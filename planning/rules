@@ -1,48 +1,165 @@
 The goal of this game is to reduce the enemy's life-energy to 0. There are
-monster, spell, trigger, and equipment cards.
+character, spell, trigger, and equipment cards.
 
-Monster Cards:
+Character Cards:
 
-Fights opponent monster cards or deals damage in some form, such as to
-life-energy, to another monster, etc.
+Fights opponent character cards or deals damage in some form, such as to
+life-energy, to another character, etc.
 
-Monster cards have traits that can affect many things such as damage taken. For
-example, if a monster is human and a spell the opponent is using affects humans
-more then it will do more damage or have more effect relative to the amount of
-human that card is.
+Character cards have traits that can affect many things such as damage
+taken. For example, if a character is human and a spell the opponent is using
+affects humans more then it will do more damage or have more effect relative to
+the amount of human that card is.
 
-For combat they use A/DA/DD.  A monster is in attack mode when they attack. The
-attacks can be seen as spells that are used under attack conditions.  The
-monster's attack determines whether or not they make it through the enemy's
+For combat they use A/AD/DD.  A character is in attack mode when they attack.
+The attacks can be seen as spells that are used under attack conditions.  The
+character's attack determines whether or not they make it through the enemy's
 defense. There is a comparison between the enemy's defense in their current
 mode (DA or DD) and the attacker's attack. If the attacker wins the opponent
-loses their monster.
+loses their character.
 
-Monsters also have an HP mechanic. This is a separate reserve of points that
-can be lowered by status conditions or spells.  The monster can also die when
+    Scenario:
+
+        Card A (A/AD/DD = 2/1/1) attacks Card B (1/1/1) and Card B is in attack
+        mode: Card B is destroyed because Card A's ATTACK (2) is larger than
+        Card B's ATTACK DEFENSE (1).
+
+        A (2/1/1) attacks B (1/2/1) in attack mode: card A is destroyed
+        (defender's AD >= attacker's A)
+
+        A (2/1/1) attacks B (1/1/2) in defense mode: card A is destroyed (ties
+        go to defender)
+
+        A (2/1/1) attacks B (1/1/3) in defense mode: card A is destroyed
+
+        A (2/1/1) attacks B (1/1/3) in attack mode: card B is destroyed
+
+
+Character also have an HP mechanic. This is a separate reserve of points that
+can be lowered by status conditions or spells.  The character can also die when
 they lose all of their HP.
 
-There is also a speed trait.  This resolves ties, determining which action
+There is also a speed trait. This resolves ties, determining which action
 happened first.
 
-Monsters can have ailments that affect their stats.
+Cards with non-zero attack have a RANGE attribute that determines how many
+zones they can attack "over" -- cards with range 0 must be in the front zone
+to attack, with range 1 they can be in front or zone behind it.
 
-Ailments: Poison - Lowers the monster's HP by X amonut of points for rand(0,6)
-number of turns Burn - Lowers the monster's attack/defense by X amount until
-cured Dizzy - Lower's the monster's ability to defend for X amount of turns,
-roll a die and if it is not 5,6 then the monster successfully does the intended
-action.  Lasts for rand(0,4) turns
+Character can have ailments that affect their stats.
+
+Ailments:
+
+    Poison - Lowers the character's HP by X amonut of points for rand(0,6)
+number of turns
+
+    Burn - Lowers the character's attack/defense by X amount until cured
+
+    Dizzy - Lower's the character's ability to defend for X amount of turns,
+roll a die and if it is not 5,6 then the character successfully does the
+intended action. Lasts for rand(0,4) turns
+
+Character cards can have abilities that are invoked like spell cards.
 
 Equipment Cards:
 
-These cards alter one or many traits of the monster it is played on until that
-equipment is destroyed.
+These cards alter one or many traits of the character it is played on until
+that equipment is destroyed.
 
 Spell Cards:
 
-These cards are single use and alter some aspect of the game when played.
+These cards are single use and alter some aspect of the game when played. Spell
+cards have durations from instant to permanent.
+
+Some spell cards have constant effects while 
 
 Trigger Cards:
 
 These cards are single use and trigger when a condition the player entered is
-met.
+met. Trigger cards when triggered essentially become spell cards.
+
+---
+
+Attacking:
+
+    If a card (which much in attack mode) attacks and:
+
+        a) the enemy has no character cards, the attack must target the enemy's
+life-energy
+
+        b) the enemy has character cards but they are all in attack mode, the
+attack can target any character (dependent on attacker's A and defender's DA);
+or, it can target the enemy's life energy
+
+        c) the enemy has defender cards, the attack must target one of the the
+enemy's defender cards
+
+    Characters are placed into numbered zones. Zones may not be empty, but
+zones can be created "between" or "behind" other zones, moving some number of
+zones forward.
+
+    Defenders in a zone protect all zones behind them from attack until there
+are no more defenders in that zone. The last zone (the zone closest to the
+player) protects the player's life-energy.
+
+---
+
+Face
+
+    Some cards can be placed face down:
+
+    Character cards can be placed face down in attack or defense mode. They
+cannot attack while face down, and if they are attacked they become face up.
+
+    Spell cards cannot be placed face down.
+
+    Trigger cards must be placed face down unless they are to be immediately
+triggered. When a trigger card is triggered, it becomes face up.
+
+    Equipment cards must be placed face up, even if they are equipped to a
+face-down character card.
+
+    Cards can be flipped from down to up during the move phase of your turn
+but cards cannot be flipped from up to down without a special ability.
+
+---
+
+Turns:
+
+    On your turn...
+
+        1) you must draw 1 card.
+
+        2) you can activate any spells, triggers, or abilities in play, play
+any number of cards, change any cards from attack to defense mode (or visa
+versa), or move cards from one zone to another, including new zones
+
+        3) you can attack with up to one card
+
+        4) you can activate any spels, triggers, or abilities in play
+
+        5) if there is a game limit on number of cards in your hand, you must
+discard cards until that limit is met
+
+        6) finally, you must end your turn
+
+    At any point after your turn begins (including before you have drawn a
+card) until you end your turn, you can change the conditions under which a
+trigger activates.
+
+---
+
+Energy
+
+    Some cards provide play-energy whenever they are in play and face up.
+
+    Some cards require there to be a minimum play-energy in play before they
+can be played.
+
+    Play-energy combines from all sources and is equal for all players.
+
+    If play-energy decreases and a card no longer has its minimum play-energy,
+it cannot use any abilities (the effect of ongoing spells stop, triggers cannot
+be triggered, and other activated abilities cannot be used) but a character
+card can still attack, defend, move, turn face up, or switch modes.
+
