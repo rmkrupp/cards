@@ -165,9 +165,9 @@ Turns:
 
             g) destroy any card, sending it to the grave
 
-            h) attach an equipment card to a character card
+            h) attach an equipment card to a card
 
-            i) detach an equipment card from a character card
+            i) detach an equipment card from a card
 
         3) you can attack with up to one card
 
@@ -198,3 +198,26 @@ it cannot use any abilities (the effect of ongoing spells stop, triggers cannot
 be triggered, and other activated abilities cannot be used) but a character
 card can still attack, defend, move, turn face up, or switch modes.
 
+---
+
+Equipment
+
+You can attach equipment (unless the equipment states otherwise) to any character
+in your field, and detach and attach it as many times as you like.
+
+When a card is desroyed that has equipment attached, the equipment is destroyed
+too.
+
+---
+
+Grave
+
+Your grave is a stack of cards where your destroyed cards go. Newly destroyed
+cards go on top.
+
+Discard
+
+Your discard is a stack of cards where your discarded cards go. Newly discarded
+cards go on top.
+
+Game settings determine whether the grave and discard are the same.
