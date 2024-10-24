@@ -20,10 +20,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#ifndef BUILDTYPE
+#define BUILDTYPE "unknown"
+#endif /* BUILDTYPE */
+
 struct config {
     long port, port2;
     char * s;
     bool verbose;
+    char * build;
 };
 
 #endif /* CONFIG_H */

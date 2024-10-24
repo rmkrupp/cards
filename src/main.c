@@ -50,6 +50,7 @@ int main(int argc, char ** argv) {
     printf("verbose = %d\n", config.verbose);
 
     free(config.s);
+    free(config.build);
 
     return 0;
 }

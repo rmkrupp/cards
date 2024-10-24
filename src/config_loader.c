@@ -249,6 +249,8 @@ int config_load(struct config * config, int nfiles, char ** files)
             loader, "s", "foo", NULL, &config->s);
     config_loader_add_option_boolean(
             loader, "verbose", false, NULL, &config->verbose);
+    config_loader_add_option_string(
+            loader, "build", BUILDTYPE, NULL, &config->build);
 
     lua_State * L = luaL_newstate();
     if (!L) return 1;

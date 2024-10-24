@@ -19,4 +19,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-gcc -Iinclude -fsanitize=address,undefined -flto -g -Og -Wall -o cards src/main.c src/config_loader.c -levent -lluajit-5.1
+gcc -DBUILDTYPE='"debug"' -Iinclude -fsanitize=address,undefined -flto -g -Og -Wall -o cards src/main.c src/config_loader.c -levent -lluajit-5.1
