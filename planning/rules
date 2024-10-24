@@ -39,9 +39,6 @@ Character also have an HP mechanic. This is a separate reserve of points that
 can be lowered by status conditions or spells.  The character can also die when
 they lose all of their HP.
 
-There is also a speed trait. This resolves ties, determining which action
-happened first.
-
 Cards with non-zero attack have a RANGE attribute that determines how many
 zones they can attack "over" -- cards with range 0 must be in the front zone
 to attack, with range 1 they can be in front or zone behind it.
@@ -124,15 +121,53 @@ but cards cannot be flipped from up to down without a special ability.
 
 ---
 
+Zones
+
+    For each player:
+
+    All trigger, spell, and unattached equipment cards go in a special zone
+
+    All characters go in a single zone, numbered from the zone closest to the
+player to the zone farthest. There can be as many zones as there are
+characters.
+
+---
+
 Turns:
 
     On your turn...
 
         1) you must draw 1 card.
 
-        2) you can activate any spells, triggers, or abilities in play, play
-any number of cards, change any cards from attack to defense mode (or visa
-versa), or move cards from one zone to another, including new zones
+        2) you can (as many of these as you want and in any order):
+
+            (these actions apply only to cards in your field)
+
+            a) activate any spells, triggers, or abilities
+
+            b) play any number of cards
+
+                i) if a character card, into any character zone
+
+                ii) otherwise, into the special zone
+
+            c) change any cards from attack to defense mode
+            
+            d) change any cards from defense to attack mode
+
+            e) flip any face-down cards face-up
+
+                (if they are spells or triggers this activates them)
+
+            f) move cards in from one zone to another
+
+                (this can create or destroy zones as needed)
+
+            g) destroy any card, sending it to the grave
+
+            h) attach an equipment card to a character card
+
+            i) detach an equipment card from a character card
 
         3) you can attack with up to one card
 
