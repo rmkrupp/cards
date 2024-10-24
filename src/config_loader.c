@@ -182,6 +182,7 @@ int config_loader_update(
         if (option == NULL) {
             fprintf(stderr, "[config] config.%s matches no options\n", k);
             error++;
+            lua_pop(L, 1);
             continue;
         }
 
