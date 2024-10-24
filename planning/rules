@@ -1,0 +1,48 @@
+The goal of this game is to reduce the enemy's life-energy to 0. There are
+monster, spell, trigger, and equipment cards.
+
+Monster Cards:
+
+Fights opponent monster cards or deals damage in some form, such as to
+life-energy, to another monster, etc.
+
+Monster cards have traits that can affect many things such as damage taken. For
+example, if a monster is human and a spell the opponent is using affects humans
+more then it will do more damage or have more effect relative to the amount of
+human that card is.
+
+For combat they use A/DA/DD.  A monster is in attack mode when they attack. The
+attacks can be seen as spells that are used under attack conditions.  The
+monster's attack determines whether or not they make it through the enemy's
+defense. There is a comparison between the enemy's defense in their current
+mode (DA or DD) and the attacker's attack. If the attacker wins the opponent
+loses their monster.
+
+Monsters also have an HP mechanic. This is a separate reserve of points that
+can be lowered by status conditions or spells.  The monster can also die when
+they lose all of their HP.
+
+There is also a speed trait.  This resolves ties, determining which action
+happened first.
+
+Monsters can have ailments that affect their stats.
+
+Ailments: Poison - Lowers the monster's HP by X amonut of points for rand(0,6)
+number of turns Burn - Lowers the monster's attack/defense by X amount until
+cured Dizzy - Lower's the monster's ability to defend for X amount of turns,
+roll a die and if it is not 5,6 then the monster successfully does the intended
+action.  Lasts for rand(0,4) turns
+
+Equipment Cards:
+
+These cards alter one or many traits of the monster it is played on until that
+equipment is destroyed.
+
+Spell Cards:
+
+These cards are single use and alter some aspect of the game when played.
+
+Trigger Cards:
+
+These cards are single use and trigger when a condition the player entered is
+met.
