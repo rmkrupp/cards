@@ -24,54 +24,9 @@
 #include "config.h"
 #include <stdbool.h>
 
-enum config_option_type {
-    CONFIG_BOOLEAN,
-    CONFIG_INTEGER,
-    CONFIG_STRING
-};
-
-struct config_option {
-    enum config_option_type type;
-    char * name;
-    bool value_boolean;
-    long value_integer;
-    char * value_string;
-    int (*callback)(struct config_option *);
-    void * context;
-};
-
-struct config_loader {
-    struct config_option * options;
-    size_t n_options;
-};
-
 struct config_loader * config_loader_create();
 
 void config_loader_destroy(struct config_loader * loader);
-
-void config_loader_add_option_boolean(
-        struct config_loader * loader,
-        const char * name, 
-        bool default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
-
-void config_loader_add_option_integer(
-        struct config_loader * loader,
-        const char * name, 
-        long default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
-
-void config_loader_add_option_string(
-        struct config_loader * loader,
-        const char * name, 
-        const char * default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
 
 int config_loader_update(
         struct config_loader * loader,

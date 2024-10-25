@@ -20,13 +20,24 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#ifndef BUILDTYPE
-#define BUILDTYPE "unknown"
-#endif /* BUILDTYPE */
+#include <stdbool.h>
+
+#ifndef CONFIG_BUILDTYPE_DEFAULT
+#define CONFIG_BUILDTYPE_DEFAULT "unknown"
+#endif /* CONFIG_BUILDTYPE_DEFAULT */
+
+#ifndef CONFIG_DUMMY_DEFAULT
+#define CONFIG_DUMMY_DEFAULT false
+#endif /* CONFIG_DUMMY_DEFAULT */
+
+#ifndef CONFIG_PORT_DEFAULT
+#define CONFIG_PORT_DEFAULT 10101
+#endif /* CONFIG_PORT_DEFAULT */
 
 struct config {
     long port;
-    char * build;
+    bool dummy;
+    char * buildtype;
 };
 
 void config_free(struct config * config);

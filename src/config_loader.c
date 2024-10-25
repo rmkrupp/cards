@@ -25,6 +25,51 @@
 #include "lua.h"
 #include "config_loader.h"
 
+enum config_option_type {
+    CONFIG_BOOLEAN,
+    CONFIG_INTEGER,
+    CONFIG_STRING
+};
+
+struct config_option {
+    enum config_option_type type;
+    char * name;
+    bool value_boolean;
+    long value_integer;
+    char * value_string;
+    int (*callback)(struct config_option *);
+    void * context;
+};
+
+struct config_loader {
+    struct config_option * options;
+    size_t n_options;
+};
+
+static void config_loader_add_option_boolean(
+        struct config_loader * loader,
+        const char * name, 
+        bool default_value,
+        int (*callback)(struct config_option *),
+        void * context
+    );
+
+static void config_loader_add_option_integer(
+        struct config_loader * loader,
+        const char * name, 
+        long default_value,
+        int (*callback)(struct config_option *),
+        void * context
+    );
+
+static void config_loader_add_option_string(
+        struct config_loader * loader,
+        const char * name, 
+        const char * default_value,
+        int (*callback)(struct config_option *),
+        void * context
+    );
+
 static int default_config_callback(struct config_option * option)
 {
     if (!option->context) {
@@ -234,9 +279,11 @@ int config_load(struct config * config, int nfiles, char ** files)
     struct config_loader * loader = config_loader_create();
 
     config_loader_add_option_integer(
-            loader, "port", 10101, NULL, &config->port);
+            loader, "port", CONFIG_PORT_DEFAULT, NULL, &config->port);
+    config_loader_add_option_boolean(
+            loader, "dummy", CONFIG_DUMMY_DEFAULT, NULL, &config->dummy);
     config_loader_add_option_string(
-            loader, "build", BUILDTYPE, NULL, &config->build);
+            loader, "buildtype", CONFIG_BUILDTYPE_DEFAULT, NULL, &config->buildtype);
 
     lua_State * L = luaL_newstate();
     if (!L) {
