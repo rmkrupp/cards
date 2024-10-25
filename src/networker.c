@@ -19,7 +19,6 @@
  */
 #include "networker.h"
 #include "config.h"
-#include "game.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,21 +32,26 @@
 
 /* a networker holds the state of networking apparatus */
 struct networker {
-    struct game * game;
-    struct connection ** connections;
-    size_t n_connections;
     struct event_base * base;
     struct evconnlistener * listener;
-    size_t next_id;
+    struct connection ** connections;
+    size_t n_connections;
+    int errors;
 };
 
 /* a connection is the context given to each connection created by the
  * networker
  * */
 struct connection {
+    size_t id;
     struct networker * networker;
-    struct player * player;
     struct bufferevent * bev;
+};
+
+/* iterator over networker->connections */
+struct networker_connection_iter {
+    struct networker * networker;
+    size_t index;
 };
 
 /* create a connection with the given networker and bufferevent */
@@ -58,12 +62,10 @@ static struct connection * connection_create(
 {
     struct connection * connection = malloc(sizeof(*connection));
     *connection = (struct connection) {
+        .id = networker->n_connections,
         .networker = networker,
-        .player = player_create(networker->next_id++),
         .bev = bev
     };
-
-    game_add_player(networker->game, connection->player);
 
     networker->connections = realloc(
             networker->connections,
@@ -84,11 +86,10 @@ static void connection_destroy(struct connection * connection)
     for (size_t n = 0; n < connection->networker->n_connections; n++) {
         if (connection->networker->connections[n] == connection) {
             connection->networker->connections[n] = NULL;
+            break;
         }
     }
 
-    game_remove_player(connection->networker->game, connection->player);
-    player_destroy(connection->player);
     bufferevent_free(connection->bev);
 
     free(connection);
@@ -100,7 +101,6 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
     struct connection * connection = ptr;
 
     struct evbuffer * input = bufferevent_get_input(bev);
-    struct evbuffer * output = bufferevent_get_output(bev);
 
     size_t n = 0;
     do {
@@ -117,12 +117,32 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 event_base_loopexit(connection->networker->base, NULL);
             }
 
-            evbuffer_add_printf(
-                    output,
-                    "[%ld] %s\n",
-                    player_get_id(connection->player),
-                    line
-                );
+            struct networker_connection_iter * iter =
+                networker_connection_iter_create(connection->networker);
+
+            struct connection * c2;
+
+            while ((c2 = networker_connection_iter_iterate(iter))) {
+                struct evbuffer * output = bufferevent_get_output(c2->bev);
+
+                if (c2 == connection) {
+                    evbuffer_add_printf(
+                            output,
+                            "you said: %s\n",
+                            line
+                        );
+                } else {
+                    evbuffer_add_printf(
+                            output,
+                            "%ld said: %s\n",
+                            connection->id,
+                            line
+                        );
+                }
+            }
+
+            networker_connection_iter_destroy(iter);
+
             free(line);
         }
     } while (n > 0);
@@ -134,6 +154,7 @@ static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
     struct connection * connection = ptr;
 
     if (events & BEV_EVENT_ERROR) {
+        connection->networker->errors++;
         perror("echo_event_cb() called for error");
     }
 
@@ -173,7 +194,9 @@ static void networker_listener_error_cb(
         void * ptr
     )
 {
-    //struct networker * networker = ptr;
+    struct networker * networker = ptr;
+    networker->errors++;
+
     struct event_base * base = evconnlistener_get_base(listener);
     int error = EVUTIL_SOCKET_ERROR();
     fprintf(
@@ -186,7 +209,7 @@ static void networker_listener_error_cb(
 }
 
 /* reutrn a new networker based on config and holding game */
-struct networker * networker_create(struct config * config, struct game * game)
+struct networker * networker_create(struct config * config)
 {
     int port = (int)config->port;
 
@@ -205,9 +228,7 @@ struct networker * networker_create(struct config * config, struct game * game)
 
     struct networker * networker = malloc(sizeof(*networker));
 
-    *networker = (struct networker) {
-        .game = game
-    };
+    *networker = (struct networker) { };
 
     networker->base = event_base_new();
     if (!networker->base) {
@@ -255,7 +276,46 @@ void networker_destroy(struct networker * networker)
 }
 
 /* run the eventloop of this networker */
-void networker_run(struct networker * networker)
+int networker_run(struct networker * networker)
 {
     event_base_dispatch(networker->base);
+    return networker->errors;
+}
+
+/* returns a new iterator over the networker's connections */
+struct networker_connection_iter * networker_connection_iter_create(
+        struct networker * networker)
+{
+    struct networker_connection_iter * iter = malloc(sizeof(*iter));
+    *iter = (struct networker_connection_iter) {
+        .networker = networker,
+        .index = 0
+    };
+    return iter;
+}
+
+/* destroys this iterator */
+void networker_connection_iter_destroy(
+        struct networker_connection_iter * iter)
+{
+    free(iter);
+}
+
+/* returns the next connection and advances the iterator */
+struct connection * networker_connection_iter_iterate(
+        struct networker_connection_iter * iter
+    )
+{
+    if (iter->index >= iter->networker->n_connections) {
+        return NULL;
+    }
+
+    while (!iter->networker->connections[iter->index]) {
+        iter->index++;
+    }
+
+    struct connection * connection = iter->networker->connections[iter->index];
+    iter->index++;
+
+    return connection;
 }

@@ -25,12 +25,27 @@
 
 /* returns a new networker based on config and holding game */
 struct networker * networker_create(
-        struct config * config, struct game * game);
+        struct config * config);
 
 /* destroy this networker */
 void networker_destroy(struct networker * networker);
 
-/* begin this networker's event loop */
-void networker_run(struct networker * networker);
+/* begin this networker's event loop
+ * returns 0 if exited without error, number of errors otherwise
+ */
+int networker_run(struct networker * networker);
+
+/* returns a new iterator over the networker's connections */
+struct networker_connection_iter * networker_connection_iter_create(
+        struct networker * networker);
+
+/* destroys this iterator */
+void networker_connection_iter_destroy(
+        struct networker_connection_iter * iter);
+
+/* returns the next connection and advances the iterator */
+struct connection * networker_connection_iter_iterate(
+        struct networker_connection_iter * iter
+    );
 
 #endif /* NETWORKER_H */

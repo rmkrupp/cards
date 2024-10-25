@@ -1,4 +1,4 @@
-/* File: src/main.c
+/* File: src/server.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,37 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
+#include "server.h"
 
-#include <event2/event.h>
+#include <stdlib.h>
 
-#include "config.h"
-#include "game.h"
 #include "networker.h"
 
-int main(int argc, char ** argv) {
+struct server * server_create(struct config * config)
+{
+    struct server * server = malloc(sizeof(*server));
 
-    struct config config = (struct config) { };
+    *server = (struct server) {
+        .config = config,
+        .networker = networker_create(config)
+    };
 
-    if (config_load(&config, argc - 1, &argv[1])) {
-        return 1;
+    if (!server->networker) {
+        free(server);
+        return NULL;
     }
 
-    printf("port = %ld\n", config.port);
+    return server;
+}
 
-    struct server * server = server_create(&config);
+void server_destroy(struct server * server)
+{
+    networker_destory(server->networker);
+    free(server);
+}
 
-    printf("server_run()\n");
-
-    server_run(server);
-
-    printf("server_destroy()\n");
-
-    server_destroy(server);
-
-    config_free(&config);
-
-    libevent_global_shutdown();
-
-    return 0;
+int server_run(struct server * server)
+{
+    return networker_run(server->networker);
 }
