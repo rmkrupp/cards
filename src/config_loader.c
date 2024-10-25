@@ -335,7 +335,7 @@ int config_load(struct config * config, int nfiles, char ** files)
 
     lua_setfield(L, LUA_GLOBALSINDEX, "config");
 
-    for (int i = 1; i < nfiles; i++) {
+    for (int i = 0; i < nfiles; i++) {
         err = luaL_loadfile(L, files[i]);
 
         if (err == LUA_ERRFILE) {

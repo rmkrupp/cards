@@ -29,7 +29,7 @@ int main(int argc, char ** argv) {
 
     struct config config = (struct config) { };
 
-    if (config_load(&config, argc, argv)) {
+    if (config_load(&config, argc - 1, &argv[1])) {
         return 1;
     }
 
