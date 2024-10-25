@@ -22,5 +22,5 @@
 gcc -DBUILDTYPE='"debug"' -Iinclude -fsanitize=address,undefined \
     -flto -g -Og -Wall -o cards \
     src/main.c src/config_loader.c src/game.c src/config.c \
-    src/networker.c \
+    src/networker.c src/server.c \
     -levent -lluajit-5.1
