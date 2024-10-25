@@ -62,7 +62,7 @@ struct config_loader {
 static int default_config_callback(struct config_option * option)
 {
     if (!option->context) {
-        printf("[config] warning: option %s with default callback has NULL target\n", option->name);
+        fprintf(stderr, "[config] warning: option %s with default callback has NULL target\n", option->name);
         return 0;
     }
 
