@@ -20,7 +20,9 @@
 #ifndef CONFIG_LOADER_H
 #define CONFIG_LOADER_H
 
+#include "lua.h"
 #include "config.h"
+#include <stdbool.h>
 
 enum config_option_type {
     CONFIG_BOOLEAN,

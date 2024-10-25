@@ -18,39 +18,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 
-#if defined(USE_LUAJIT) && USE_LUAJIT
-#include <luajit-2.1/lua.h>
-#include <luajit-2.1/lualib.h>
-#include <luajit-2.1/lauxlib.h>
-#else
-#include <lua5.1/lua.h>
-#include <lua5.1/lualib.h>
-#include <lua5.1/lauxlib.h>
-#endif /* USE_LUAJIT */
+#include <event2/event.h>
 
 #include "config_loader.h"
 #include "config.h"
+#include "game.h"
+#include "networker.h"
 
 int main(int argc, char ** argv) {
 
     struct config config = (struct config) { };
 
     if (config_load(&config, argc, argv)) {
-        if (config.s) free(config.s);
         return 1;
     }
 
     printf("port = %ld\n", config.port);
-    printf("port2 = %ld\n", config.port2);
-    printf("s = %s\n", config.s);
-    printf("verbose = %d\n", config.verbose);
 
-    free(config.s);
-    free(config.build);
+    struct game * game = game_create();
+
+    struct networker * networker = networker_create(&config, game);
+
+    printf("networker_run()\n");
+
+    networker_run(networker);
+
+    printf("networker_destroy()\n");
+
+    networker_destroy(networker);
+    game_destroy(game);
+
+    config_free(&config);
+
+    libevent_global_shutdown();
 
     return 0;
 }

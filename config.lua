@@ -14,8 +14,4 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-print("(in lua) config.port = " .. config.port)
-print("(in lua) config.s = " .. config.s)
-config.port = 7
---config.s = ""
---config.port2 = "bob"
+-- config.port = 10101

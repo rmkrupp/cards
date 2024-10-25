@@ -1,4 +1,4 @@
-/* File: include/config.h
+/* File: include/networker.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,18 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef NETWORKER_H
+#define NETWORKER_H
 
-#ifndef BUILDTYPE
-#define BUILDTYPE "unknown"
-#endif /* BUILDTYPE */
+#include "game.h"
+#include "config.h"
 
-struct config {
-    long port;
-    char * build;
-};
+/* returns a new networker */
+struct networker * networker_create(
+        struct config * config, struct game * game);
 
-void config_free(struct config * config);
+/* destroy this networker */
+void networker_destroy(struct networker * networker);
 
-#endif /* CONFIG_H */
+/* begin this networker's event loop */
+void networker_run(struct networker * networker);
+
+#endif /* NETWORKER_H */

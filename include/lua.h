@@ -1,4 +1,4 @@
-/* File: include/config.h
+/* File: include/lua.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef LUA_H
+#define LUA_H
 
-#ifndef BUILDTYPE
-#define BUILDTYPE "unknown"
-#endif /* BUILDTYPE */
+#if defined(USE_LUAJIT) && USE_LUAJIT
+#include <luajit-2.1/lua.h>
+#include <luajit-2.1/lualib.h>
+#include <luajit-2.1/lauxlib.h>
+#else
+#include <lua5.1/lua.h>
+#include <lua5.1/lualib.h>
+#include <lua5.1/lauxlib.h>
+#endif /* USE_LUAJIT */
 
-struct config {
-    long port;
-    char * build;
-};
-
-void config_free(struct config * config);
-
-#endif /* CONFIG_H */
+#endif /* LUA_H */

@@ -22,16 +22,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#if defined(USE_LUAJIT) && USE_LUAJIT
-#include <luajit-2.1/lua.h>
-#include <luajit-2.1/lualib.h>
-#include <luajit-2.1/lauxlib.h>
-#else
-#include <lua5.1/lua.h>
-#include <lua5.1/lualib.h>
-#include <lua5.1/lauxlib.h>
-#endif /* USE_LUAJIT */
-
+#include "lua.h"
 #include "config_loader.h"
 
 static int default_config_callback(struct config_option * option)
@@ -244,17 +235,14 @@ int config_load(struct config * config, int nfiles, char ** files)
 
     config_loader_add_option_integer(
             loader, "port", 10101, NULL, &config->port);
-    config_loader_add_option_integer(
-            loader, "port2", 3, NULL, &config->port2);
-    config_loader_add_option_string(
-            loader, "s", "foo", NULL, &config->s);
-    config_loader_add_option_boolean(
-            loader, "verbose", false, NULL, &config->verbose);
     config_loader_add_option_string(
             loader, "build", BUILDTYPE, NULL, &config->build);
 
     lua_State * L = luaL_newstate();
-    if (!L) return 1;
+    if (!L) {
+        config_loader_destroy(loader);
+        return 1;
+    }
     luaL_openlibs(L);
 
     lua_newtable(L);
@@ -297,6 +285,7 @@ int config_load(struct config * config, int nfiles, char ** files)
 
         if (err) {
             lua_close(L);
+            config_loader_destroy(loader);
             return 1;
         }
 
@@ -304,6 +293,7 @@ int config_load(struct config * config, int nfiles, char ** files)
             fprintf(stderr, "[config] Lua error in %s: %s\n",
                     files[i], lua_tostring(L, -1));
             lua_close(L);
+            config_loader_destroy(loader);
             return 1;
         }
     }

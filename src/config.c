@@ -1,4 +1,4 @@
-/* File: include/config.h
+/* File: src/config.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,18 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#include "config.h"
 
-#ifndef BUILDTYPE
-#define BUILDTYPE "unknown"
-#endif /* BUILDTYPE */
+#include <stdlib.h>
 
-struct config {
-    long port;
-    char * build;
-};
-
-void config_free(struct config * config);
-
-#endif /* CONFIG_H */
+void config_free(struct config * config)
+{
+    free(config->build);
+}
