@@ -31,7 +31,7 @@
 #include <event2/buffer.h>
 #include <arpa/inet.h>
 
-/* a networker holds the state of networking aparatus */
+/* a networker holds the state of networking apparatus */
 struct networker {
     struct game * game;
     struct connection ** connections;
