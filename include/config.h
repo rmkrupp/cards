@@ -22,9 +22,9 @@
 
 #include <stdbool.h>
 
-#ifndef CONFIG_BUILDTYPE_DEFAULT
-#define CONFIG_BUILDTYPE_DEFAULT "unknown"
-#endif /* CONFIG_BUILDTYPE_DEFAULT */
+#ifndef VERSION
+#error no VERSION defined
+#endif /* VERSION */
 
 #ifndef CONFIG_DUMMY_DEFAULT
 #define CONFIG_DUMMY_DEFAULT false
@@ -38,7 +38,6 @@
 struct config {
     long port;
     bool dummy;
-    char * buildtype;
 };
 
 /* free resources used by this config */

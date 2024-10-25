@@ -33,6 +33,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    printf("version = %s\n", VERSION);
     printf("port = %ld\n", config.port);
 
     struct server * server = server_create(&config);

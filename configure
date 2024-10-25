@@ -1,0 +1,17 @@
+#!/bin/bash
+
+ninjadir="ninja"
+
+[ $1 ] && buildtype="$1" || buildtype="release-luajit"
+
+buildfile="$ninjadir/$buildtype.ninja"
+resultfile="active.gen.ninja"
+
+[[ ! -f "$buildfile" ]] && { echo "No configuration $buildtype" >&2; exit 1 ; }
+cp -v "$buildfile" "$resultfile"
+
+[[ "$VERSION" ]] && sed -i 's/version = .*/version = '"$VERSION"'/' "$resultfile"
+[[ "$CFLAGS" ]] && sed -i 's/cflags = .*/cflags = $cflags '"$CFLAGS"'/' "$resultfile"
+[[ "$LDFLAGS" ]] && sed -i 's/ldflags = .*/ldflags = $ldflags '"$LDFLAGS"'/' "$resultfile"
+
+exit 0

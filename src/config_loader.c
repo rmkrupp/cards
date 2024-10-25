@@ -115,7 +115,7 @@ static void config_loader_add_option_boolean(
         void * context
     )
 {
-    if (!callback) {
+    if (!callback && context) {
         callback = &default_config_callback;
     }
 
@@ -147,7 +147,7 @@ static void config_loader_add_option_integer(
         void * context
     )
 {
-    if (!callback) {
+    if (!callback && context) {
         callback = &default_config_callback;
     }
 
@@ -179,7 +179,7 @@ static void config_loader_add_option_string(
         void * context
     )
 {
-    if (!callback) {
+    if (!callback && context) {
         callback = &default_config_callback;
     }
 
@@ -297,12 +297,12 @@ int config_load(struct config * config, int nfiles, char ** files)
 
     struct config_loader * loader = config_loader_create();
 
+    config_loader_add_option_string(
+            loader, "version", VERSION, NULL, NULL);
     config_loader_add_option_integer(
             loader, "port", CONFIG_PORT_DEFAULT, NULL, &config->port);
     config_loader_add_option_boolean(
             loader, "dummy", CONFIG_DUMMY_DEFAULT, NULL, &config->dummy);
-    config_loader_add_option_string(
-            loader, "buildtype", CONFIG_BUILDTYPE_DEFAULT, NULL, &config->buildtype);
 
     lua_State * L = luaL_newstate();
     if (!L) {
