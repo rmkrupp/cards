@@ -20,7 +20,7 @@
 builddir = out
 cflags = -Wall -flto -fdiagnostics-color -Iinclude
 ldflags =
-defines = 
+defines =
 sanflags = -fsanitize=address,undefined
 libs = -levent
 
