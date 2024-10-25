@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 
+/* free resources used by this config */
 void config_free(struct config * config)
 {
     free(config->buildtype);

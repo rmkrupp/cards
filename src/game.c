@@ -22,17 +22,26 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+/* a player with an id and a connectedness */
 struct player {
     size_t id;
     bool connected;
 };
 
+/* a game with and expandable array of player slots
+ *
+ * new players will fill holes in these slots left by the prior removal of any
+ * players (these slots will hold NULL until filled again.)
+ *
+ * if there are no holes, the player_slots array will be realloc'd and expanded
+ */
 struct game {
     struct player ** player_slots;
     size_t n_player_slots;
     size_t n_players;
 };
 
+/* create and return a new player with this id */
 struct player * player_create(size_t id)
 {
     struct player * player = malloc(sizeof(*player));
@@ -43,26 +52,32 @@ struct player * player_create(size_t id)
     return player;
 }
 
+/* free the resources of this player */
 void player_destroy(struct player * player)
 {
     free(player);
 }
 
-bool player_get_connected(struct player * player)
-{
-    return player->connected;
-}
-
+/* get whether this player is connected */
 void player_set_connected(struct player * player, bool connected)
 {
     player->connected = connected;
 }
 
+/* set whether this player is connected */
+bool player_get_connected(struct player * player)
+{
+    return player->connected;
+}
+
+/* get the id of this player */
 size_t player_get_id(struct player * player)
 {
     return player->id;
 }
+/* create and return a game */
 
+/* create and return a game */
 struct game * game_create()
 {
     struct game * game = malloc(sizeof(*game));
@@ -70,6 +85,7 @@ struct game * game_create()
     return game;
 }
 
+/* free the resources of this game */
 void game_destroy(struct game * game)
 {
     for (size_t n = 0; n < game->n_player_slots; n++) {
@@ -82,6 +98,7 @@ void game_destroy(struct game * game)
     free(game);
 }
 
+/* add this player to this game */
 void game_add_player(struct game * game, struct player * player)
 {
     game->n_players++;
@@ -99,6 +116,9 @@ void game_add_player(struct game * game, struct player * player)
     game->n_player_slots++;
 }
 
+/* remove this player from this game
+ * returns: 1 if succesful, 0 if this player was not in this game
+ */
 int game_remove_player(struct game * game, struct player * player)
 {
     for (size_t n = 0; n < game->n_player_slots; n++) {

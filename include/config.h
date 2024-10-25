@@ -34,12 +34,17 @@
 #define CONFIG_PORT_DEFAULT 10101
 #endif /* CONFIG_PORT_DEFAULT */
 
+/* holds values populated by a config_loader */
 struct config {
     long port;
     bool dummy;
     char * buildtype;
 };
 
+/* free resources used by this config */
 void config_free(struct config * config);
+
+/* populate a config from a list of Lua scripts */
+int config_load(struct config * config, int nfiles, char ** files);
 
 #endif /* CONFIG_H */

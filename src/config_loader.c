@@ -23,53 +23,42 @@
 #include <string.h>
 
 #include "lua.h"
-#include "config_loader.h"
+#include "config.h"
 
+/* the type of config option */
 enum config_option_type {
-    CONFIG_BOOLEAN,
-    CONFIG_INTEGER,
-    CONFIG_STRING
+    CONFIG_BOOLEAN, /* a bool option */
+    CONFIG_INTEGER, /* a long option */
+    CONFIG_STRING   /* a (config-managed) char * option */
 };
 
+/* one option supported by the loader */
 struct config_option {
+     /* the option type */
     enum config_option_type type;
+
+    /* the option name, as it will appear in Lua (as config.<name>) */
     char * name;
+
+    /* the values, depending on type */
     bool value_boolean;
     long value_integer;
     char * value_string;
+
+    /* the callback that will run after the option has loaded
+     * default: stores the option into a pointer held in context
+     */
     int (*callback)(struct config_option *);
     void * context;
 };
 
+/* a loader that holds a number of config_options */
 struct config_loader {
     struct config_option * options;
     size_t n_options;
 };
 
-static void config_loader_add_option_boolean(
-        struct config_loader * loader,
-        const char * name, 
-        bool default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
-
-static void config_loader_add_option_integer(
-        struct config_loader * loader,
-        const char * name, 
-        long default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
-
-static void config_loader_add_option_string(
-        struct config_loader * loader,
-        const char * name, 
-        const char * default_value,
-        int (*callback)(struct config_option *),
-        void * context
-    );
-
+/* the default callback */
 static int default_config_callback(struct config_option * option)
 {
     if (!option->context) {
@@ -92,14 +81,16 @@ static int default_config_callback(struct config_option * option)
     return 0;
 }
 
-struct config_loader * config_loader_create()
+/* returns a new config_loader (i.e. with no options) */
+static struct config_loader * config_loader_create()
 {
     struct config_loader * loader = malloc(sizeof(*loader));
     *loader = (struct config_loader) { };
     return loader;
 }
 
-void config_loader_destroy(struct config_loader * loader)
+/* frees the resources of a config loader */
+static void config_loader_destroy(struct config_loader * loader)
 {
     for (size_t n = 0; n < loader->n_options; n++) {
         free(loader->options[n].name);
@@ -110,7 +101,13 @@ void config_loader_destroy(struct config_loader * loader)
     free(loader);
 }
 
-void config_loader_add_option_boolean(
+/* add a boolean option to the loader
+ *
+ * if callback is null use default_config_callback which treats
+ * context as a pointer to something the size of the value, and
+ * stores that value into the pointer when loading is done
+ */
+static void config_loader_add_option_boolean(
         struct config_loader * loader,
         const char * name, 
         bool default_value,
@@ -136,7 +133,13 @@ void config_loader_add_option_boolean(
     loader->n_options++;
 }
 
-void config_loader_add_option_integer(
+/* add a integer (long) option to the loader
+ *
+ * if callback is null use default_config_callback which treats
+ * context as a pointer to something the size of the value, and
+ * stores that value into the pointer when loading is done
+ */
+static void config_loader_add_option_integer(
         struct config_loader * loader,
         const char * name, 
         long default_value,
@@ -162,7 +165,13 @@ void config_loader_add_option_integer(
     loader->n_options++;
 }
 
-void config_loader_add_option_string(
+/* add a string option to the loader
+ *
+ * if callback is null use default_config_callback which treats
+ * context as a pointer to something the size of the value, and
+ * stores that value into the pointer when loading is done
+ */
+static void config_loader_add_option_string(
         struct config_loader * loader,
         const char * name, 
         const char * default_value,
@@ -188,10 +197,19 @@ void config_loader_add_option_string(
     loader->n_options++;
 }
 
-int config_loader_update(
-        struct config_loader * loader,
-        lua_State * L
-    )
+/* extract config values from a lua_State, presumably where config scripts
+ * have been run that might have changed those values
+ *
+ * this also runs a check that no config.<whatever> values have been set in
+ * the Lua state that don't match any options known to the loader, and that
+ * the values match the type expected by the loader.
+ *
+ * note that Lua only has one number type, so for options of type
+ * CONFIG_OPTION_INTEGER we issue a warning if the truncated (i.e. integer)
+ * form of the config.<whatever> value doesn't match the value in the Lua
+ * state (e.g. because it's 1.1 and getting truncated to just 1)
+ */
+static int config_loader_update(struct config_loader * loader, lua_State * L)
 {
     lua_getfield(L, LUA_GLOBALSINDEX, "config");
 
@@ -272,6 +290,7 @@ int config_loader_update(
     return error;
 }
 
+/* populate a config from a list of Lua scripts */
 int config_load(struct config * config, int nfiles, char ** files)
 {
     int err;

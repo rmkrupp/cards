@@ -23,7 +23,7 @@
 #include "game.h"
 #include "config.h"
 
-/* returns a new networker */
+/* returns a new networker based on config and holding game */
 struct networker * networker_create(
         struct config * config, struct game * game);
 

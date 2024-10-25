@@ -31,6 +31,7 @@
 #include <event2/buffer.h>
 #include <arpa/inet.h>
 
+/* a networker holds the state of networking aparatus */
 struct networker {
     struct game * game;
     struct connection ** connections;
@@ -40,12 +41,16 @@ struct networker {
     size_t next_id;
 };
 
+/* a connection is the context given to each connection created by the
+ * networker
+ * */
 struct connection {
     struct networker * networker;
     struct player * player;
     struct bufferevent * bev;
 };
 
+/* create a connection with the given networker and bufferevent */
 static struct connection * connection_create(
         struct networker * networker,
         struct bufferevent * bev
@@ -71,6 +76,9 @@ static struct connection * connection_create(
     return connection;
 }
 
+/* destroy a connection, remove it from its networker, and remove its player
+ * from the game
+ */
 static void connection_destroy(struct connection * connection)
 {
     for (size_t n = 0; n < connection->networker->n_connections; n++) {
@@ -86,6 +94,7 @@ static void connection_destroy(struct connection * connection)
     free(connection);
 }
 
+/* dummy read callback */
 static void example_read_cb(struct bufferevent * bev, void * ptr)
 {
     struct connection * connection = ptr;
@@ -119,6 +128,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
     } while (n > 0);
 }
 
+/* dummy event callback */
 static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
 {
     struct connection * connection = ptr;
@@ -132,6 +142,7 @@ static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
     }
 }
 
+/* listener callback creates connection objects for each new connection */
 static void networker_listener_accept_cb(
         struct evconnlistener * listener,
         evutil_socket_t sock,
@@ -156,6 +167,7 @@ static void networker_listener_accept_cb(
     bufferevent_enable(bev, EV_READ | EV_WRITE);
 }
 
+/* listener error callback exits the eventloop on listener error */
 static void networker_listener_error_cb(
         struct evconnlistener * listener,
         void * ptr
@@ -173,6 +185,7 @@ static void networker_listener_error_cb(
     event_base_loopexit(base, NULL);
 }
 
+/* reutrn a new networker based on config and holding game */
 struct networker * networker_create(struct config * config, struct game * game)
 {
     int port = (int)config->port;
@@ -227,6 +240,7 @@ struct networker * networker_create(struct config * config, struct game * game)
     return networker;
 }
 
+/* free the resources (connections, events, etc.) of this networker */
 void networker_destroy(struct networker * networker)
 {
     evconnlistener_free(networker->listener);
@@ -240,6 +254,7 @@ void networker_destroy(struct networker * networker)
     free(networker);
 }
 
+/* run the eventloop of this networker */
 void networker_run(struct networker * networker)
 {
     event_base_dispatch(networker->base);

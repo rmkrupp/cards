@@ -21,7 +21,6 @@
 
 #include <event2/event.h>
 
-#include "config_loader.h"
 #include "config.h"
 #include "game.h"
 #include "networker.h"
