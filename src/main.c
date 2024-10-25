@@ -23,7 +23,7 @@
 
 #include "config.h"
 #include "game.h"
-#include "networker.h"
+#include "server.h"
 
 int main(int argc, char ** argv) {
 

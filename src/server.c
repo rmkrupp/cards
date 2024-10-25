@@ -42,7 +42,7 @@ struct server * server_create(struct config * config)
 
 void server_destroy(struct server * server)
 {
-    networker_destory(server->networker);
+    networker_destroy(server->networker);
     free(server);
 }
 
