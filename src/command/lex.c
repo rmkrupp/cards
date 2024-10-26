@@ -149,6 +149,19 @@ void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
     }
 }
 
+static struct particle * consume_end_nest(const char * input, size_t * n)
+{
+    if (input[*n + 1] == '\0'
+            || input[*n + 1] == ' '
+            || input[*n + 1] == '\n'
+            || input[*n + 1] == ')') {
+        struct particle * particle = particle_create(PARTICLE_END_NEST);
+        return particle;
+    } else {
+        return NULL;
+    }
+}
+
 static struct particle * consume_name(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
@@ -248,16 +261,26 @@ void lex(
         particle = NULL;
 
         switch (input[n]) {
+            case ' ':
+                break;
+
             case '\n':
                 particle = particle_create(PARTICLE_END);
                 break;
+
             case '(':
                 particle = particle_create(PARTICLE_BEGIN_NEST);
                 break;
+
             case ')':
-                particle = particle_create(PARTICLE_END_NEST);
-                break;
-            case ' ':
+                particle = consume_end_nest(input, &n);
+                if (!particle) {
+                    *result_out = (struct lex_result) {
+                        .type = LEX_ERROR,
+                        .index = n
+                    };
+                    return;
+                }
                 break;
 
             case '"':
