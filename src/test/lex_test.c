@@ -20,21 +20,53 @@
 #include "command/lex.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define LINE_MAX 16 * 1024
 
 int main(int argc, char ** argv)
 {
     struct particle_buffer * buffer = particle_buffer_create();
+    struct lex_result result;
 
-    if (argc > 1) {
-        struct lex_result result;
-        lex(argv[1], buffer, &result);
-        printf("n = %lu\n", result.index);
-        for (size_t n = 0; n < buffer->n_particles; n++) {
-            struct refstring * string = particle_string(buffer->particles[n]);
-            printf("%s\n", refstring_string(string));
-            refstring_destroy(string);
+    char * input = malloc(LINE_MAX);
+
+    while (!feof(stdin)) {
+        fgets(input, LINE_MAX, stdin);
+        if (feof(stdin)) break;
+
+        lex(input, buffer, &result);
+
+        if (result.type == LEX_ERROR) {
+            if (!isatty(fileno(stdin))) {
+                size_t i;
+                for (i = 0; input[i]; i++);
+                if (i == 0 || input[i-1] != '\n') {
+                    printf("%s\n", input);
+                } else {
+                    printf("%s", input);
+                }
+            }
+            for (size_t i = 0; i < result.index; i++) {
+                printf(" ");
+            }
+            printf("^error\n");
+        } else {
+
+            for (size_t n = 0; n < buffer->n_particles; n++) {
+                struct refstring * string = particle_string(buffer->particles[n]);
+                printf("%s%s", (n == 0) ? "" : " ", refstring_string(string));
+                refstring_destroy(string);
+            }
+            printf("\n");
+
         }
-    };
+
+        particle_buffer_free_all(buffer);
+    }
+
+    free(input);
 
     particle_buffer_destroy(buffer);
 }

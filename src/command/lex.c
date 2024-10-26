@@ -21,6 +21,10 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+
+/* for perror() */
+#include <stdio.h>
 
 /*
 struct lexer {
@@ -47,22 +51,22 @@ struct refstring * particle_string(struct particle * particle)
 
     switch (particle->type) {
         case PARTICLE_END:
-            return refstring_createf("'\\n'");
+            return refstring_createf("END");
 
         case PARTICLE_KEYWORD:
             return refstring_createf("KEYWORD<%s>", particle->value);
 
-        case PARTICLE_ID:
-            return refstring_createf("ID<%s>", particle->value);
+        case PARTICLE_NUMBER:
+            return refstring_createf("NUMBER<%s>", particle->value);
 
         case PARTICLE_NAME:
             return refstring_createf("NAME<%s>", particle->value);
 
         case PARTICLE_BEGIN_NEST:
-            return refstring_createf("'('");
+            return refstring_createf("(");
 
         case PARTICLE_END_NEST:
-            return refstring_createf("')'");
+            return refstring_createf(")");
 
         default:
             return refstring_create("UNKNOWN");
@@ -145,6 +149,86 @@ void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
     }
 }
 
+static struct particle * consume_name(const char * input, size_t * n)
+{
+    for (size_t i = *n + 1; ; i++) {
+        if (!input[i]) {
+            return NULL;
+        }
+        if (input[i] == '"') {
+            struct particle * particle = particle_create(PARTICLE_NAME);
+            particle->value = strndup(&input[*n + 1], i - *n - 1);
+            if (!particle->value) {
+                perror("[lexer] strndup error");
+                particle_destroy(particle);
+                return NULL;
+            }
+            *n = i;
+            return particle;
+        }
+    }
+}
+
+static struct particle * consume_number(const char * input, size_t * n)
+{
+    for (size_t i = *n + 1; ; i++) {
+        if (!input[i]) {
+            return NULL;
+        }
+        if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+            struct particle * particle = particle_create(PARTICLE_NUMBER);
+            particle->value = strndup(&input[*n], i - *n);
+            if (!particle->value) {
+                perror("[lexer] strndup error");
+                particle_destroy(particle);
+                return NULL;
+            }
+            *n = i - 1;
+            return particle;
+        }
+        if (input[i] >= '0' && input[i] <= '9') {
+            // okay
+        } else {
+            return NULL;
+        }
+    }
+}
+
+static struct particle * consume_keyword(const char * input, size_t * n)
+{
+    for (size_t i = *n + 1; ; i++) {
+        if (!input[i]) {
+            return NULL;
+        }
+        if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+            struct particle * particle = particle_create(PARTICLE_KEYWORD);
+            particle->value = strndup(&input[*n], i - *n);
+            if (!particle->value) {
+                perror("[lexer] strndup error");
+                particle_destroy(particle);
+                return NULL;
+            }
+            for (size_t j = 0; j < i - *n; j++) {
+                if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
+                    particle->value[j] = particle->value[j] - 'a' + 'A';
+                }
+            }
+            *n = i - 1;
+            return particle;
+        }
+        if (input[i] >= 'a' && input[i] <= 'z') {
+            // okay
+        } else if (input[i] >= 'A' && input[i] <= 'Z') {
+            // okay
+        } else if (input[i] >= '0' && input[i] <= '9') {
+            // okay
+        } else if (input[i] == '!' || input[i] == '?' || input[i] == '-') {
+            // okay
+        } else {
+            return NULL;
+        }
+    }
+}
 #ifndef PARTICLE_BUFFER_GROW_INCREMENT
 #define PARTICLE_BUFFER_GROW_INCREMENT 64
 #endif /* PARTICLE_BUFFER_GROW_INCREMENT */
@@ -173,8 +257,55 @@ void lex(
             case ')':
                 particle = particle_create(PARTICLE_END_NEST);
                 break;
-            default:
+            case ' ':
                 break;
+
+            case '"':
+                particle = consume_name(input, &n);
+                if (!particle) {
+                    *result_out = (struct lex_result) {
+                        .type = LEX_ERROR,
+                        .index = n
+                    };
+                    return;
+                }
+                break;
+
+            case '0' ... '9':
+                particle = consume_number(input, &n);
+                if (!particle) {
+                    *result_out = (struct lex_result) {
+                        .type = LEX_ERROR,
+                        .index = n
+                    };
+                    return;
+                }
+                break;
+
+            case 'a' ... 'z':
+            case 'A' ... 'Z':
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '?':
+            case '!':
+                particle = consume_keyword(input, &n);
+                if (!particle) {
+                    *result_out = (struct lex_result) {
+                        .type = LEX_ERROR,
+                        .index = n
+                    };
+                    return;
+                }
+                break;
+
+            default:
+                *result_out = (struct lex_result) {
+                    .type = LEX_ERROR,
+                    .index = n
+                };
+                return;
         }
 
         if (particle) {

@@ -33,7 +33,9 @@ enum particle_type {
                    * in general, corresponds to a newline
                    */
     PARTICLE_KEYWORD, /* a keyword, has a value of the keyword */
-    PARTICLE_ID, /* an id, has a value of the string form of the id */
+    PARTICLE_NUMBER, /* a (integer) number, has a value of the string form of
+                      * itself
+                      */
     PARTICLE_NAME, /* a name, the value is the string form without the ""s */
     PARTICLE_BEGIN_NEST, /* the open paren */
     PARTICLE_END_NEST /* the close paren */
