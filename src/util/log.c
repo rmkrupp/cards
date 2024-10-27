@@ -25,10 +25,25 @@
 
 #include "config.h"
 
+/* a logger
+ *
+ * at the moment, loggers hold no state, have no configuration, and do nothing
+ * meaningful. we pass them around in case they start doing something.
+ *
+ * the logger_logf() command and associated macros just call fprintf with
+ * stdout (if LOG_VERBOSE or LOG_INFO) or stderr (if LOG_ERROR)
+ */
 struct logger {
     // empty
 };
 
+/* create a logger for/with this config
+ *
+ * normally this is then put into the config->logger property,
+ * but this function cannot assume one of those already exists,
+ * so it must not rely on that logger instance for logging
+ * (which is fine, it doesn't log anything.)
+ */
 struct logger * logger_create(struct config * config)
 {
     struct logger * logger = malloc(sizeof(*logger));
@@ -36,11 +51,13 @@ struct logger * logger_create(struct config * config)
     return logger;
 }
 
+/* destroy this logger */
 void logger_destroy(struct logger * logger)
 {
     free(logger);
 }
 
+/* log using this logger at this level with this format and args */
 void logger_logf(
         struct logger * logger,
         enum log_level level,

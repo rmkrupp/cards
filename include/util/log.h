@@ -22,15 +22,26 @@
 
 #include "config.h"
 
+/* log levels */
 enum log_level {
     LOG_VERBOSE,
     LOG_INFO,
     LOG_ERROR
 };
 
+/* create a logger for/with this config
+ *
+ * normally this is then put into the config->logger property,
+ * but this function cannot assume one of those already exists,
+ * so it must not rely on that logger instance for logging
+ * (which is fine, it doesn't log anything.)
+ */
 struct logger * logger_create(struct config * config);
+
+/* destroy this logger */
 void logger_destroy(struct logger * logger);
 
+/* log using this logger at this level with this format and args */
 void logger_logf(
         struct logger * logger,
         enum log_level level,
@@ -38,8 +49,17 @@ void logger_logf(
         ...
     );
 
-#define LOGF_VERBOSE(logger, format, ...) logger_logf(logger, LOG_VERBOSE, format __VA_OPT__(,) __VA_ARGS__)
-#define LOGF_INFO(logger, format, ...) logger_logf(logger, LOG_INFO, format __VA_OPT__(,) __VA_ARGS__)
-#define LOGF_ERROR(logger, format, ...) logger_logf(logger, LOG_ERROR, format __VA_OPT__(,)  __VA_ARGS__)
+/* predefined macros that call logger_logf() with their corresponding
+ * log level.
+ * 
+ * these are here to allow for future compile-time disabling of logging at
+ * certain levels.
+ */
+#define LOGF_VERBOSE(logger, format, ...) \
+    logger_logf(logger, LOG_VERBOSE, format __VA_OPT__(,) __VA_ARGS__)
+#define LOGF_INFO(logger, format, ...) \
+    logger_logf(logger, LOG_INFO, format __VA_OPT__(,) __VA_ARGS__)
+#define LOGF_ERROR(logger, format, ...) \
+    logger_logf(logger, LOG_ERROR, format __VA_OPT__(,)  __VA_ARGS__)
 
 #endif /* LOG_H */
