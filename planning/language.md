@@ -124,6 +124,15 @@ decks.
 
 ### Operators
 
+#### Nested Commands
+
+    - `(` opens a nested command
+    - `)` closes a nested command
+
+Nested commands execute when the interpreter gets to them.  The results are used
+as part of the command where the nested command is.
+
+
 ### Commands At Any Time
 
 #### `playerspec`
@@ -160,6 +169,8 @@ One of:
 
  - `CARD <location>`
 
+ - `CARD "<name>" <zone>`
+
 Card names are contained in quotes. Card names can contain space (` `) and any
 printable character except double quote (`"`).
 
@@ -179,6 +190,7 @@ PLAY CARD "Big Bucket"
 
 
 LOOK ZONE 1 (LOOK ZONE ID 1?)
+TODO: stackspec is not set up to have ZONE there, just the ID or name.
 
     POSITION    ID  CARD        MODE    FACE    Status
     1           32  Blue Goo    Attack  Up      (none)
@@ -191,6 +203,38 @@ DESTROY CARD ZONE 1 POSITION 1
 DESTROY CARD ZONE 1 "Blue Goo"
 
     Ambiguous: could refer to card ID 32 or 34.
+
+```
+
+#### `moveid`
+
+    - Moves/skills have a number based on where they fall on the card, the
+      player can use that number as a moveid.
+
+    - Moves/skills also have a name
+
+The moveid is used with a card to specify which move/spell/skill the player wants
+to use on a given card.
+
+Example:
+
+```
+LOOKUP "Blue Goo"
+
+    NAME        mvid-1/"Attack"     mvid-2/"Goop Up"
+    "Blue Goo"  Lowers HP by 2      Your defense is raised.
+
+The command:
+
+ACTIVATE "Blue Goo" 2 (or mvid-2 or mvid2)
+
+will raise "Blue Goo"'s defense.
+
+The command:
+
+ACTIVATE "Blue Goo" "Goop Up"
+
+will also raise "Blue Goo"'s defense.
 
 ```
 
@@ -238,7 +282,8 @@ its existance, the size of the stack, or the contents of the stack.
 
 `LOOK cardspec`
 
-Shows the skills list, equipment, and status effects on the card
+Shows the skills list, face, equipment, status effects, and whether the card is
+in attack mode or defense mode
 
 `LOOK playerspec stackspec`
 
@@ -284,25 +329,143 @@ Looks up the rules for this card, if the card is visible to you.
 Looks up the rules for a card with this name, returning an error if no such
 card exists.
 
+`LOOKUP cardspec moveid`
+
+Returns the move at moveid's spot.  If there is no move at the moveid it will
+return an error.
+
 ### Commands During Your Turn
 
 #### `face`
 
- - `up`
- - `down`
+Can be referenced with two keywords depending on the face.
 
-#### `DRAW`
+##### `FACE UP` or `UP`
 
-`DRAW`
+Specifies that the card being played/changed/looked for is face up.
 
-Draws a card from the deck
+##### `FACE DOWN` or `DOWN`
+
+Specifies that the card being played/changed/looked for is face down. 
 
 #### `MOVE`
+
+`MOVE cardspec stackspec stackspec`
+
+Moves the specified card from the first stackspec to the second.
+
+If it is unambiguous, the player can leave out the first stackspec.
+
+Example:
+
+    POSITION ZONE   ID     CARD
+    1        HAND   102    Big Bucket
+    2        1      69     Corn Monster
+    3        GRAVE  115    Hot Butter
+
+`MOVE "Big Bucket" 1` will move Big Bucket from the hand to zone 1.
+
+Example:
+
+    POSITION ZONE   ID     CARD
+    1        HAND   102    Big Bucket
+    2        2      103    Big Bucket
+    3        1      69     Corn Monster
+    4        GRAVE  115    Hot Butter
+
+`MOVE "Big Bucket" 1` will not work.
+TODO: Figure out zones having multiples of the same card with different stats
 
 #### `PLAY`
 
 `PLAY cardspec ZONE face`
 
-Adds the card into play either face up or down
+Adds the character card into the specified zone either face up or down.
 
-`ACTIVATE cardspec face`
+This is a shorthand for moving from the hand to putting it in play.
+
+If the card is a spell/trigger card, the zone need not be specified as it goes
+into the spell/trigger zone.
+
+`PLAY cardspec1 [ON] cardspec2`
+
+This attaches equipment (cardspec1) to the character card (cardspec2)
+
+If the zone is not ambiguous the player can omit the zone.
+
+#### `ATTACH` or `EQUIPT`
+
+`ATTACH cardspec1 [ON] cardspec2`
+
+`EQUIPT cardspec1 [ON] cardspec2`
+
+In most cases these both function the same as:
+
+    `PLAY cardspec1 ZONE [ON] cardspec2`
+
+As with PLAY, if it is unambiguous, the zone can be omitted.
+
+These two commands can also be used to attach or equip things that are already
+in play i.e. have been removed from another character.
+
+#### `DETACH`
+
+`DETACH cardspec1 [FROM] cardspec2`
+
+Removes the equipment, cardspec1, from cardspec2.
+
+The equipment stays in play as 'detached' and can be reattached or attached to
+another character card.
+
+#### `ACTIVATE`
+
+`ACTIVATE cardspec moveid`
+
+This activates a spell, trigger, or character card at the option selected by
+MOVEID.  MOVEID is a number that specifies which ability or effect is used when
+the card is activated.
+
+If no MOVEID is given, the game will default to the first skill/effect.
+
+`ACTIVATE cardspec moveid cardspec`
+
+This activates a skill that takes effect on another card.
+
+`ACTIVATE cardspec moveid stackspec`
+
+This activates a skill that takes effect on a stackspec.
+
+#### `TURN`
+
+`TURN cardspec`
+
+The card is turned from its current mode (attack or defense) to the other mode.
+
+#### `MODE`
+
+`MODE` cardspec [ATTACK/DEFENSE]
+
+Changes the mode of a card in play to attack or defense.
+
+#### `FLIP`
+
+`FLIP cardspec`
+
+Flips a face down card face up.
+
+#### `DESTROY`
+
+`DESTROY cardspec`
+
+Destroys the specified card, if allowed, sending it to a grave.
+
+This can be seen as using a move statement to bring a card from somewhere in play
+to the specified grave.
+
+#### `CHANGE TRIGGER`
+
+TODO: figure out how to change or add triggers to cards.
+
+#### `END TURN` or `END`
+
+Ends the player's turn
