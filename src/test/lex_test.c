@@ -22,10 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #define LINE_MAX 16 * 1024
 
-int main(int argc, char ** argv)
+void lex_test()
 {
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
@@ -70,3 +71,71 @@ int main(int argc, char ** argv)
 
     particle_buffer_destroy(buffer);
 }
+
+void silent_lex_test(size_t * total_out, size_t * errors_out)
+{
+    struct particle_buffer * buffer = particle_buffer_create();
+    struct lex_result result;
+
+    char * input = malloc(LINE_MAX);
+
+    size_t total = 0;
+    size_t errors = 0;
+
+    while (!feof(stdin)) {
+        fgets(input, LINE_MAX, stdin);
+        if (feof(stdin)) break;
+
+        lex(input, buffer, &result);
+
+        total++;
+        if (result.type == LEX_ERROR) {
+            errors++;
+        }
+
+        particle_buffer_free_all(buffer);
+    }
+
+    free(input);
+
+    particle_buffer_destroy(buffer);
+
+    *errors_out = errors;
+    *total_out = total;
+}
+
+enum mode {
+    NORMAL,
+    SILENT
+};
+
+int main(int argc, char ** argv)
+{
+    enum mode mode = NORMAL;
+
+    for (int arg = 1; arg < argc; arg++) {
+        if (strcmp(argv[arg], "--silent") == 0) {
+            mode = SILENT;
+        } else {
+            fprintf(stderr, "unknown argument \"%s\"\n", argv[1]);
+            return 1;
+        }
+    }
+
+    switch (mode) {
+        case NORMAL:
+            lex_test();
+            break;
+
+        case SILENT:
+            size_t errors, total;
+            silent_lex_test(&total, &errors);
+            printf("%lu/%lu\n", errors, total);
+            break;
+
+        default:
+            return 1;
+    }
+}
+
+
