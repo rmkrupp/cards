@@ -26,6 +26,10 @@
 #include "server.h"
 #include "util/log.h"
 
+#if defined(__MINGW32__)
+#include <windef.h>
+#endif /* __MINGW32__ */
+
 int main(int argc, char ** argv) {
 
     struct config config = (struct config) { };
@@ -38,6 +42,17 @@ int main(int argc, char ** argv) {
 
     LOGF_VERBOSE(config.logger, "version = %s\n", VERSION);
     LOGF_VERBOSE(config.logger, "port = %ld\n", config.port);
+
+#if defined(__MINGW32__)
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    WSADATA wsaData;
+    int err;
+    if ((err = WSAStartup(wVersionRequested, &wsaData))) {
+        LOGF_ERROR(config.logger, "WSAStartup() failed (code %d)\n", err);
+        logger_destroy(config.logger);
+        return 1;
+    }
+#endif /* __MINGW32__ */
 
     struct server * server = server_create(&config);
 
@@ -54,6 +69,10 @@ int main(int argc, char ** argv) {
     config_free(&config);
 
     libevent_global_shutdown();
+
+#if defined(__MINGW32__)
+    WSACleanup();
+#endif /* __MINGW32__ */
 
     return 0;
 }

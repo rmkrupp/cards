@@ -24,12 +24,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
-#include <arpa/inet.h>
 
 /* a networker holds the state of networking apparatus */
 struct networker {
@@ -136,8 +136,8 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 } else {
                     evbuffer_add_printf(
                             output,
-                            "%ld said: %s\n",
-                            connection->id,
+                            "%" PRIu64 " said: %s\n",
+                            (uint64_t)connection->id,
                             line
                         );
                 }
@@ -194,8 +194,11 @@ static void networker_listener_accept_cb(
     bufferevent_enable(bev, EV_READ | EV_WRITE);
 
     struct evbuffer * output = bufferevent_get_output(bev);
-    evbuffer_add_printf(output,
-            "[server] welcome, you are %lu\n", connection->id);
+    evbuffer_add_printf(
+            output,
+            "[server] welcome, you are %" PRIu64 "\n",
+            (uint64_t)connection->id
+        );
 }
 
 /* listener error callback exits the eventloop on listener error */

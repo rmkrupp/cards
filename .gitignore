@@ -1,5 +1,7 @@
 cards
-lex_test
+cards.exe
+test/lex_test
+test/lex_test.exe
 out/
 *.gen
 *.gen.*

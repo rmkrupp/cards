@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttypes.h>
 
 #define LINE_MAX 16 * 1024
 
@@ -130,7 +131,7 @@ int main(int argc, char ** argv)
         case SILENT:
             size_t errors, total;
             silent_lex_test(&total, &errors);
-            printf("%lu/%lu\n", errors, total);
+            printf("%" PRIu64 "/%" PRIu64 "\n", (uint64_t)errors, (uint64_t)total);
             break;
 
         default:

@@ -25,6 +25,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "util/strdup.h"
+
 struct refstring {
     char * string;
     long references;
@@ -34,7 +36,7 @@ struct refstring * refstring_create(const char * string)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
-        .string = strdup(string),
+        .string = util_strdup(string),
         .references = 1
     };
     return refstring;
@@ -68,7 +70,7 @@ struct refstring * refstring_create_from_stringn(
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
-        .string = strndup(string, n),
+        .string = util_strndup(string, n),
         .references = 1
     };
     return refstring;

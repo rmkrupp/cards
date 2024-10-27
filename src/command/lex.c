@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include "util/strdup.h"
+
 /* GENERAL NOTES ON THE LEXER
  *
  * 1) Right now, the Lexer does not support interpreting particles across the
@@ -89,7 +91,7 @@ struct particle * particle_create_value(
     struct particle * particle = malloc(sizeof(*particle));
     *particle = (struct particle) {
         .type = type,
-        .value = strndup(value, n)
+        .value = util_strndup(value, n)
     };
     return particle;
 }
@@ -220,7 +222,7 @@ static struct particle * consume_name(const char * input, size_t * n)
         }
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
-            particle->value = strndup(&input[*n + 1], i - *n - 1);
+            particle->value = util_strndup(&input[*n + 1], i - *n - 1);
             *n = i;
             return particle;
         }
@@ -236,7 +238,7 @@ static struct particle * consume_number(const char * input, size_t * n)
         }
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
-            particle->value = strndup(&input[*n], i - *n);
+            particle->value = util_strndup(&input[*n], i - *n);
             *n = i - 1;
             return particle;
         }
@@ -257,7 +259,7 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         }
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
-            particle->value = strndup(&input[*n], i - *n);
+            particle->value = util_strndup(&input[*n], i - *n);
             for (size_t j = 0; j < i - *n; j++) {
                 if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
                     particle->value[j] = particle->value[j] - 'a' + 'A';
