@@ -34,6 +34,8 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    config.logger = logger_create(&config);
+
     LOGF_VERBOSE(config.logger, "version = %s\n", VERSION);
     LOGF_VERBOSE(config.logger, "port = %ld\n", config.port);
 
