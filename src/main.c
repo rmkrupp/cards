@@ -49,6 +49,8 @@ int main(int argc, char ** argv) {
 
     server_destroy(server);
 
+    logger_destroy(config.logger);
+
     config_free(&config);
 
     libevent_global_shutdown();
