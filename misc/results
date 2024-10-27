@@ -1,0 +1,12 @@
+LEXING
+
+Simple lexer:
+
+500k 0-128 particles of length 0-64:    5100ns per commmand
+500k 0-16 particles of length 0-64:      660ns per command
+
+Flex/bison lexer:
+
+500k 0-128 particles of length 0-64:    12250ns per command
+500k 0-16 particles of length 0-64:      1570ns per command
+
