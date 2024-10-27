@@ -29,7 +29,7 @@ struct refstring * refstring_create(const char * string);
 struct refstring * refstring_createf(
         const char * string, ...);
 
-/* create a refstring using only n bytes of this string */
+/* create a refstring using at most n bytes of this string */
 struct refstring * refstring_create_from_stringn(
         const char * string, size_t n);
 

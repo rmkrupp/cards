@@ -47,6 +47,13 @@ struct particle {
 /* return a new particle of type */
 struct particle * particle_create(enum particle_type type);
 
+/* create a particle with the given type and and value
+ *
+ * makes a duplicate of the value, consuming at most n bytes from the argument
+ */
+struct particle * particle_create_value(
+        enum particle_type type, const char * value, size_t n);
+
 /* destroy this particle */
 void particle_destroy(struct particle * particle);
 
@@ -104,6 +111,10 @@ void particle_buffer_grow(struct particle_buffer * buffer, size_t amount);
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
  */
 void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum);
+
+/* add this particle to this buffer, growing the buffer if necessary */
+void particle_buffer_add(
+        struct particle_buffer * buffer, struct particle * particle);
 
 /* turn input string into particles
  *

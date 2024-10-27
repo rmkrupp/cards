@@ -63,7 +63,52 @@
  *    versus the current "is it this?" "no? is it this?" setup.
  */
 
-/* return a new particle of type */
+/* how much to grow the particle_buffer by, in number of particles,
+ * every time its capacity is exceeded.
+ */
+#ifndef PARTICLE_BUFFER_GROW_INCREMENT
+#define PARTICLE_BUFFER_GROW_INCREMENT 64
+#endif /* PARTICLE_BUFFER_GROW_INCREMENT */
+
+static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
+
+/* create a particle with the given type and NULL value */
+struct particle * particle_create(enum particle_type type)
+{
+    struct particle * particle = malloc(sizeof(*particle));
+    *particle = (struct particle) {
+        .type = type
+    };
+    return particle;
+}
+
+/* create a particle with the given type and and value
+ *
+ * makes a duplicate of the value, consuming at most n bytes from the argument
+ */
+struct particle * particle_create_value(
+        enum particle_type type, const char * value, size_t n)
+{
+    struct particle * particle = malloc(sizeof(*particle));
+    *particle = (struct particle) {
+        .type = type,
+        .value = strndup(value, n)
+    };
+    return particle;
+}
+
+/* destroy this particle */
+void particle_destroy(struct particle * particle)
+{
+    free(particle->value);
+    free(particle);
+}
+
+/* return a refstring describing the particle
+ *
+ * the caller is the owner of the refstring, and so must call
+ * refstring_destroy() on it when finished
+ */
 struct refstring * particle_string(struct particle * particle)
 {
     if (!particle) {
@@ -92,28 +137,6 @@ struct refstring * particle_string(struct particle * particle)
         default:
             return refstring_create("UNKNOWN");
     }
-
-}
-
-/* destroy this particle */
-struct particle * particle_create(enum particle_type type)
-{
-    struct particle * particle = malloc(sizeof(*particle));
-    *particle = (struct particle) {
-        .type = type
-    };
-    return particle;
-}
-
-/* return a refstring describing the particle
- *
- * the caller is the owner of the refstring, and so must call
- * refstring_destroy() on it when finished
- */
-void particle_destroy(struct particle * particle)
-{
-    free(particle->value);
-    free(particle);
 }
 
 /* create a new buffer */
@@ -167,6 +190,17 @@ void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
     }
 }
 
+/* */
+void particle_buffer_add(
+        struct particle_buffer * buffer, struct particle * particle)
+{
+    if (buffer->n_particles == buffer->capacity) {
+        particle_buffer_grow(buffer, PARTICLE_BUFFER_GROW_INCREMENT);
+    }
+    buffer->particles[buffer->n_particles] = particle;
+    buffer->particles++;
+}
+
 /* subfunction of lex() */
 static struct particle * consume_end_nest(const char * input, size_t * n)
 {
@@ -174,8 +208,7 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
             || input[*n + 1] == ' '
             || input[*n + 1] == '\n'
             || input[*n + 1] == ')') {
-        struct particle * particle = particle_create(PARTICLE_END_NEST);
-        return particle;
+        return particle_create(PARTICLE_END_NEST);
     } else {
         return NULL;
     }
@@ -191,6 +224,7 @@ static struct particle * consume_name(const char * input, size_t * n)
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
             particle->value = strndup(&input[*n + 1], i - *n - 1);
+            /* TODO is this check needed? */
             if (!particle->value) {
                 perror("[lexer] strndup error");
                 particle_destroy(particle);
@@ -212,6 +246,7 @@ static struct particle * consume_number(const char * input, size_t * n)
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
             particle->value = strndup(&input[*n], i - *n);
+            /* TODO is this check needed? */
             if (!particle->value) {
                 perror("[lexer] strndup error");
                 particle_destroy(particle);
@@ -238,6 +273,7 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
             particle->value = strndup(&input[*n], i - *n);
+            /* TODO is this check needed? */
             if (!particle->value) {
                 perror("[lexer] strndup error");
                 particle_destroy(particle);
@@ -264,15 +300,6 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         }
     }
 }
-
-/* how much to grow the particle_buffer by, in number of particles,
- * every time its capacity is exceeded.
- */
-#ifndef PARTICLE_BUFFER_GROW_INCREMENT
-#define PARTICLE_BUFFER_GROW_INCREMENT 64
-#endif /* PARTICLE_BUFFER_GROW_INCREMENT */
-
-static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
 /* turn input string into particles
  *
@@ -369,11 +396,7 @@ void lex(
         }
 
         if (particle) {
-            if (buffer->n_particles == buffer->capacity) {
-                particle_buffer_grow(buffer, PARTICLE_BUFFER_GROW_INCREMENT);
-            }
-            buffer->particles[buffer->n_particles] = particle;
-            buffer->n_particles++;
+            particle_buffer_add(buffer, particle);
         }
     }
 
