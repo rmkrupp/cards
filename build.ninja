@@ -45,17 +45,18 @@ rule so
             -shared $in -o $out $ldflags $libs
 
 # ...sources
-build out/main.o:               cc src/main.c
-build out/config_loader.o:      cc src/config_loader.c
-build out/game.o:               cc src/game.c
-build out/config.o:             cc src/config.c
-build out/networker.o:          cc src/networker.c
-build out/server.o:             cc src/server.c
-build out/refstring.o:          cc src/refstring.c
+build out/main.o:                   cc src/main.c
+build out/config_loader.o:          cc src/config_loader.c
+build out/game.o:                   cc src/game.c
+build out/config.o:                 cc src/config.c
+build out/networker.o:              cc src/networker.c
+build out/server.o:                 cc src/server.c
+build out/refstring.o:              cc src/refstring.c
 
-build out/command/lex.o:        cc src/command/lex.c
+build out/command/lex.o:            cc src/command/lex.c
 
-build out/test/lex_test.o:      cc src/test/lex_test.c
+build out/test/lex_test.o:          cc src/test/lex_test.c
+build out/test/silent_lex_test.o:   cc src/test/silent_lex_test.c
 
 # ...outputs
 build cards:                    bin $
@@ -66,7 +67,7 @@ build cards:                    bin $
     out/networker.o $
     out/server.o
 
-build lex_test:                 bin $
+build test/lex_test:            bin $
     out/test/lex_test.o $
     out/refstring.o $
     out/command/lex.o
@@ -74,6 +75,6 @@ build lex_test:                 bin $
 
 build all:                      phony $
     cards $
-    lex_test
+    test/lex_test
 
 default all
