@@ -22,6 +22,9 @@
 
 #include <stdbool.h>
 
+/* VERSION is defined as a string by the build scripts and provided to any
+ * configuration scripts as config.version
+ */
 #ifndef VERSION
 #error no VERSION defined
 #endif /* VERSION */

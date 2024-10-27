@@ -22,13 +22,31 @@
 
 #include <stddef.h>
 
+/* create a refstring with a copy of this string */
 struct refstring * refstring_create(const char * string);
+
+/* create a refstring from the result of this format string */
 struct refstring * refstring_createf(
         const char * string, ...);
+
+/* create a refstring using only n bytes of this string */
 struct refstring * refstring_create_from_stringn(
         const char * string, size_t n);
+
+/* destroy this refstring
+ *
+ * refstrings are reference counted (set to one on creation and increased by
+ * calls to refstring dup) so this will only free the underlying memory if
+ * it was the last reference
+ */
 void refstring_destroy(struct refstring * refstring);
+
+/* get the string out of this refstring */
 const char * refstring_string(struct refstring * refstring);
+
+/* "duplicate" a refstring (this returns its argument, but with its reference
+ * count increased by one
+ */
 struct refstring * refstring_dup(struct refstring * refstring);
 
 #endif /* REFSTRING_H */

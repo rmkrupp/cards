@@ -186,6 +186,10 @@ static void networker_listener_accept_cb(
     bufferevent_setcb(
             bev, &example_read_cb, NULL, &example_event_cb, connection);
     bufferevent_enable(bev, EV_READ | EV_WRITE);
+
+    struct evbuffer * output = bufferevent_get_output(bev);
+    evbuffer_add_printf(output,
+            "[server] welcome, you are %lu\n", connection->id);
 }
 
 /* listener error callback exits the eventloop on listener error */

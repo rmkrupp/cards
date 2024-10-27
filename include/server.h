@@ -17,13 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef SERVER_H
+#define SERVER_H
 
+/* the state of a server */
 struct server {
-    struct config * config;
-    struct networker * networker;
-    struct game * game;
+    struct config * config; /* the configuration, set on creation */
+    struct networker * networker; /* the networker, created by the server */
+    struct game * game; /* the game */
 };
 
+/* create a server with this config
+ *
+ * this will also create a networker inside this server
+ */
 struct server * server_create(struct config * config);
+
+/* destroy this server and its networker
+ *
+ * does not free the config, since that was passed in and might be reused
+ */
 void server_destroy(struct server * server);
+
+/* enter the server's event loop
+ *
+ * return result is the same as networker_run()
+ * (because right now all this does is networker_run(server->networker))
+ */
 int server_run(struct server * server);
+
+#endif /* SERVER_H */

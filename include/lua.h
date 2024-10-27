@@ -20,6 +20,9 @@
 #ifndef LUA_H
 #define LUA_H
 
+/* if USE_LUAJIT is set and true-like, include the headers for luajit,
+ * otherwise include the headers for Lua 5.1
+ */
 #if defined(USE_LUAJIT) && USE_LUAJIT
 #include <luajit-2.1/lua.h>
 #include <luajit-2.1/lualib.h>

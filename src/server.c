@@ -23,6 +23,10 @@
 
 #include "networker.h"
 
+/* create a server with this config
+ *
+ * this will also create a networker inside this server
+ */
 struct server * server_create(struct config * config)
 {
     struct server * server = malloc(sizeof(*server));
@@ -40,12 +44,21 @@ struct server * server_create(struct config * config)
     return server;
 }
 
+/* destroy this server and its networker
+ *
+ * does not free the config, since that was passed in and might be reused
+ */
 void server_destroy(struct server * server)
 {
     networker_destroy(server->networker);
     free(server);
 }
 
+/* enter the server's event loop
+ *
+ * return result is the same as networker_run()
+ * (because right now all this does is networker_run(server->networker))
+ */
 int server_run(struct server * server)
 {
     return networker_run(server->networker);

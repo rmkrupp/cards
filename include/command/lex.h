@@ -24,9 +24,6 @@
 
 #include "refstring.h"
 
-//struct lexer * lexer_create();
-//void lexer_destroy(struct lexer * lexer);
-
 /* the different types of particles */
 enum particle_type {
     PARTICLE_END, /* always the last particle in a complete command
@@ -62,7 +59,11 @@ struct refstring * particle_string(struct particle * particle);
 
 /* the type of lex results
  *
- * TODO: expand to handle errors in a nuanced way
+ * TODO: (potentially) expand to handle errors in a nuanced way
+ *       right now, a few kinds of errors can be generated but
+ *       nothing more than location leaves lex()
+ *       
+ *       it might be helpful to add an error code or type
  */
 enum lex_result_type {
     LEX_OKAY,

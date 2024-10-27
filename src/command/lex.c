@@ -26,23 +26,44 @@
 /* for perror() */
 #include <stdio.h>
 
-/*
-struct lexer {
-};
+/* GENERAL NOTES ON THE LEXER
+ *
+ * 1) Right now, the Lexer does not support interpreting particles across the
+ *    boundary from one call of lex() to another. Changing this could be done
+ *    in a few ways, and would involve not interpreting \0 as an end-like
+ *    character (it already doesn't create an END token)
+ *
+ *    Either the lexer would need to maintain state (and thus require some
+ *    sort of lexer object, or hidden state in a particlebuffer), or it would
+ *    need to communicate using the current returned lexer_result that it wants
+ *    to be given some of the old buffer again.
+ *
+ *    One option could be to accept an *array* of strings to go over, so that
+ *    the caller could just provide a slice of the previous input, but this
+ *    would still complicate things because there's no guarantee that the
+ *    particle isn't some enormous things stretching over multiple buffers...
+ *
+ *    The fact is, the server is going to buffer network input and retrieve
+ *    it in newline-terminated chunks through libevent already, so adding extra
+ *    logic isn't going to change anything. The more important piece is 2)
+ *    which wouldn't require this type of change.
+ *
+ * 2) We need a way to handle embedded newlines in multi-line blocks for
+ *    trigger conditions. Probably a [ and ] particle will need to be added
+ *    to hold a series of further particles (and END tokens) and this will
+ *    be fine from the lexer's POV, with the true logic in the parser.
+ *
+ *    We will also need some way to decide whether ()s inside []s are executed
+ *    now or saved as part of the trigger condition and run when the conditon
+ *    script is.
+ *
+ * 3) Performance! This has not been tested (TODO: test it.)
+ *
+ *    Some thoughts: it may be faster to use a lookup table and state changes
+ *    versus the current "is it this?" "no? is it this?" setup.
+ */
 
-struct lexer * lexer_create()
-{
-    struct lexer * lexer = malloc(sizeof(*lexer));
-    *lexer = (struct lexer) { };
-    return lexer;
-}
-
-void lexer_destroy(struct lexer * lexer)
-{
-    free(lexer);
-}
-*/
-
+/* return a new particle of type */
 struct refstring * particle_string(struct particle * particle)
 {
     if (!particle) {
@@ -74,6 +95,7 @@ struct refstring * particle_string(struct particle * particle)
 
 }
 
+/* destroy this particle */
 struct particle * particle_create(enum particle_type type)
 {
     struct particle * particle = malloc(sizeof(*particle));
@@ -83,34 +105,18 @@ struct particle * particle_create(enum particle_type type)
     return particle;
 }
 
+/* return a refstring describing the particle
+ *
+ * the caller is the owner of the refstring, and so must call
+ * refstring_destroy() on it when finished
+ */
 void particle_destroy(struct particle * particle)
 {
     free(particle->value);
     free(particle);
 }
 
-/*
-static struct particle * consume_begin_nest(
-        const char * input,
-        size_t * n_inout
-    )
-{
-    struct particle * particle = particle_create(PARTICLE_BEGIN_NEST);
-    *n_inout++;
-    return particle;
-}
-
-static struct particle * consume_end_nest(
-        const char * input,
-        size_t * n_inout
-    )
-{
-    struct particle * particle = particle_create(PARTICLE_END_NEST);
-    *n_inout++;
-    return particle;
-}
-*/
-
+/* create a new buffer */
 struct particle_buffer * particle_buffer_create()
 {
     struct particle_buffer * buffer = malloc(sizeof(*buffer));
@@ -118,6 +124,7 @@ struct particle_buffer * particle_buffer_create()
     return buffer;
 }
 
+/* destroy this buffer */
 void particle_buffer_destroy(struct particle_buffer * buffer)
 {
     particle_buffer_free_all(buffer);
@@ -125,6 +132,7 @@ void particle_buffer_destroy(struct particle_buffer * buffer)
     free(buffer);
 }
 
+/* free every particle in this buffer and set buffer->n_particles to zero */
 void particle_buffer_free_all(struct particle_buffer * buffer)
 {
     for (size_t n = 0; n < buffer->n_particles; n++) {
@@ -133,6 +141,11 @@ void particle_buffer_free_all(struct particle_buffer * buffer)
     buffer->n_particles = 0;
 }
 
+/* if buffer->capacity < minimum, grow to (at least) minimum
+ *
+ * NOTE: the current implementation grows to exactly minimum, no matter
+ *       what PARTICLE_BUFFER_GROW_INCREMENT is
+ */
 void particle_buffer_grow(struct particle_buffer * buffer, size_t amount)
 {
     buffer->particles = realloc(
@@ -142,6 +155,11 @@ void particle_buffer_grow(struct particle_buffer * buffer, size_t amount)
     buffer->capacity += amount;
 }
 
+/* if buffer->capacity < minimum, grow to (at least) minimum
+ *
+ * NOTE: the current implementation grows to exactly minimum, no matter
+ *       what PARTICLE_BUFFER_GROW_INCREMENT is
+ */
 void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
 {
     if (minimum > buffer->capacity) {
@@ -149,6 +167,7 @@ void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
     }
 }
 
+/* subfunction of lex() */
 static struct particle * consume_end_nest(const char * input, size_t * n)
 {
     if (input[*n + 1] == '\0'
@@ -162,6 +181,7 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
     }
 }
 
+/* subfunction of lex() */
 static struct particle * consume_name(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
@@ -182,6 +202,7 @@ static struct particle * consume_name(const char * input, size_t * n)
     }
 }
 
+/* subfunction of lex() */
 static struct particle * consume_number(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
@@ -207,6 +228,7 @@ static struct particle * consume_number(const char * input, size_t * n)
     }
 }
 
+/* subfunction of lex() */
 static struct particle * consume_keyword(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
@@ -242,12 +264,27 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         }
     }
 }
+
+/* how much to grow the particle_buffer by, in number of particles,
+ * every time its capacity is exceeded.
+ */
 #ifndef PARTICLE_BUFFER_GROW_INCREMENT
 #define PARTICLE_BUFFER_GROW_INCREMENT 64
 #endif /* PARTICLE_BUFFER_GROW_INCREMENT */
 
 static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
+/* turn input string into particles
+ *
+ * buffer must be a particle buffer
+ * if it is not empty, the particles will be appended,
+ * thus is must be emptied after the particles have been consumed
+ * (e.g. via a call to particle_buffer_free_all())
+ *
+ * otherwise, the caller must track its own offset into the buffer
+ *
+ * the result status is written to result_out
+ */
 void lex(
         const char * input,
         struct particle_buffer * buffer,
