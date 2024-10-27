@@ -1,4 +1,4 @@
-/* File: include/refstring.h
+/* File: include/util/refstring.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>

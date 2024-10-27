@@ -1,4 +1,4 @@
-/* File: include/config.h
+/* File: include/util/log.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,37 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef LOG_H
+#define LOG_H
 
-#include <stdbool.h>
+#include "config.h"
 
-/* VERSION is defined as a string by the build scripts and provided to any
- * configuration scripts as config.version
- */
-#ifndef VERSION
-#error no VERSION defined
-#endif /* VERSION */
-
-#ifndef CONFIG_DUMMY_DEFAULT
-#define CONFIG_DUMMY_DEFAULT false
-#endif /* CONFIG_DUMMY_DEFAULT */
-
-#ifndef CONFIG_PORT_DEFAULT
-#define CONFIG_PORT_DEFAULT 10101
-#endif /* CONFIG_PORT_DEFAULT */
-
-/* holds values populated by a config_loader */
-struct config {
-    struct logger * logger;
-    long port;
-    bool dummy;
+enum log_level {
+    LOG_VERBOSE,
+    LOG_INFO,
+    LOG_ERROR
 };
 
-/* free resources used by this config */
-void config_free(struct config * config);
+struct logger * logger_create(struct config * config);
+void logger_destroy(struct logger * logger);
 
-/* populate a config from a list of Lua scripts */
-int config_load(struct config * config, int nfiles, char ** files);
+void logger_logf(
+        struct logger * logger,
+        enum log_level level,
+        const char * format,
+        ...
+    );
 
-#endif /* CONFIG_H */
+#define LOGF_VERBOSE(logger, format, ...) logger_logf(logger, LOG_VERBOSE, format __VA_OPT__(,) __VA_ARGS__)
+#define LOGF_INFO(logger, format, ...) logger_logf(logger, LOG_INFO, format __VA_OPT__(,) __VA_ARGS__)
+#define LOGF_ERROR(logger, format, ...) logger_logf(logger, LOG_ERROR, format __VA_OPT__(,)  __VA_ARGS__)
+
+#endif /* LOG_H */

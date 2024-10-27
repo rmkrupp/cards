@@ -1,4 +1,4 @@
-/* File: src/refstring.c
+/* File: src/util/refstring.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "refstring.h"
+#include "util/refstring.h"
 
 #include <stdarg.h>
 #include <stdlib.h>

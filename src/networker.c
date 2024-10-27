@@ -19,6 +19,7 @@
  */
 #include "networker.h"
 #include "config.h"
+#include "util/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,7 @@
 
 /* a networker holds the state of networking apparatus */
 struct networker {
+    struct logger * logger;
     struct event_base * base;
     struct evconnlistener * listener;
     struct connection ** connections;
@@ -155,7 +157,11 @@ static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
 
     if (events & BEV_EVENT_ERROR) {
         connection->networker->errors++;
-        perror("echo_event_cb() called for error");
+        LOGF_ERROR(
+                connection->networker->logger,
+                "echo_event_cb() called for error %s\n",
+                strerror(errno)
+            );
     }
 
     if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
@@ -203,9 +209,9 @@ static void networker_listener_error_cb(
 
     struct event_base * base = evconnlistener_get_base(listener);
     int error = EVUTIL_SOCKET_ERROR();
-    fprintf(
-            stderr,
-            "listener error %d (%s)\n",
+    LOGF_ERROR(
+            networker->logger,
+            "[networker] listener error %d (%s)\n",
             error,
             evutil_socket_error_to_string(error)
         );
@@ -218,7 +224,10 @@ struct networker * networker_create(struct config * config)
     int port = (int)config->port;
 
     if ((long)port != config->port) {
-        fprintf(stderr, "[networker] config.port does not fit in int\n");
+        LOGF_ERROR(
+                config->logger,
+                "[networker] config.port does not fit in int\n"
+            );
         return NULL;
     }
 
@@ -232,11 +241,16 @@ struct networker * networker_create(struct config * config)
 
     struct networker * networker = malloc(sizeof(*networker));
 
-    *networker = (struct networker) { };
+    *networker = (struct networker) {
+        .logger = config->logger
+    };
 
     networker->base = event_base_new();
     if (!networker->base) {
-        fprintf(stderr, "[networker] event_base_new() failed\n");
+        LOGF_ERROR(
+                networker->logger,
+                "[networker] event_base_new() failed\n"
+            );
         free(networker);
         return NULL;
     }
@@ -251,7 +265,10 @@ struct networker * networker_create(struct config * config)
         );
 
     if (!networker->listener) {
-        fprintf(stderr, "[networker] evconnlistener_new_bind() failed\n");
+        LOGF_ERROR(
+                networker->logger,
+                "[networker] evconnlistener_new_bind() failed\n"
+            );
         event_base_free(networker->base);
         free(networker);
         return NULL;

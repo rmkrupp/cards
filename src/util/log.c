@@ -1,4 +1,4 @@
-/* File: src/main.c
+/* File: src/util/log.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,39 +17,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
-
-#include <event2/event.h>
-
-#include "config.h"
-#include "game.h"
-#include "server.h"
 #include "util/log.h"
 
-int main(int argc, char ** argv) {
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
-    struct config config = (struct config) { };
+#include "config.h"
 
-    if (config_load(&config, argc - 1, &argv[1])) {
-        return 1;
+struct logger {
+    // empty
+};
+
+struct logger * logger_create(struct config * config)
+{
+    struct logger * logger = malloc(sizeof(*logger));
+    *logger = (struct logger) { };
+    return logger;
+}
+
+void logger_destroy(struct logger * logger)
+{
+    free(logger);
+}
+
+void logger_logf(
+        struct logger * logger,
+        enum log_level level,
+        const char * format,
+        ...
+    )
+{
+    va_list args;
+    va_start(args, format);
+
+    FILE * f;
+
+    switch (level) {
+        case LOG_VERBOSE:
+        case LOG_INFO:
+            f = stdout;
+            break;
+
+        case LOG_ERROR:
+            f = stderr;
+            break;
     }
 
-    LOGF_VERBOSE(config.logger, "version = %s\n", VERSION);
-    LOGF_VERBOSE(config.logger, "port = %ld\n", config.port);
+    vfprintf(f, format, args);
 
-    struct server * server = server_create(&config);
-
-    LOGF_VERBOSE(config.logger, "server_run()\n");
-
-    server_run(server);
-
-    LOGF_VERBOSE(config.logger, "server_destroy()\n");
-
-    server_destroy(server);
-
-    config_free(&config);
-
-    libevent_global_shutdown();
-
-    return 0;
+    va_end(args);
 }

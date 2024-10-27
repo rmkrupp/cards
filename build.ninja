@@ -51,7 +51,9 @@ build out/game.o:                   cc src/game.c
 build out/config.o:                 cc src/config.c
 build out/networker.o:              cc src/networker.c
 build out/server.o:                 cc src/server.c
-build out/refstring.o:              cc src/refstring.c
+
+build out/util/refstring.o:         cc src/util/refstring.c
+build out/util/log.o:               cc src/util/log.c
 
 build out/command/lex.o:            cc src/command/lex.c
 
@@ -65,11 +67,14 @@ build cards:                    bin $
     out/game.o $
     out/config.o $
     out/networker.o $
-    out/server.o
+    out/server.o $
+    out/command/lex.o $
+    out/util/log.o $
+    out/util/refstring.o
 
 build test/lex_test:            bin $
     out/test/lex_test.o $
-    out/refstring.o $
+    out/util/refstring.o $
     out/command/lex.o
   libs =
 

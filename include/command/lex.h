@@ -22,7 +22,7 @@
 
 #include <stddef.h>
 
-#include "refstring.h"
+#include "util/refstring.h"
 
 /* the different types of particles */
 enum particle_type {

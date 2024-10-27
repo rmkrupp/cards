@@ -23,9 +23,6 @@
 #include <assert.h>
 #include <string.h>
 
-/* for perror() */
-#include <stdio.h>
-
 /* GENERAL NOTES ON THE LEXER
  *
  * 1) Right now, the Lexer does not support interpreting particles across the
@@ -198,7 +195,7 @@ void particle_buffer_add(
         particle_buffer_grow(buffer, PARTICLE_BUFFER_GROW_INCREMENT);
     }
     buffer->particles[buffer->n_particles] = particle;
-    buffer->particles++;
+    buffer->n_particles++;
 }
 
 /* subfunction of lex() */
@@ -224,12 +221,6 @@ static struct particle * consume_name(const char * input, size_t * n)
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
             particle->value = strndup(&input[*n + 1], i - *n - 1);
-            /* TODO is this check needed? */
-            if (!particle->value) {
-                perror("[lexer] strndup error");
-                particle_destroy(particle);
-                return NULL;
-            }
             *n = i;
             return particle;
         }
@@ -246,12 +237,6 @@ static struct particle * consume_number(const char * input, size_t * n)
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
             particle->value = strndup(&input[*n], i - *n);
-            /* TODO is this check needed? */
-            if (!particle->value) {
-                perror("[lexer] strndup error");
-                particle_destroy(particle);
-                return NULL;
-            }
             *n = i - 1;
             return particle;
         }
@@ -273,12 +258,6 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
             particle->value = strndup(&input[*n], i - *n);
-            /* TODO is this check needed? */
-            if (!particle->value) {
-                perror("[lexer] strndup error");
-                particle_destroy(particle);
-                return NULL;
-            }
             for (size_t j = 0; j < i - *n; j++) {
                 if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
                     particle->value[j] = particle->value[j] - 'a' + 'A';
