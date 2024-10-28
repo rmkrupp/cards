@@ -397,7 +397,7 @@ If the zone is not ambiguous the player can omit the zone.
 
 `ATTACH cardspec1 [ON] cardspec2`
 
-`EQUIPT cardspec1 [ON] cardspec2`
+`EQUIP cardspec1 [ON] cardspec2`
 
 In most cases these both function the same as:
 
