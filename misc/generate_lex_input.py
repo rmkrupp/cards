@@ -72,8 +72,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-particle_name_letters = [c for c in string.printable if c not in string.whitespace and c != "\""] + [' ']
-particle_num_letters = [c for c in string.digits]
+particle_name_letters = [c for c in string.printable if c != "\n" and c != "\""] + [" "]
 particle_num_letters = [c for c in string.digits]
 particle_keyword_first_letters = [c for c in string.ascii_letters + "+-*/?!"]
 particle_keyword_letters = [c for c in string.ascii_letters + string.digits + "!?-"]

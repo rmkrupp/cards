@@ -2,6 +2,10 @@ cards
 cards.exe
 test/lex_test
 test/lex_test.exe
+test/cli
+test/cli.exe
 out/
+*.ignore
+*.ignore.*
 *.gen
 *.gen.*

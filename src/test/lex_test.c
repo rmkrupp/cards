@@ -25,9 +25,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define LINE_MAX 16 * 1024
+#define LINE_MAX 1024 * 1024 * 1024
 
-void lex_test()
+static void lex_test()
 {
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
@@ -73,7 +73,7 @@ void lex_test()
     particle_buffer_destroy(buffer);
 }
 
-void silent_lex_test(size_t * total_out, size_t * errors_out)
+static void silent_lex_test(size_t * total_out, size_t * errors_out)
 {
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
@@ -105,9 +105,43 @@ void silent_lex_test(size_t * total_out, size_t * errors_out)
     *total_out = total;
 }
 
+static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
+{
+    struct particle_buffer * buffer = particle_buffer_create();
+    struct lex_result result;
+
+    char * input = malloc(LINE_MAX);
+
+    size_t total = 0;
+    size_t errors = 0;
+
+    while (!feof(stdin)) {
+        fgets(input, LINE_MAX, stdin);
+        if (feof(stdin)) break;
+
+        lex(input, buffer, &result);
+
+        total++;
+        if (result.type == LEX_ERROR) {
+            errors++;
+            printf("%s", input);
+        }
+
+        particle_buffer_free_all(buffer);
+    }
+
+    free(input);
+
+    particle_buffer_destroy(buffer);
+
+    *errors_out = errors;
+    *total_out = total;
+}
+
 enum mode {
     NORMAL,
-    SILENT
+    SILENT,
+    ERRORS
 };
 
 int main(int argc, char ** argv)
@@ -117,11 +151,15 @@ int main(int argc, char ** argv)
     for (int arg = 1; arg < argc; arg++) {
         if (strcmp(argv[arg], "--silent") == 0) {
             mode = SILENT;
+        } else if (strcmp(argv[arg], "--errors") == 0) {
+            mode = ERRORS;
         } else {
             fprintf(stderr, "unknown argument \"%s\"\n", argv[1]);
             return 1;
         }
     }
+
+    size_t errors, total;
 
     switch (mode) {
         case NORMAL:
@@ -129,8 +167,12 @@ int main(int argc, char ** argv)
             break;
 
         case SILENT:
-            size_t errors, total;
             silent_lex_test(&total, &errors);
+            printf("%" PRIu64 "/%" PRIu64 "\n", (uint64_t)errors, (uint64_t)total);
+            break;
+
+        case ERRORS:
+            errors_only_lex_test(&total, &errors);
             printf("%" PRIu64 "/%" PRIu64 "\n", (uint64_t)errors, (uint64_t)total);
             break;
 
