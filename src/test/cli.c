@@ -24,10 +24,6 @@
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
 static void net_readcb(struct bufferevent * bev, void * ctx)
 {
     struct evbuffer * input = bufferevent_get_input(bev);
