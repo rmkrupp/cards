@@ -316,8 +316,6 @@ int config_load(struct config * config, int nfiles, char ** files)
     for (size_t n = 0; n < loader->n_options; n++) {
         struct config_option * option = &loader->options[n];
 
-        lua_pushstring(L, option->name);
-
         switch (option->type) {
             case CONFIG_BOOLEAN:
                 lua_pushboolean(L, option->value_boolean);
@@ -330,7 +328,7 @@ int config_load(struct config * config, int nfiles, char ** files)
                 break;
         }
 
-        lua_settable(L, -3);
+        lua_setfield(L, -2, option->name);
     }
 
     lua_setfield(L, LUA_GLOBALSINDEX, "config");
