@@ -31,3 +31,30 @@ AUR packages needed:
 
 The build is static. DLLs for libevent, luajit, winpthreads, etc. don't need
 to be distributed with the executables.
+
+## Project Goals
+
+A non-exhaustive list...
+
+ - [ ] Functional server
+   - [ ] Parses commands
+   - [ ] Loading of rules from configuration
+   - [ ] Manages game state
+   - [ ] Manages lobby vs in-game and player assignment
+   - [ ] Manages reconnection and save/load
+   - [ ] Provides API for cards
+   - [ ] Loads cards and related assets
+ - [ ] An asset wrangler
+   - [ ] Takes card scripts and data and packages it up
+ - [ ] Basic text client
+   - [ ] readline-like convenience (history, tab completion)
+   - [ ] Colorized
+ - [ ] Graphical client
+ - [ ] Computer-controlled client
+ - [ ] Wrapper for easy setup of common play scenarios
+ - [ ] Packages for
+   - [ ] ArchLinux
+   - [ ] Debian
+   - [ ] Windows
+ - [ ] Testing, especially for rigorous handling of inputs to server
+ - [ ] Our personal card library and pre-defined decks, including flavor
