@@ -25,6 +25,34 @@
 
 #include "util/strdup.h"
 
+#ifndef VERBOSE_LEXER
+#define VERBOSE_LEXER 0
+#endif /* VERBOSE_LEXER */
+
+#if VERBOSE_LEXER
+
+#include <stdio.h>
+#include <ctype.h>
+
+/* buffer of at least 5 bytes */
+static const char * charmsg(char c)
+{
+    static char buffer[5];
+
+    if (isprint(c) && !isspace(c)) {
+        buffer[0] = '\'';
+        buffer[1] = c;
+        buffer[2] = '\'';
+        buffer[3] = '\0';
+        return buffer;
+    } else {
+        snprintf(buffer, 5, "%hhx", c);
+        return buffer;
+    }
+}
+
+#endif /* VERBOSE_LEXER */
+
 /* GENERAL NOTES ON THE LEXER
  *
  * 1) Right now, the Lexer does not support interpreting particles across the
@@ -209,6 +237,9 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
             || input[*n + 1] == ')') {
         return particle_create(PARTICLE_END_NEST);
     } else {
+#if VERBOSE_LEXER
+        fprintf(stderr, "lexer error 8 (bad char %s following end nest)\n", charmsg(input[*n + 1]));
+#endif /* VERBOSE_LEXER */
         return NULL;
     }
 }
@@ -218,6 +249,15 @@ static struct particle * consume_name(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i]) {
+#if VERBOSE_LEXER
+            fprintf(stderr, "lexer error 7 (null char in name)\n");
+#endif /* VERBOSE_LEXER */
+            return NULL;
+        }
+        if (input[i] == '\n') {
+#if VERBOSE_LEXER
+            fprintf(stderr, "lexer error 6 (newline in name)\n");
+#endif /* VERBOSE_LEXER */
             return NULL;
         }
         if (input[i] == '"') {
@@ -233,10 +273,7 @@ static struct particle * consume_name(const char * input, size_t * n)
 static struct particle * consume_number(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
-        if (!input[i]) {
-            return NULL;
-        }
-        if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+        if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
             particle->value = util_strndup(&input[*n], i - *n);
             *n = i - 1;
@@ -245,6 +282,9 @@ static struct particle * consume_number(const char * input, size_t * n)
         if (input[i] >= '0' && input[i] <= '9') {
             // okay
         } else {
+#if VERBOSE_LEXER
+            fprintf(stderr, "lexer error 4 (bad char %s in number)\n", charmsg(input[i]));
+#endif /* VERBOSE_LEXER */
             return NULL;
         }
     }
@@ -254,12 +294,9 @@ static struct particle * consume_number(const char * input, size_t * n)
 static struct particle * consume_keyword(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
-        if (!input[i]) {
-            return NULL;
-        }
-        if (input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+        if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
-            particle->value = util_strndup(&input[*n], i - *n);
+            particle->value = util_strndup(&input[*n], i - *n - 1);
             for (size_t j = 0; j < i - *n; j++) {
                 if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
                     particle->value[j] = particle->value[j] - 'a' + 'A';
@@ -277,6 +314,9 @@ static struct particle * consume_keyword(const char * input, size_t * n)
         } else if (input[i] == '!' || input[i] == '?' || input[i] == '-') {
             // okay
         } else {
+#if VERBOSE_LEXER
+            fprintf(stderr, "lexer error 2 (bad char %s in keyword)\n", charmsg(input[i]));
+#endif /* VERBOSE_LEXER */
             return NULL;
         }
     }
@@ -369,6 +409,9 @@ void lex(
                 break;
 
             default:
+#if VERBOSE_LEXER
+                fprintf(stderr, "lexer error 1 (bad char %s in toplevel)\n", charmsg(input[n]));
+#endif /* VERBOSE_LEXER */
                 *result_out = (struct lex_result) {
                     .type = LEX_ERROR,
                     .index = n
@@ -380,6 +423,8 @@ void lex(
             particle_buffer_add(buffer, particle);
         }
     }
+
+    particle_buffer_add(buffer, particle_create(PARTICLE_END));
 
     *result_out = (struct lex_result) {
         .type = LEX_OKAY,
