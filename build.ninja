@@ -21,7 +21,7 @@ builddir = out
 cc = gcc
 cflags = -Wall -flto -fdiagnostics-color -Iinclude
 ldflags =
-defines =
+defines = -DVERBOSE_LEXER=1
 sanflags = -fsanitize=address,undefined
 libs = -levent
 
