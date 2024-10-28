@@ -70,7 +70,8 @@ build out/test/cli.o:               cc src/test/cli.c
 build out/test/gperf_test.o:        cc src/test/gperf_test.c
 
 # ...outputs
-build cards:                        bin $
+build cards $
+    | cards.exe:                    bin $
     out/main.o $
     out/config_loader.o $
     out/config.o $
@@ -83,17 +84,20 @@ build cards:                        bin $
     out/util/refstring.o $
     out/util/strdup.o
 
-build test/lex_test:                bin $
+build test/lex_test $
+    | test/lex_test.exe:            bin $
     out/test/lex_test.o $
     out/util/refstring.o $
     out/util/strdup.o $
     out/command/lex.o
   libs =
 
-build test/cli:                     bin $
+build test/cli $
+    | test/cli.exe:                 bin $
     out/test/cli.o
 
-build test/gperf_test:              bin $
+build test/gperf_test $
+    | test/gperf_test.exe:          bin $
     out/test/gperf_test.o $
     out/command/keyword.o
 
