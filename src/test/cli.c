@@ -121,8 +121,8 @@ int main(int argc, char ** argv)
 
     event_base_dispatch(base);
 
-    bufferevent_free(bev);
-    bufferevent_free(bevstdin);
+    bufferevent_free(bev_net);
+    bufferevent_free(bev_in);
     event_base_free(base);
     libevent_global_shutdown();
 }
