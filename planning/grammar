@@ -1,0 +1,118 @@
+command: END
+       | valid_command END
+       ;
+
+valid_command: say_command
+             | version_command
+             | rules_command
+             | ready_command
+             ;
+
+/* universal commands */
+
+say_command: SAY <zero or more non-terminal particles...>
+           ;
+
+version_command: VERSION
+               ;
+
+rules_command: RULES
+             ;
+
+/* lobby commands */
+
+ready_commmand: READY
+              ;
+
+/* specs */
+
+lifespec: LIFE
+        | playerspec LIFE
+        ;
+
+energyspec: ENERGY                                  total energy
+          | playerspec ENERGY                       energy contributed by player
+          ;
+
+playerspec: MY                                      me
+          | PLAYER <number>                         player by id
+          | PLAYER <name>                           player by name
+          ;
+
+stackspec: HAND
+         | DECK
+         | DISCARD
+         | GRAVE
+         | zonespec
+         ;
+
+zonespec: ZONE [ID] <number>                        my zone by ID
+        | ZONE SPECIAL                              my special zone
+        ;
+
+location: stackspec
+        | stackspec [POSITION] <number>
+        | playerspec stackspec
+        | playerspec stackspec [POSITION] <number>
+        ;
+
+cardspec: CARD [ID] <number>                        get card by id
+        | CARD <name>                               get card by name
+        | CARD [IN] location                        get card by location
+        | CARD <name> [IN] location                 get card by name and loc.
+        ;
+
+movespec: cardspec [ABILITY] <number>
+        | cardspec [ABILITY] <name>
+        ;
+
+facespec: [FACE] UP
+        | [FACE] DOWN
+        ;
+
+modespec: ATTACK [MODE]
+        | DEFENSE [MODE]
+        ;
+
+/* game commands */
+
+look_command: LOOK playerspec
+            | LOOK location
+            | LOOK cardspec
+            | LOOK lifespec
+            | LOOK energyspec
+            | LOOK energyspec SOURCES
+            ;
+
+activate_command: ACTIVATE movespec
+                ;
+
+list_command: LIST PLAYERS
+            | LIST STACKS
+            | LIST ZONES
+            | LIST playerspec STACKS
+            | LIST playerspec ZONES
+            ;
+
+find_command: FIND cardspec
+            ;
+
+lookup_command: LOOKUP cardspec
+              | LOOKUP cardspec ABILITY <number>
+              | LOOKUP cardspec ABILITY <name>
+              ;
+
+move_command: MOVE location [TO] location [facespec] [modespec]
+            ;
+
+hand_default_location: <number>                 index into hand
+                     | location                 some location
+                     ;
+
+special_default_location: <empty>               MY ZONE SPECIAL
+                        | location
+                        ;
+
+play_command: PLAY hand_default_location [IN|ON] special_default_location [facespec] [modespec]
+
+flip_command: 
