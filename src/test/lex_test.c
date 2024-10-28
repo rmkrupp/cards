@@ -25,9 +25,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define LINE_MAX 16 * 1024
+#define LINE_MAX 1024 * 1024 * 1024
 
-void lex_test()
+static void lex_test()
 {
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
@@ -73,7 +73,7 @@ void lex_test()
     particle_buffer_destroy(buffer);
 }
 
-void silent_lex_test(size_t * total_out, size_t * errors_out)
+static void silent_lex_test(size_t * total_out, size_t * errors_out)
 {
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
