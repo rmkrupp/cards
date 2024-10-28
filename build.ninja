@@ -48,7 +48,6 @@ rule so
 # ...sources
 build out/main.o:                   cc src/main.c
 build out/config_loader.o:          cc src/config_loader.c
-build out/game.o:                   cc src/game.c
 build out/config.o:                 cc src/config.c
 build out/networker.o:              cc src/networker.c
 build out/server.o:                 cc src/server.c
@@ -66,7 +65,6 @@ build out/test/cli.o:               cc src/test/cli.c
 build cards:                        bin $
     out/main.o $
     out/config_loader.o $
-    out/game.o $
     out/config.o $
     out/networker.o $
     out/server.o $
