@@ -23,6 +23,7 @@
 
 /* until we have a proper parser object */
 #include "command/lex.h"
+#include "command/parse.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +57,7 @@ struct connection {
      * soon we will have a parser object
      */
     struct particle_buffer * buffer;
+    struct parser * parser;
 };
 
 /* iterator over networker->connections */
@@ -75,7 +77,8 @@ static struct connection * NONNULL(1, 2) connection_create(
         .id = networker->n_connections,
         .networker = networker,
         .bev = bev,
-        .buffer = particle_buffer_create()
+        .buffer = particle_buffer_create(),
+        .parser = parser_create()
     };
 
     networker->connections = realloc(
@@ -105,6 +108,7 @@ static void NONNULL(1) connection_destroy(struct connection * connection)
 
     /* until we have a parser object */
     particle_buffer_destroy(connection->buffer);
+    parser_destroy(connection->parser);
 
     free(connection);
 }
@@ -137,6 +141,9 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
             if (result.type == LEX_ERROR) {
                 evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");
+            } else {
+                struct parse_result parse_result;
+                parser_parse(connection->parser, connection->buffer, &parse_result);
             }
             particle_buffer_free_all(connection->buffer);
             /* ------------------------------- */

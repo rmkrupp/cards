@@ -19,6 +19,7 @@
 
 builddir = out
 cc = gcc
+gperf = gperf
 cflags = -Wall -flto -fdiagnostics-color -Iinclude
 ldflags =
 defines = -DVERBOSE_LEXER=1
@@ -45,6 +46,9 @@ rule so
   command = $cc -MMD -MF $out.d -fPIC $defines $cflags $
             -shared $in -o $out $ldflags $libs
 
+rule gperf
+  command = $gperf --output-file=$out $in
+
 # ...sources
 build out/main.o:                   cc src/main.c
 build out/config_loader.o:          cc src/config_loader.c
@@ -57,9 +61,13 @@ build out/util/log.o:               cc src/util/log.c
 build out/util/strdup.o:            cc src/util/strdup.c
 
 build out/command/lex.o:            cc src/command/lex.c
+build out/command/parse.o:          cc src/command/parse.c
+build out/command/keyword.c:        gperf src/command/keyword.gperf
+build out/command/keyword.o:        cc out/command/keyword.c
 
 build out/test/lex_test.o:          cc src/test/lex_test.c
 build out/test/cli.o:               cc src/test/cli.c
+build out/test/gperf_test.o:        cc src/test/gperf_test.c
 
 # ...outputs
 build cards:                        bin $
@@ -69,6 +77,8 @@ build cards:                        bin $
     out/networker.o $
     out/server.o $
     out/command/lex.o $
+    out/command/parse.o $
+    out/command/keyword.o $
     out/util/log.o $
     out/util/refstring.o $
     out/util/strdup.o
@@ -83,9 +93,14 @@ build test/lex_test:                bin $
 build test/cli:                     bin $
     out/test/cli.o
 
+build test/gperf_test:              bin $
+    out/test/gperf_test.o $
+    out/command/keyword.o
+
 build all:                          phony $
     cards $
     test/lex_test $
+    test/gperf_test $
     test/cli
 
 default all

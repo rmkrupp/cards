@@ -112,6 +112,9 @@ struct particle * particle_create(enum particle_type type)
 /* create a particle with the given type and and value
  *
  * makes a duplicate of the value, consuming at most n bytes from the argument
+ *
+ * TODO: this does duplicate work between strndup and strnlen finding
+ *       the length
  */
 struct particle * particle_create_value(
         enum particle_type type, const char * value, size_t n)
@@ -119,7 +122,8 @@ struct particle * particle_create_value(
     struct particle * particle = malloc(sizeof(*particle));
     *particle = (struct particle) {
         .type = type,
-        .value = util_strndup(value, n)
+        .value = util_strndup(value, n),
+        .length = strnlen(value, n)
     };
     return particle;
 }
@@ -244,7 +248,9 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
     }
 }
 
-/* subfunction of lex() */
+/* subfunction of lex()
+ * TODO: should this strndup really always copy length and not up to length?
+ */
 static struct particle * consume_name(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
@@ -263,19 +269,23 @@ static struct particle * consume_name(const char * input, size_t * n)
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
             particle->value = util_strndup(&input[*n + 1], i - *n - 1);
+            particle->length = i - *n - 1;
             *n = i;
             return particle;
         }
     }
 }
 
-/* subfunction of lex() */
+/* subfunction of lex()
+ * TODO: see consume_name
+ */
 static struct particle * consume_number(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
             particle->value = util_strndup(&input[*n], i - *n);
+            particle->length = i - *n;
             *n = i - 1;
             return particle;
         }
@@ -290,13 +300,16 @@ static struct particle * consume_number(const char * input, size_t * n)
     }
 }
 
-/* subfunction of lex() */
+/* subfunction of lex()
+ * TODO: see consume_name
+ */
 static struct particle * consume_keyword(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
-            particle->value = util_strndup(&input[*n], i - *n - 1);
+            particle->value = util_strndup(&input[*n], i - *n);
+            particle->length = i - *n;
             for (size_t j = 0; j < i - *n; j++) {
                 if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
                     particle->value[j] = particle->value[j] - 'a' + 'A';
