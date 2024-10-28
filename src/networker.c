@@ -21,6 +21,9 @@
 #include "config.h"
 #include "util/log.h"
 
+/* until we have a proper parser object */
+#include "command/lex.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +51,11 @@ struct connection {
     size_t id;
     struct networker * networker;
     struct bufferevent * bev;
+
+    /* for now, store one of these here,
+     * soon we will have a parser object
+     */
+    struct particle_buffer * buffer;
 };
 
 /* iterator over networker->connections */
@@ -66,7 +74,8 @@ static struct connection * connection_create(
     *connection = (struct connection) {
         .id = networker->n_connections,
         .networker = networker,
-        .bev = bev
+        .bev = bev,
+        .buffer = particle_buffer_create()
     };
 
     networker->connections = realloc(
@@ -94,6 +103,9 @@ static void connection_destroy(struct connection * connection)
 
     bufferevent_free(connection->bev);
 
+    /* until we have a parser object */
+    particle_buffer_destroy(connection->buffer);
+
     free(connection);
 }
 
@@ -119,31 +131,15 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 event_base_loopexit(connection->networker->base, NULL);
             }
 
-            struct networker_connection_iter * iter =
-                networker_connection_iter_create(connection->networker);
+            /* minimal lexing code for testing */
+            struct lex_result result;
+            lex(line, connection->buffer, &result);
 
-            struct connection * c2;
-
-            while ((c2 = networker_connection_iter_iterate(iter))) {
-                struct evbuffer * output = bufferevent_get_output(c2->bev);
-
-                if (c2 == connection) {
-                    evbuffer_add_printf(
-                            output,
-                            "you said: %s\n",
-                            line
-                        );
-                } else {
-                    evbuffer_add_printf(
-                            output,
-                            "%" PRIu64 " said: %s\n",
-                            (uint64_t)connection->id,
-                            line
-                        );
-                }
+            if (result.type == LEX_ERROR) {
+                evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");
             }
-
-            networker_connection_iter_destroy(iter);
+            particle_buffer_free_all(connection->buffer);
+            /* ------------------------------- */
 
             free(line);
         }
