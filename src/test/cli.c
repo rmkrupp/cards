@@ -19,6 +19,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
@@ -113,6 +114,21 @@ int main(int argc, char ** argv)
         event_base_free(base);
         libevent_global_shutdown();
         return 1;
+    }
+
+    for (int i = 1; i < argc; i++) {
+        printf("[cli] loading input from \"%s\"\n", argv[i]);
+        FILE * f = fopen(argv[i], "r");
+        if (!f) {
+            fprintf(stderr, "[cli] error: %s\n", strerror(errno));
+            continue;
+        }
+        char * line = malloc(1024 * 1024 * 1024);
+        while (fgets(line, 1024 * 1024 * 1024, f)) {
+            evbuffer_add_printf(bufferevent_get_output(bev_net), "%s", line);
+        }
+        free(line);
+        fclose(f);
     }
 
     event_base_dispatch(base);
