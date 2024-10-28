@@ -60,10 +60,10 @@ build out/util/strdup.o:            cc src/util/strdup.c
 build out/command/lex.o:            cc src/command/lex.c
 
 build out/test/lex_test.o:          cc src/test/lex_test.c
-build out/test/silent_lex_test.o:   cc src/test/silent_lex_test.c
+build out/test/cli.o:               cc src/test/cli.c
 
 # ...outputs
-build cards:                    bin $
+build cards:                        bin $
     out/main.o $
     out/config_loader.o $
     out/game.o $
@@ -75,15 +75,19 @@ build cards:                    bin $
     out/util/refstring.o $
     out/util/strdup.o
 
-build test/lex_test:            bin $
+build test/lex_test:                bin $
     out/test/lex_test.o $
     out/util/refstring.o $
     out/util/strdup.o $
     out/command/lex.o
   libs =
 
-build all:                      phony $
+build test/cli:                     bin $
+    out/test/cli.o
+
+build all:                          phony $
     cards $
-    test/lex_test
+    test/lex_test $
+    test/cli
 
 default all
