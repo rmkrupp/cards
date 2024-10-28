@@ -30,7 +30,7 @@ parser.add_argument(
 parser.add_argument(
         "--command-length-min",
         type=int,
-        default=0,
+        default=1,
         help="set the minimum length of commands (in number of particles)"
     )
 parser.add_argument(
@@ -72,7 +72,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-particle_name_letters = [c for c in string.printable if c != "\n" and c != "\""] + [" "]
+name_forbidden = "\n\"\r\x0b\x0c"
+particle_name_letters = [c for c in string.printable if c not in name_forbidden]
 particle_num_letters = [c for c in string.digits]
 particle_keyword_first_letters = [c for c in string.ascii_letters + "+-*/?!"]
 particle_keyword_letters = [c for c in string.ascii_letters + string.digits + "!?-"]

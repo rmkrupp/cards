@@ -54,10 +54,11 @@ static void in_readcb(struct bufferevent * bev, void * ctx)
 
 static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
 {
+    struct bufferevent * bev_in = ctx;
     if (events & BEV_EVENT_CONNECTED) {
         fprintf(stderr, "[cli] connected\n");
         bufferevent_enable(bev, EV_READ);
-        bufferevent_enable(ctx, EV_READ);
+        bufferevent_enable(bev_in, EV_READ);
     } else if (events & BEV_EVENT_ERROR ){
         fprintf(stderr, "[cli] error connecting\n");
         event_base_loopexit(bufferevent_get_base(bev), NULL);

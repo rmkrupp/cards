@@ -254,9 +254,9 @@ static struct particle * consume_name(const char * input, size_t * n)
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
-        if (input[i] == '\n') {
+        if (input[i] == '\n' || input[i] == '\r' || input[i] == 0xb || input[i] == 0xc) {
 #if VERBOSE_LEXER
-            fprintf(stderr, "lexer error 6 (newline in name)\n");
+            fprintf(stderr, "lexer error 6 (char %s in name)\n", charmsg(input[i]));
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
@@ -347,6 +347,7 @@ void lex(
 
         switch (input[n]) {
             case ' ':
+            case '\t':
                 break;
 
             case '\n':
