@@ -20,24 +20,32 @@
 #ifndef ATTRIBUTES_H
 #define ATTRIBUTES_H
 
+/* TODO: windows defines a PURE macro so figure out if there are better names
+ *       than sticking ATTR_ in front of our PURE... (which is also not
+ *       currently used in any places.)
+ *
+ *       it also defines a CONST (as just the CONST keyword, so similar
+ *       thoughts there.)
+ */
 
 #if defined(NO_COMMON_ATTRIBUTES) && NO_COMMON_ATTRIBUTES
-#define CONST
+
+#define ATTR_CONST
 #define FORMAT(type, string_index, first_to_check)
 #define FORMAT_ARG(string_index)
 #define NONNULL(...)
-#define PURE
+#define ATTR_PURE
 #define WARN_UNUSED_RESULT
 
 #else
 
-#define CONST __attribute__ (( const ))
+#define ATTR_CONST __attribute__ (( const ))
 #define FORMAT(type, string_index, first_to_check) \
     __attribute__ (( format(type, string_index, first_to_check) ))
 #define FORMAT_ARG(string_index) \
     __attribute__ (( format_arg(string_index) ))
 #define NONNULL(...) __attribute__(( nonnull(__VA_ARGS__) ))
-#define PURE __attribute__(( pure ))
+#define ATTR_PURE __attribute__(( pure ))
 #define WARN_UNUSED_RESULT __attribute__(( warn_unused_result ))
 
 #endif /* NO_COMMON_ATTRIBUTES */
