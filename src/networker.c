@@ -65,7 +65,7 @@ struct networker_connection_iter {
 };
 
 /* create a connection with the given networker and bufferevent */
-static struct connection * connection_create(
+static struct connection * NONNULL(1, 2) connection_create(
         struct networker * networker,
         struct bufferevent * bev
     )
@@ -92,7 +92,7 @@ static struct connection * connection_create(
 /* destroy a connection, remove it from its networker, and remove its player
  * from the game
  */
-static void connection_destroy(struct connection * connection)
+static void NONNULL(1) connection_destroy(struct connection * connection)
 {
     for (size_t n = 0; n < connection->networker->n_connections; n++) {
         if (connection->networker->connections[n] == connection) {
@@ -218,7 +218,7 @@ static void networker_listener_error_cb(
 }
 
 /* reutrn a new networker based on config and holding game */
-struct networker * networker_create(struct config * config)
+struct networker * NONNULL(1) networker_create(struct config * config)
 {
     int port = (int)config->port;
 
@@ -282,7 +282,7 @@ struct networker * networker_create(struct config * config)
 }
 
 /* free the resources (connections, events, etc.) of this networker */
-void networker_destroy(struct networker * networker)
+void NONNULL(1) networker_destroy(struct networker * networker)
 {
     evconnlistener_free(networker->listener);
     for (size_t n = 0; n < networker->n_connections; n++) {
@@ -296,14 +296,14 @@ void networker_destroy(struct networker * networker)
 }
 
 /* run the eventloop of this networker */
-int networker_run(struct networker * networker)
+int NONNULL(1) networker_run(struct networker * networker)
 {
     event_base_dispatch(networker->base);
     return networker->errors;
 }
 
 /* returns a new iterator over the networker's connections */
-struct networker_connection_iter * networker_connection_iter_create(
+struct networker_connection_iter * NONNULL(1) networker_connection_iter_create(
         struct networker * networker)
 {
     struct networker_connection_iter * iter = malloc(sizeof(*iter));
@@ -315,14 +315,14 @@ struct networker_connection_iter * networker_connection_iter_create(
 }
 
 /* destroys this iterator */
-void networker_connection_iter_destroy(
+void NONNULL(1) networker_connection_iter_destroy(
         struct networker_connection_iter * iter)
 {
     free(iter);
 }
 
 /* returns the next connection and advances the iterator */
-struct connection * networker_connection_iter_iterate(
+struct connection * NONNULL(1) networker_connection_iter_iterate(
         struct networker_connection_iter * iter
     )
 {

@@ -27,7 +27,7 @@
  *
  * this will also create a networker inside this server
  */
-struct server * server_create(struct config * config)
+struct server * NONNULL(1) server_create(struct config * config)
 {
     struct server * server = malloc(sizeof(*server));
 
@@ -48,7 +48,7 @@ struct server * server_create(struct config * config)
  *
  * does not free the config, since that was passed in and might be reused
  */
-void server_destroy(struct server * server)
+void NONNULL(1) server_destroy(struct server * server)
 {
     networker_destroy(server->networker);
     free(server);
@@ -59,7 +59,7 @@ void server_destroy(struct server * server)
  * return result is the same as networker_run()
  * (because right now all this does is networker_run(server->networker))
  */
-int server_run(struct server * server)
+int NONNULL(1) server_run(struct server * server)
 {
     return networker_run(server->networker);
 }

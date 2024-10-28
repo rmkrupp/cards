@@ -20,6 +20,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include "attributes.h"
+
 #include "config.h"
 
 /* log levels */
@@ -36,13 +38,13 @@ enum log_level {
  * so it must not rely on that logger instance for logging
  * (which is fine, it doesn't log anything.)
  */
-struct logger * logger_create(struct config * config);
+struct logger * NONNULL(1) logger_create(struct config * config);
 
 /* destroy this logger */
-void logger_destroy(struct logger * logger);
+void NONNULL(1) logger_destroy(struct logger * logger);
 
 /* log using this logger at this level with this format and args */
-void logger_logf(
+void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
         struct logger * logger,
         enum log_level level,
         const char * format,

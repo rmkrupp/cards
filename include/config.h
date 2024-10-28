@@ -20,6 +20,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "attributes.h"
+
 #include <stdbool.h>
 
 /* VERSION is defined as a string by the build scripts and provided to any
@@ -48,6 +50,6 @@ struct config {
 void config_free(struct config * config);
 
 /* populate a config from a list of Lua scripts */
-int config_load(struct config * config, int nfiles, char ** files);
+int NONNULL(1) config_load(struct config * config, int nfiles, char ** files);
 
 #endif /* CONFIG_H */

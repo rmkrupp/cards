@@ -291,7 +291,7 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
 }
 
 /* populate a config from a list of Lua scripts */
-int config_load(struct config * config, int nfiles, char ** files)
+int NONNULL(1) config_load(struct config * config, int nfiles, char ** files)
 {
     int err;
 

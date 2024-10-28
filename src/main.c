@@ -22,7 +22,6 @@
 #include <event2/event.h>
 
 #include "config.h"
-#include "game.h"
 #include "server.h"
 #include "util/log.h"
 
