@@ -35,6 +35,7 @@
 
 static void net_readcb(struct bufferevent * bev, void * ctx)
 {
+    (void)ctx;
     struct evbuffer * input = bufferevent_get_input(bev);
     size_t n;
     char * line;

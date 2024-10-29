@@ -25,4 +25,5 @@
 void config_free(struct config * config)
 {
     // do nothing
+    (void)config;
 }

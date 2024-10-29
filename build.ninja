@@ -21,7 +21,7 @@ builddir = out
 cc = gcc
 gperf = gperf
 install = install
-cflags = -Wall -flto -fdiagnostics-color -Iinclude
+cflags = -Wall -Wextra -Werror -flto -fdiagnostics-color -Iinclude
 ldflags =
 installflags =
 defines = -DVERBOSE_LEXER=1
@@ -70,6 +70,7 @@ build out/command/lex.o:            cc src/command/lex.c
 build out/command/parse.o:          cc src/command/parse.c
 build out/command/keyword.c:        gperf src/command/keyword.gperf
 build out/command/keyword.o:        cc out/command/keyword.c
+  cflags = $cflags -Wno-missing-field-initializers -Wno-unused-parameter
 
 build out/test/lex_test.o:          cc src/test/lex_test.c
 build out/test/cli.o:               cc src/test/cli.c

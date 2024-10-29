@@ -45,6 +45,9 @@ void NONNULL(1) parser_parse(
         struct parse_result * result
     )
 {
+    /* TODO */
+    (void)parser;
+
     for (size_t i = 0; i < particles->n_particles; i++) {
         struct particle * particle = particles->particles[i];
         struct refstring * s = particle_string(particle);
@@ -59,4 +62,6 @@ void NONNULL(1) parser_parse(
         }
         refstring_destroy(s);
     }
+
+    result->type = PARSE_OKAY;
 }

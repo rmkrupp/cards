@@ -46,6 +46,9 @@ struct logger {
  */
 struct logger * NONNULL(1) logger_create(struct config * config)
 {
+    /* TODO */
+    (void)config;
+
     struct logger * logger = malloc(sizeof(*logger));
     *logger = (struct logger) { };
     return logger;
@@ -65,12 +68,20 @@ void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
         ...
     )
 {
+    /* TODO: use the logger */
+    (void)logger;
+
     va_list args;
     va_start(args, format);
 
     FILE * f;
 
     switch (level) {
+        default:
+            f = stderr;
+            fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
+            break;
+
         case LOG_VERBOSE:
         case LOG_INFO:
             f = stdout;

@@ -156,6 +156,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 /* dummy event callback */
 static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
 {
+    (void)bev;
     struct connection * connection = ptr;
 
     if (events & BEV_EVENT_ERROR) {
@@ -181,6 +182,9 @@ static void networker_listener_accept_cb(
         void * ptr
     )
 {
+    (void)len;
+    (void)addr;
+
     struct networker * networker = ptr;
     struct event_base * base = evconnlistener_get_base(listener);
 
