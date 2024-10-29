@@ -20,11 +20,15 @@
 builddir = out
 cc = gcc
 gperf = gperf
+install = install
 cflags = -Wall -flto -fdiagnostics-color -Iinclude
 ldflags =
+installflags =
 defines = -DVERBOSE_LEXER=1
 sanflags = -fsanitize=address,undefined
 libs = -levent
+prefix = /usr/local
+binsuffix =
 
 include active.gen.ninja
 
@@ -45,9 +49,11 @@ rule so
   depfile = $out.d
   command = $cc -MMD -MF $out.d -fPIC $defines $cflags $
             -shared $in -o $out $ldflags $libs
-
 rule gperf
   command = $gperf --output-file=$out $in
+
+rule installbin
+  command = $install -D -m755 $installflags $in $out
 
 # ...sources
 build out/main.o:                   cc src/main.c
@@ -70,8 +76,7 @@ build out/test/cli.o:               cc src/test/cli.c
 build out/test/gperf_test.o:        cc src/test/gperf_test.c
 
 # ...outputs
-build cards $
-    | cards.exe:                    bin $
+build cards$binsuffix:              bin $
     out/main.o $
     out/config_loader.o $
     out/config.o $
@@ -84,27 +89,33 @@ build cards $
     out/util/refstring.o $
     out/util/strdup.o
 
-build test/lex_test $
-    | test/lex_test.exe:            bin $
+build test/lex_test$binsuffix:      bin $
     out/test/lex_test.o $
     out/util/refstring.o $
     out/util/strdup.o $
     out/command/lex.o
   libs =
 
-build test/cli $
-    | test/cli.exe:                 bin $
+build test/cli$binsuffix:           bin $
     out/test/cli.o
 
-build test/gperf_test $
-    | test/gperf_test.exe:          bin $
+build test/gperf_test$binsuffix:    bin $
     out/test/gperf_test.o $
     out/command/keyword.o
 
 build all:                          phony $
-    cards $
-    test/lex_test $
-    test/gperf_test $
-    test/cli
+    cards$binsuffix $
+    test/lex_test$binsuffix $
+    test/gperf_test$binsuffix $
+    test/cli$binsuffix
+
+build $prefix/bin/cards:            installbin cards
+build $prefix/bin/cards-cli:        installbin test/cli
+build $prefix/bin/cards-gperf_test: installbin test/gperf_test
+
+build install:                      phony $
+    $prefix/bin/cards $
+    $prefix/bin/cards-cli $
+    $prefix/bin/cards-gperf_test
 
 default all

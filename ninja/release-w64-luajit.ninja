@@ -4,3 +4,4 @@ ldflags = $ldflags -L/usr/x86_64-w64-mingw32/lib
 version = release
 defines = $defines -DNDEBUG -DUSE_LUAJIT=1
 libs = $libs -lluajit -lws2_32 -liphlpapi
+binsuffix = .exe

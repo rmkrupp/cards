@@ -1,6 +1,14 @@
 # cards
 a card game engine for a card game
 
+## tl;dr
+
+Makefile wrapper: `DESTDIR=/where/to/install/besides/usr/local ./configure && make && make install`
+
+or
+
+`DESTDIR=/as/above ./configure && ninja && ninja install`
+
 ## Dependencies
 
 ### Build

@@ -22,10 +22,18 @@
 #
 # Look in ninja/ for all possible build types (every .ninja file there without
 # the suffix)
+#
+# This throws out any arguments that start with -- so it can be pretend to be
+# autotools-like. This is probably not a great solution.
 
 ninjadir="ninja"
 
-[ $1 ] && buildtype="$1" || buildtype="release-luajit"
+while [[ $# -ge 1 ]] && [[ $1 =~ ^-.*$ ]] ; do
+    echo "warning: ignoring option-like argument $1" >&2
+    shift 1
+done
+
+[[ $1 ]] && buildtype="$1" || buildtype="release-luajit"
 
 buildfile="$ninjadir/$buildtype.ninja"
 resultfile="active.gen.ninja"
@@ -36,5 +44,6 @@ cp -v "$buildfile" "$resultfile"
 [[ "$VERSION" ]] && sed -i 's/version = .*/version = '"$VERSION"'/' "$resultfile"
 [[ "$CFLAGS" ]] && sed -i 's/cflags = .*/cflags = $cflags '"$CFLAGS"'/' "$resultfile"
 [[ "$LDFLAGS" ]] && sed -i 's/ldflags = .*/ldflags = $ldflags '"$LDFLAGS"'/' "$resultfile"
+[[ "$DESTDIR" ]] && echo "prefix = $DESTDIR/$prefix" >> "$resultfile"
 
 exit 0
