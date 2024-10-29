@@ -9,6 +9,18 @@ or
 
 `DESTDIR=/as/above ./configure && ninja && ninja install`
 
+*This is not really autotools, this configure ignores options you might pass
+it!*
+
+Instead, you can `./configure BUILDTYPE` where `BUILDTYPE` matches one of the
+files in the `ninja/` directory, i.e.:
+
+ - `debug-luajit`: build for debug (`-g -Og` plus sanitizers) with luajit
+ - `debug-lua51`: build for debug (`-g -Og` plus sanitizers) with plain lua
+ - `release-luajit`: build for release with luajit
+ - `release-lua51`: build for release with plain lua
+ - `release-w64-luajit`: cross-compile with mingw (see below) with luajit
+
 ## Dependencies
 
 ### Build
