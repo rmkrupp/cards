@@ -21,6 +21,8 @@ all:
 	ninja -v
 
 install:
+	sed -i '/prefix =.*/d' active.gen.ninja
+	echo "prefix = ${DESTDIR}/\$$prefix" >> active.gen.ninja
 	ninja -v install
 
 clean:

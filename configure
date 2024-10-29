@@ -44,6 +44,5 @@ cp -v "$buildfile" "$resultfile"
 [[ "$VERSION" ]] && sed -i 's/version = .*/version = '"$VERSION"'/' "$resultfile"
 [[ "$CFLAGS" ]] && sed -i 's/cflags = .*/cflags = $cflags '"$CFLAGS"'/' "$resultfile"
 [[ "$LDFLAGS" ]] && sed -i 's/ldflags = .*/ldflags = $ldflags '"$LDFLAGS"'/' "$resultfile"
-[[ "$DESTDIR" ]] && echo "prefix = $DESTDIR/$prefix" >> "$resultfile"
 
 exit 0
