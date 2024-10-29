@@ -26,6 +26,7 @@ ldflags =
 installflags =
 defines = -DVERBOSE_LEXER=1
 sanflags = -fsanitize=address,undefined
+winnetlibs =
 libs = -levent
 prefix = /usr/local
 binsuffix =
@@ -99,10 +100,17 @@ build test/lex_test$binsuffix:      bin $
 
 build test/cli$binsuffix:           bin $
     out/test/cli.o
+  libs = -levent $winnetlibs
+
+build test/rlcli$binsuffix:         bin $
+    out/test/rlcli.o
+  cflags = $cflags -pthread
+  libs = -levent -lreadline $winnetlibs
 
 build test/gperf_test$binsuffix:    bin $
     out/test/gperf_test.o $
     out/command/keyword.o
+  libs =
 
 build all:                          phony $
     cards$binsuffix $
