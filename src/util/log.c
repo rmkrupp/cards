@@ -74,13 +74,14 @@ void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
     va_list args;
     va_start(args, format);
 
-    FILE * f;
+    FILE * f = stderr;
 
     switch (level) {
+#if !defined(NDEBUG)
         default:
-            f = stderr;
             fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
             break;
+#endif /* NDEBUG */
 
         case LOG_VERBOSE:
         case LOG_INFO:
