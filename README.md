@@ -3,7 +3,7 @@ a card game engine for a card game
 
 ## tl;dr
 
-Makefile wrapper: `DESTDIR=/where/to/install/besides/usr/local ./configure && make && make install`
+Makefile wrapper: `./configure && make && make DESTDIR=/where/to/install/besides/usr/local install`
 
 or
 
@@ -20,6 +20,10 @@ files in the `ninja/` directory, i.e.:
  - `release-luajit`: build for release with luajit
  - `release-lua51`: build for release with plain lua
  - `release-w64-luajit`: cross-compile with mingw (see below) with luajit
+
+And edit the `active.gen.ninja` or `build.ninja` if needed. `make install`
+magically adds a `prefix =` to `active.gen.ninja` if you set DESTDIR, as does
+`./configure`.
 
 ## Dependencies
 
