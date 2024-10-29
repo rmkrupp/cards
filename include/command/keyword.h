@@ -20,6 +20,8 @@
 #ifndef COMMAND_KEYWORD_H
 #define COMMAND_KEYWORD_H
 
+#include "attributes.h"
+
 #include <stddef.h>
 
 enum keyword {
@@ -29,12 +31,13 @@ enum keyword {
 };
 
 struct keyword_lookup_result {
-    char * name;
+    int offset;
     enum keyword keyword;
 };
 
-/* these are the functions from gperf */
+const char * ATTR_CONST keyword_string(int offset);
 
+/* this is the functions from gperf */
 const struct keyword_lookup_result * keyword_lookup(const char * str, size_t len);
 
 #endif /* COMMAND_KEYWORD_H */

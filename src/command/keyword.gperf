@@ -22,12 +22,21 @@
 %}
 %readonly-tables
 %enum
+%define slot-name offset
 %define lookup-function-name keyword_lookup
+%define string-pool-name keyword_pool
 %includes
 %omit-struct-type
 %struct-type
+%pic
 struct keyword_lookup_result;
 %%
 SAY, KEYWORD_SAY
 EXIT, KEYWORD_EXIT
 SHUTDOWN, KEYWORD_SHUTDOWN
+%%
+/* offset->string function because we are using %pic */
+const char * ATTR_CONST keyword_string(int offset)
+{
+    return &keyword_pool[offset];
+}
