@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <assert.h>
 
 #include "lua.h"
 #include "config.h"
@@ -280,6 +281,10 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
                 free(option->value_string);
                 option->value_string = strdup(lua_tostring(L, -1));
                 break;
+
+            default:
+                assert(0);
+                break;
         }
 
         lua_pop(L, 1);
@@ -326,6 +331,9 @@ int NONNULL(1) config_load(struct config * config, int nfiles, char ** files)
             case CONFIG_STRING:
                 lua_pushstring(L, option->value_string);
                 break;
+
+            default:
+                assert(0);
         }
 
         lua_setfield(L, -2, option->name);
