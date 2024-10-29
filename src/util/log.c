@@ -77,12 +77,6 @@ void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
     FILE * f = stderr;
 
     switch (level) {
-#if !defined(NDEBUG)
-        default:
-            fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
-            break;
-#endif /* NDEBUG */
-
         case LOG_VERBOSE:
         case LOG_INFO:
             f = stdout;
@@ -90,6 +84,10 @@ void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
 
         case LOG_ERROR:
             f = stderr;
+            break;
+
+        default:
+            fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
             break;
     }
 
