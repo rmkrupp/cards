@@ -21,9 +21,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <getopt.h>
+
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
+#include <event2/dns.h>
+#include <event2/util.h>
+
+#if defined(__MINGW32__)
+#include <windef.h>
+#endif /* __MINGW32__ */
 
 static void net_readcb(struct bufferevent * bev, void * ctx)
 {
@@ -81,21 +89,102 @@ static void in_eventcb(struct bufferevent * bev, short events, void * ctx)
     }
 }
 
+static struct option options[] = {
+    { "port", required_argument, 0, 'p' },
+    { "hostname", required_argument, 0, 'h' },
+    { }
+};
 
 int main(int argc, char ** argv)
 {
-    int port = 10101;
+
+    char * portname = strdup("10101");
+    char * hostname = strdup("localhost");
+
+    int c;
+    while (1) {
+        int index = 0;
+        c = getopt_long(argc, argv, "p:h:", options, &index);
+
+        if (c == -1) {
+            break;
+        }
+
+        switch (c) {
+            case 'p':
+                free(portname);
+                portname = strdup(optarg);
+                break;
+            case 'h':
+                free(hostname);
+                hostname = strdup(optarg);
+                break;
+            case '?':
+                free(portname);
+                free(hostname);
+                return 1;
+            default:
+                free(portname);
+                free(hostname);
+                return 2;
+        }
+    }
+
+#if defined(__MINGW32__)
+    WORD wVersionRequested = MAKEWORD(2, 2);
+    WSADATA wsaData;
+    int err;
+    if ((err = WSAStartup(wVersionRequested, &wsaData))) {
+        fprintf(stderr, "[cli] WSAStartup() failed (code %d)\n", err);
+        free(portname);
+        free(hostname);
+        return 1;
+    }
+#endif /* __MINGW32__ */
 
     struct event_base * base = event_base_new();
 
+    /*
     struct sockaddr_in sin = (struct sockaddr_in) {
         .sin_family = AF_INET,
         .sin_addr = (struct in_addr) {
-            .s_addr = htonl(0)
+            .s_addr = htonl((192L << 24) | (168L << 16) | 11L)
         },
         .sin_port = htons(port)
     };
-    
+    */
+
+    struct evutil_addrinfo hints = (struct evutil_addrinfo) {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM,
+        .ai_protocol = IPPROTO_TCP,
+        .ai_flags = EVUTIL_AI_ADDRCONFIG
+    };
+    struct evutil_addrinfo * answer = NULL;
+    int result = evutil_getaddrinfo(hostname, portname, &hints, &answer);
+
+    if (result) {
+        fprintf(
+                stderr,
+                "[cli] error resolving '%s': %s\n",
+                hostname,
+                evutil_gai_strerror(result)
+            );
+        free(hostname);
+        free(portname);
+        event_base_free(base);
+        libevent_global_shutdown();
+
+#if defined(__MINGW32__)
+        WSACleanup();
+#endif /* __MINGW32__ */
+
+        return 1;
+    }
+
+    free(hostname);
+    free(portname);
+
     struct bufferevent * bev_in = bufferevent_socket_new(
         base, 0, BEV_OPT_CLOSE_ON_FREE);
 
@@ -107,17 +196,26 @@ int main(int argc, char ** argv)
 
     if (bufferevent_socket_connect(
                 bev_net,
-                (struct sockaddr *)&sin,
-                sizeof(sin)
+                answer->ai_addr,
+                sizeof(*answer->ai_addr)
             )) {
+        fprintf(stderr, "[cli] error connecting\n");
+        evutil_freeaddrinfo(answer);
         bufferevent_free(bev_net);
         bufferevent_free(bev_in);
         event_base_free(base);
         libevent_global_shutdown();
+
+#if defined(__MINGW32__)
+        WSACleanup();
+#endif /* __MINGW32__ */
+
         return 1;
     }
 
-    for (int i = 1; i < argc; i++) {
+    evutil_freeaddrinfo(answer);
+
+    for (int i = optind; i < argc; i++) {
         printf("[cli] loading input from \"%s\"\n", argv[i]);
         FILE * f = fopen(argv[i], "r");
         if (!f) {
@@ -138,4 +236,9 @@ int main(int argc, char ** argv)
     bufferevent_free(bev_in);
     event_base_free(base);
     libevent_global_shutdown();
+
+#if defined(__MINGW32__)
+    WSACleanup();
+#endif /* __MINGW32__ */
+
 }
