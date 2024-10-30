@@ -1,8 +1,8 @@
 cards
 cards.exe
 build.ninja
-test/
-out/
+/test/
+/out/
 __pycache__
 *.ignore
 *.ignore.*
