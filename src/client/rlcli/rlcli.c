@@ -1,4 +1,4 @@
-/* File: include/test/rlcli.h
+/* File: src/client/rlcli/rlcli.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <getopt.h>
+#include "client/rlcli/args.h"
 
 #include <pthread.h>
 #include <readline/readline.h>
@@ -36,7 +36,6 @@
 #if defined(__MINGW32__)
 #include <windef.h>
 #endif /* __MINGW32__ */
-
 struct bufferevent * global_bev = NULL;
 
 static int hook()
@@ -87,22 +86,6 @@ static void * readline_fn(void * ctx)
     return NULL;
 }
 
-/*
-static void net_readcb(struct bufferevent * bev, void * ctx)
-{
-    (void)ctx;
-    struct evbuffer * input = bufferevent_get_input(bev);
-    size_t n;
-    char * line;
-    
-    while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY))) {
-        printf("%s\n", line);
-        rl_on_new_line();
-        free(line);
-    }
-}
-*/
-
 static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
 {
     (void)ctx;
@@ -132,45 +115,28 @@ static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
     }
 }
 
-static struct option options[] = {
-    { "port", required_argument, 0, 'p' },
-    { "hostname", required_argument, 0, 'h' },
-    { }
-};
+static void free_args(struct arguments * args)
+{
+    free(args->portname);
+    free(args->hostname);
+    for (size_t i = 0; i < args->n_load_files; i++) {
+        free(args->load_files[i]);
+    }
+    free(args->load_files);
+}
 
 int main(int argc, char ** argv)
 {
 
-    char * portname = strdup("10101");
-    char * hostname = strdup("127.0.0.1");
+    struct arguments args = (struct arguments) {
+        .portname = strdup("10101"),
+        .hostname = strdup("127.0.0.1")
+    };
 
-    int c;
-    while (1) {
-        int index = 0;
-        c = getopt_long(argc, argv, "p:h:", options, &index);
-
-        if (c == -1) {
-            break;
-        }
-
-        switch (c) {
-            case 'p':
-                free(portname);
-                portname = strdup(optarg);
-                break;
-            case 'h':
-                free(hostname);
-                hostname = strdup(optarg);
-                break;
-            case '?':
-                free(portname);
-                free(hostname);
-                return 1;
-            default:
-                free(portname);
-                free(hostname);
-                return 2;
-        }
+    int parse_result;
+    if ((parse_result = parse_args(&args, argc, argv))) {
+        free_args(&args);
+        return parse_result;
     }
 
 #if defined(__MINGW32__)
@@ -179,8 +145,8 @@ int main(int argc, char ** argv)
     int err;
     if ((err = WSAStartup(wVersionRequested, &wsaData))) {
         fprintf(stderr, "[cli] WSAStartup() failed (code %d)\n", err);
-        free(portname);
-        free(hostname);
+        free(args.portname);
+        free(args.hostname);
         return 1;
     }
 #endif /* __MINGW32__ */
@@ -194,17 +160,17 @@ int main(int argc, char ** argv)
         .ai_flags = EVUTIL_AI_ADDRCONFIG
     };
     struct evutil_addrinfo * answer = NULL;
-    int result = evutil_getaddrinfo(hostname, portname, &hints, &answer);
+    int result = evutil_getaddrinfo(
+            args.hostname, args.portname, &hints, &answer);
 
     if (result) {
         fprintf(
                 stderr,
                 "[cli] error resolving '%s': %s\n",
-                hostname,
+                args.hostname,
                 evutil_gai_strerror(result)
             );
-        free(hostname);
-        free(portname);
+        free_args(&args);
         event_base_free(base);
         libevent_global_shutdown();
 
@@ -214,9 +180,6 @@ int main(int argc, char ** argv)
 
         return 1;
     }
-
-    free(hostname);
-    free(portname);
 
     struct bufferevent * bev_net = bufferevent_socket_new(
             base, -1, 0);
@@ -229,6 +192,7 @@ int main(int argc, char ** argv)
                 sizeof(*answer->ai_addr)
             )) {
         fprintf(stderr, "[cli] error connecting\n");
+        free_args(&args);
         evutil_freeaddrinfo(answer);
         bufferevent_free(bev_net);
         event_base_free(base);
@@ -243,20 +207,31 @@ int main(int argc, char ** argv)
 
     evutil_freeaddrinfo(answer);
 
-    for (int i = optind; i < argc; i++) {
-        printf("[cli] loading input from \"%s\"\n", argv[i]);
-        FILE * f = fopen(argv[i], "r");
+    char * line = NULL;
+    size_t line_max = 1024 * 1024 * 1024;
+
+    if (args.n_load_files > 0) {
+        line = malloc(line_max);
+    }
+
+    for (size_t i = 0; i < args.n_load_files; i++) {
+        printf("[cli] loading input from \"%s\"\n", args.load_files[i]);
+        FILE * f = fopen(args.load_files[i], "r");
         if (!f) {
             fprintf(stderr, "[cli] error: %s\n", strerror(errno));
             continue;
         }
-        char * line = malloc(1024 * 1024 * 1024);
-        while (fgets(line, 1024 * 1024 * 1024, f)) {
+        while (fgets(line, line_max, f)) {
             evbuffer_add_printf(bufferevent_get_output(bev_net), "%s", line);
         }
-        free(line);
         fclose(f);
     }
+
+    if (line) {
+        free(line);
+    }
+
+    free_args(&args);
 
     rl_event_hook = &hook;
 

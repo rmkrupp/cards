@@ -56,6 +56,8 @@ parser.add_argument('--disable-server', action='store_true',
                     help='don\'t build the server')
 parser.add_argument('--disable-readline', action='store_true',
                     help='don\'t build anything dependent on readline')
+parser.add_argument('--disable-argp', action='store_true',
+                    help='fall back to getopt for argument parsing')
 parser.add_argument('--disable-sanitize', action='store_true',
                     help='don\'t enable the sanitizer in debug mode')
 parser.add_argument('--disable-verbose-lexer', action='store_true',
@@ -89,6 +91,7 @@ def enable_release():
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
 
 def enable_w64():
+    args.disable_argp = True
     w.variable(key = 'cflags', value = '$cflags -O2 -static -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'w64netlibs', value = '-lws2_32 -liphlpapi')
     w.variable(key = 'ldflags', value = '$ldflags -L/usr/x86_64-w64-mingw32/lib')
@@ -220,6 +223,7 @@ elif args.build == 'release':
     enable_release()
 elif args.build == 'w64':
     w.comment('build mode: w64')
+    w.comment('(this implies --disable-argp)')
     enable_w64()
 else:
     print('WARNING: unhandled build mode "' + args.build + '"', file=sys.stderr)
@@ -334,10 +338,19 @@ w.build('$builddir/command/lex.o', 'cc', 'src/command/lex.c')
 w.build('$builddir/command/parse.o', 'cc', 'src/command/parse.c')
 w.newline()
 
-w.build('$builddir/test/cli.o', 'cc', 'src/test/cli.c')
 w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
 w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
-w.build('$builddir/test/rlcli.o', 'cc', 'src/test/rlcli.c')
+
+w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
+w.build('$builddir/client/cli/args_getopt.o', 'cc', 'src/client/cli/args_getopt.c')
+w.build('$builddir/client/cli/args_argp.o', 'cc', 'src/client/cli/args_argp.c',
+        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
+w.newline()
+
+w.build('$builddir/client/rlcli/rlcli.o', 'cc', 'src/client/rlcli/rlcli.c')
+w.build('$builddir/client/rlcli/args_getopt.o', 'cc', 'src/client/rlcli/args_getopt.c')
+w.build('$builddir/client/rlcli/args_argp.o', 'cc', 'src/client/rlcli/args_argp.c',
+        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
 w.newline()
 
 w.build('$builddir/command/keyword.c', 'gperf', 'src/command/keyword.gperf')
@@ -422,22 +435,36 @@ bin_target(
         targets = [all_targets, tools_targets]
     )
 
+if args.disable_argp:
+    w.comment('# building cli with getopt because we were generated with --disable-argp')
+    cli_args_input = [ '$builddir/client/cli/args_getopt.o' ]
+else:
+    cli_args_input = [ '$builddir/client/cli/args_argp.o' ]
+
 bin_target(
         name = 'test/cli',
         inputs = [
-            '$builddir/test/cli.o'
-        ],
+            '$builddir/client/cli/cli.o',
+            '$builddir/util/strdup.o'
+        ] + cli_args_input,
         variables = [('libs', '-levent $w64netlibs')],
         is_disabled = 'cli' in args.disable_tool,
         why_disabled = 'we were generated with --disable-tool=cli',
         targets = [all_targets, tools_targets]
     )
 
+if args.disable_argp:
+    w.comment('# building rlcli with getopt because we were generated with --disable-argp')
+    rlcli_args_input = [ '$builddir/client/rlcli/args_getopt.o' ]
+else:
+    rlcli_args_input = [ '$builddir/client/rlcli/args_argp.o' ]
+
 bin_target(
         name = 'test/rlcli',
         inputs = [
-            '$builddir/test/rlcli.o'
-        ],
+            '$builddir/client/rlcli/rlcli.o',
+            '$builddir/util/strdup.o'
+        ] + rlcli_args_input ,
         variables = [
             ('libs', '-levent $w64netlibs -lreadline'),
             ('cflags', '$cflags -pthread')

@@ -1,4 +1,4 @@
-/* File: include/test/cli.h
+/* File: src/client/cli.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <getopt.h>
+#include "util/strdup.h"
+
+#include "client/cli/args.h"
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
@@ -90,55 +92,37 @@ static void in_eventcb(struct bufferevent * bev, short events, void * ctx)
     }
 }
 
-static struct option options[] = {
-    { "port", required_argument, 0, 'p' },
-    { "hostname", required_argument, 0, 'h' },
-    { }
-};
+static void free_args(struct arguments * args)
+{
+    free(args->portname);
+    free(args->hostname);
+    for (size_t i = 0; i < args->n_load_files; i++) {
+        free(args->load_files[i]);
+    }
+    free(args->load_files);
+}
 
 int main(int argc, char ** argv)
 {
 
-    char * portname = strdup("10101");
-    char * hostname = strdup("127.0.0.1");
+    struct arguments args = (struct arguments) {
+        .portname = util_strdup("10101"),
+        .hostname = util_strdup("127.0.0.1")
+    };
 
-    int c;
-    while (1) {
-        int index = 0;
-        c = getopt_long(argc, argv, "p:h:", options, &index);
-
-        if (c == -1) {
-            break;
-        }
-
-        switch (c) {
-            case 'p':
-                free(portname);
-                portname = strdup(optarg);
-                break;
-            case 'h':
-                free(hostname);
-                hostname = strdup(optarg);
-                break;
-            case '?':
-                free(portname);
-                free(hostname);
-                return 1;
-            default:
-                free(portname);
-                free(hostname);
-                return 2;
-        }
+    int parse_result;
+    if ((parse_result = parse_args(&args, argc, argv))) {
+        free_args(&args);
+        return parse_result;
     }
-
+    
 #if defined(__MINGW32__)
     WORD wVersionRequested = MAKEWORD(2, 2);
     WSADATA wsaData;
     int err;
     if ((err = WSAStartup(wVersionRequested, &wsaData))) {
         fprintf(stderr, "[cli] WSAStartup() failed (code %d)\n", err);
-        free(portname);
-        free(hostname);
+        free_args(&args);
         return 1;
     }
 #endif /* __MINGW32__ */
@@ -162,17 +146,17 @@ int main(int argc, char ** argv)
         .ai_flags = EVUTIL_AI_ADDRCONFIG
     };
     struct evutil_addrinfo * answer = NULL;
-    int result = evutil_getaddrinfo(hostname, portname, &hints, &answer);
+    int result = evutil_getaddrinfo(
+            args.hostname, args.portname, &hints, &answer);
 
     if (result) {
         fprintf(
                 stderr,
                 "[cli] error resolving '%s': %s\n",
-                hostname,
+                args.hostname,
                 evutil_gai_strerror(result)
             );
-        free(hostname);
-        free(portname);
+        free_args(&args);
         event_base_free(base);
         libevent_global_shutdown();
 
@@ -182,9 +166,6 @@ int main(int argc, char ** argv)
 
         return 1;
     }
-
-    free(hostname);
-    free(portname);
 
     struct bufferevent * bev_in = bufferevent_socket_new(
         base, 0, BEV_OPT_CLOSE_ON_FREE);
@@ -201,6 +182,7 @@ int main(int argc, char ** argv)
                 sizeof(*answer->ai_addr)
             )) {
         fprintf(stderr, "[cli] error connecting\n");
+        free_args(&args);
         evutil_freeaddrinfo(answer);
         bufferevent_free(bev_net);
         bufferevent_free(bev_in);
@@ -216,9 +198,9 @@ int main(int argc, char ** argv)
 
     evutil_freeaddrinfo(answer);
 
-    for (int i = optind; i < argc; i++) {
-        printf("[cli] loading input from \"%s\"\n", argv[i]);
-        FILE * f = fopen(argv[i], "r");
+    for (size_t i = 0; i < args.n_load_files; i++) {
+        printf("[cli] loading input from \"%s\"\n", args.load_files[i]);
+        FILE * f = fopen(args.load_files[i], "r");
         if (!f) {
             fprintf(stderr, "[cli] error: %s\n", strerror(errno));
             continue;
@@ -230,6 +212,12 @@ int main(int argc, char ** argv)
         free(line);
         fclose(f);
     }
+
+    if (args.send_exit) {
+        evbuffer_add_printf(bufferevent_get_output(bev_net), "exit\n");
+    }
+
+    free_args(&args);
 
     event_base_dispatch(base);
 
