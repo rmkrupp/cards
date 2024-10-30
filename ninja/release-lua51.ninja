@@ -1,5 +1,0 @@
-cflags = $cflags -O2
-ldflags = $ldflags
-version = release
-defines = $defines -DNDEBUG -DUSE_LUAJIT=0
-libs = $libs -llua5.1

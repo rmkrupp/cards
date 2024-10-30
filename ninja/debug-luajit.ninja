@@ -1,5 +1,0 @@
-cflags = $cflags $sanflags -g -Og
-ldflags = $ldflags
-version = debug
-defines = $defines -DUSE_LUAJIT=1
-libs = $libs -lluajit-5.1

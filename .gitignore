@@ -1,7 +1,9 @@
 cards
 cards.exe
+build.ninja
 test/
 out/
+__pycache__
 *.ignore
 *.ignore.*
 *.gen

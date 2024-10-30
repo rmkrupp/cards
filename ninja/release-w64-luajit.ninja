@@ -1,8 +1,0 @@
-cc = x86_64-w64-mingw32-gcc
-cflags = $cflags -O2 -static -I/usr/x86_64-w64-mingw32/include
-ldflags = $ldflags -L/usr/x86_64-w64-mingw32/lib
-version = release
-defines = $defines -DNDEBUG -DUSE_LUAJIT=1
-winnetlibs = -lws2_32 -liphlpapi
-libs = $libs -lluajit $winnetlibs
-binsuffix = .exe

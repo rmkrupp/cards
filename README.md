@@ -1,29 +1,7 @@
 # cards
 a card game engine for a card game
 
-## tl;dr
-
-Makefile wrapper: `./configure && make && make DESTDIR=/where/to/install/besides/usr/local install`
-
-or
-
-`DESTDIR=/as/above ./configure && ninja && ninja install`
-
-*This is not really autotools, this configure ignores options you might pass
-it!*
-
-Instead, you can `./configure BUILDTYPE` where `BUILDTYPE` matches one of the
-files in the `ninja/` directory, i.e.:
-
- - `debug-luajit`: build for debug (`-g -Og` plus sanitizers) with luajit
- - `debug-lua51`: build for debug (`-g -Og` plus sanitizers) with plain lua
- - `release-luajit`: build for release with luajit
- - `release-lua51`: build for release with plain lua
- - `release-w64-luajit`: cross-compile with mingw (see below) with luajit
-
-And edit the `active.gen.ninja` or `build.ninja` if needed. `make install`
-magically adds a `prefix =` to `active.gen.ninja` if you set DESTDIR, as does
-`./configure`.
+Build with `./configure.py && ninja`
 
 ## Dependencies
 
@@ -31,6 +9,7 @@ magically adds a `prefix =` to `active.gen.ninja` if you set DESTDIR, as does
 
  - gcc etc.
  - ninja
+ - python
  - gperf
 
 ### Runtime
@@ -39,22 +18,25 @@ magically adds a `prefix =` to `active.gen.ninja` if you set DESTDIR, as does
 
 ## W64
 
-Use `./configure release-w64-luajit` then run `ninja`. 
+Use `./configure.py --build=w64`.
 
 ### ArchLinux instructions
+
 Install the `mingw-w64` group.
 
 AUR packages needed:
 
+ - `mingw-w64-zlib`
  - `mingw-w64-environment`
- - `mingw-w64-libevent`
- - `mingw-w64-luajit`
  - `mingw-w64-openssl`
  - `mingw-w64-pkg-config`
- - `mingw-w64-zlib`
+ - `mingw-w64-libevent`
+ - `mingw-w64-luajit`
 
 The build is static. DLLs for libevent, luajit, winpthreads, etc. don't need
 to be distributed with the executables.
+
+(See the helper scripts in `misc/pkg/archlinux/w64`.)
 
 ## Project Goals
 
