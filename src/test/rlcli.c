@@ -75,14 +75,13 @@ static void * readline_fn(void * ctx)
             free(line);
             return NULL;
         }
-        if (line) {
+        if (line && line[0]) {
             add_history(line);
 
             struct evbuffer * output = bufferevent_get_output(bev);
             evbuffer_add_printf(output, "%s\n", line);
-            free(line);
-        } else {
         }
+        free(line);
     }
 
     return NULL;
