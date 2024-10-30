@@ -3,6 +3,7 @@
 from random import randint, choice
 import string
 import argparse
+import sys
 
 parser = argparse.ArgumentParser(
         prog="generate_lex_input",
@@ -69,6 +70,11 @@ parser.add_argument(
         default=1,
         help="set the relative frequency of end-nest particles"
     )
+parser.add_argument(
+        "--percent",
+        action="store_true",
+        help="print percentage completion to stderr"
+    )
 
 args = parser.parse_args()
 
@@ -110,7 +116,12 @@ choices += [particle_num] * args.number_weight
 choices += [particle_begin_nest] * args.begin_nest_weight
 choices += [particle_end_nest] * args.end_nest_weight
 
+pct = 0
 for i in range(args.number):
+    if args.percent and int((100 * i) / args.number) > pct:
+        pct = int((100 * i) / args.number)
+        print(str(pct) +"%", file=sys.stderr)
+
     c = ""
     for i in range(randint(args.command_length_min, args.command_length)):
         f = choice(choices)
