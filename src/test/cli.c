@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
 {
 
     char * portname = strdup("10101");
-    char * hostname = strdup("localhost");
+    char * hostname = strdup("127.0.0.1");
 
     int c;
     while (1) {
