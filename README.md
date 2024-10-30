@@ -18,7 +18,8 @@ Build with `./configure.py && ninja`
 
 ## W64
 
-Use `./configure.py --build=w64`.
+Use `./configure.py --build=w64`. You may need `--disable-readline` too, and
+building has only been tested with the `luajit` backend.
 
 ### ArchLinux instructions
 
