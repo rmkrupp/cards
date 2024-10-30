@@ -25,6 +25,7 @@
 
 #include <pthread.h>
 #include <readline/readline.h>
+#include <readline/history.h>
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
@@ -38,6 +39,31 @@
 
 struct bufferevent * global_bev = NULL;
 
+static int hook()
+{
+    struct bufferevent * bev = global_bev;
+    if (!bev) {
+        return 0;
+    }
+    struct evbuffer * input = bufferevent_get_input(bev);
+    int needsclear = 1;
+    size_t n;
+    char * linein;
+    while ((linein = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY))) {
+        if (needsclear) {
+            rl_save_prompt();
+            needsclear = 0;
+        }
+        rl_message("%s\n", linein);
+        free(linein);
+    }
+    if (needsclear == 0) {
+        rl_restore_prompt();
+        rl_redisplay();
+    }
+    return 0;
+}
+
 static void * readline_fn(void * ctx)
 {
     struct bufferevent ** bevptr = ctx;
@@ -50,15 +76,19 @@ static void * readline_fn(void * ctx)
             return NULL;
         }
         if (line) {
+            add_history(line);
+
             struct evbuffer * output = bufferevent_get_output(bev);
             evbuffer_add_printf(output, "%s\n", line);
             free(line);
+        } else {
         }
     }
 
     return NULL;
 }
 
+/*
 static void net_readcb(struct bufferevent * bev, void * ctx)
 {
     (void)ctx;
@@ -72,21 +102,33 @@ static void net_readcb(struct bufferevent * bev, void * ctx)
         free(line);
     }
 }
+*/
 
 static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
 {
     (void)ctx;
     if (events & BEV_EVENT_CONNECTED) {
-        fprintf(stderr, "[cli] connected\n");
-        rl_on_new_line();
+        if (rl_readline_state == RL_STATE_NONE) {
+            fprintf(stderr, "[cli] connected\n");
+        } else {
+            rl_message("[cli] connected\n");
+        }
         bufferevent_enable(bev, EV_READ);
-    } else if (events & BEV_EVENT_ERROR ){
-        fprintf(stderr, "[cli] error connecting\n");
-        rl_on_new_line();
+    } else if (events & BEV_EVENT_ERROR ) {
+        if (rl_readline_state == RL_STATE_NONE) {
+            fprintf(stderr, "[cli] error connecting\n");
+        } else {
+            rl_message("[cli] error connecting\n");
+            rl_redisplay();
+        }
         event_base_loopexit(bufferevent_get_base(bev), NULL);
     } else if (events & BEV_EVENT_EOF) {
-        fprintf(stderr, "[cli] disconnected\n");
-        rl_on_new_line();
+        if (rl_readline_state == RL_STATE_NONE) {
+            fprintf(stderr, "[cli] disconnected\n");
+        } else {
+            rl_message("[cli] disconnected\n");
+            rl_redisplay();
+        }
         event_base_loopexit(bufferevent_get_base(bev), NULL);
     }
 }
@@ -101,7 +143,7 @@ int main(int argc, char ** argv)
 {
 
     char * portname = strdup("10101");
-    char * hostname = strdup("localhost");
+    char * hostname = strdup("127.0.0.1");
 
     int c;
     while (1) {
@@ -180,7 +222,7 @@ int main(int argc, char ** argv)
     struct bufferevent * bev_net = bufferevent_socket_new(
             base, -1, 0);
 
-    bufferevent_setcb(bev_net, net_readcb, NULL, net_eventcb, NULL);
+    bufferevent_setcb(bev_net, NULL, NULL, net_eventcb, NULL);
 
     if (bufferevent_socket_connect(
                 bev_net,
@@ -217,6 +259,8 @@ int main(int argc, char ** argv)
         fclose(f);
     }
 
+    rl_event_hook = &hook;
+
     pthread_t readline_thread;
     int res = pthread_create(&readline_thread, NULL, &readline_fn, &global_bev);
 
@@ -238,7 +282,6 @@ int main(int argc, char ** argv)
 
     global_bev = NULL;
     rl_done = 1;
-    rl_pending_input = ' ';
 
     pthread_join(readline_thread, NULL);
 
@@ -249,6 +292,4 @@ int main(int argc, char ** argv)
 #if defined(__MINGW32__)
     WSACleanup();
 #endif /* __MINGW32__ */
-
-    printf("goodbye\n");
 }
