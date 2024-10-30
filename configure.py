@@ -57,8 +57,10 @@ parser.add_argument('--disable-sanitize', action='store_true',
                     help='don\'t enable the sanitizer in debug mode')
 parser.add_argument('--disable-verbose-lexer', action='store_true',
                     help='don\'t enable the verbose lexer')
-parser.add_argument('--force-version', help='override the version string')
-parser.add_argument('--add-version-suffix', help='append the version string')
+parser.add_argument('--force-version', metavar='STRING',
+                    help='override the version string')
+parser.add_argument('--add-version-suffix', metavar='SUFFIX',
+                    help='append the version string')
 
 args = parser.parse_args()
 
