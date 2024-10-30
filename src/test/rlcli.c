@@ -1,4 +1,4 @@
-/* File: include/test/cli.h
+/* File: include/test/rlcli.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
