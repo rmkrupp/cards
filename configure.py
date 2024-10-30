@@ -43,6 +43,9 @@ parser.add_argument('--ldflags', help='override compiler flags when linking')
 parser.add_argument('--build',
                     choices=['release', 'debug', 'w64'], default='debug',
                     help='set the build type (default: debug)')
+parser.add_argument('--build-native',
+                    choices=['none', 'mtune', 'march'], default='none',
+                    help='build with mtune=native or march=native')
 parser.add_argument('--lua-backend',
                     choices=['lua51', 'luajit', 'none'], default='luajit',
                     help='set the lua backend (default: luajit)')
@@ -168,6 +171,22 @@ w.variable(key = 'cflags', value = '-Wall -Wextra -Werror -fdiagnostics-color')
 if args.ldflags:
     w.comment('these are overriden below because we were generated with --ldflags=' + args.ldflags)
 w.variable(key = 'ldflags', value = '')
+
+#
+# MTUNE/MARCH SETTINGS
+#
+
+if args.build_native == 'none':
+    pass
+elif args.build_native == 'mtune':
+    w.comment('# adding cflags for --build-native=mtune')
+    w.variable(key = 'cflags', value = '$cflags -mtune=native')
+elif args.build_native == 'march':
+    w.comment('# adding cflags for --build-native=march')
+    w.variable(key = 'cflags', value = '$cflags -march=native')
+else:
+    print('WARNING: unhandled build-native mode "' + args.build_native + '"', file=sys.stderr)
+    w.comment('WARNING: unhandled build-native mode "' + args.build_native +'"')
 
 #
 # SANITIZER
