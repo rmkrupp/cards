@@ -98,7 +98,7 @@ def enable_luajit():
     else:
         w.variable(key = 'lualib', value = '-lluajit-5.1')
 
-def enable_lua():
+def enable_lua51():
     w.variable(key = 'defines', value = '$defines -DUSE_LUAJIT=0')
     w.variable(key = 'lualib', value = '-llua5.1')
 
