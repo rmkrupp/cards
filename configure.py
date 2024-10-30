@@ -94,6 +94,7 @@ def enable_w64():
     args.disable_argp = True
     w.variable(key = 'cflags', value = '$cflags -O2 -static -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'w64netlibs', value = '-lws2_32 -liphlpapi')
+    w.variable(key = 'w64curses', value = '-lcurses')
     w.variable(key = 'ldflags', value = '$ldflags -L/usr/x86_64-w64-mingw32/lib')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
 
@@ -466,7 +467,7 @@ bin_target(
             '$builddir/util/strdup.o'
         ] + rlcli_args_input ,
         variables = [
-            ('libs', '-levent $w64netlibs -lreadline'),
+            ('libs', '-levent $w64netlibs -lreadline $w64curses'),
             ('cflags', '$cflags -pthread')
         ],
         is_disabled = [
