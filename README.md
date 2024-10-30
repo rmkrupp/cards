@@ -13,12 +13,16 @@ Build with `./configure.py && ninja`
  - gperf
 
 ### Runtime
+
  - libevent
  - either Lua 5.1 or luajit
+ - readline (unless `--disable-readline`, which stops `rlcli` from building)
+ - argp (unless `--disable-argp`, which falls back to `getopt` for `rlcli` and
+   `cli`.
 
 ## W64
 
-Use `./configure.py --build=w64`. You may need `--disable-readline` too, and
+Use `./configure.py --build=w64`. You may want `--disable-readline` too, and
 building has only been tested with the `luajit` backend.
 
 ### ArchLinux instructions
@@ -33,6 +37,16 @@ AUR packages needed:
  - `mingw-w64-pkg-config`
  - `mingw-w64-libevent`
  - `mingw-w64-luajit`
+
+For readline-dependent tools (`rlcli`):
+
+ - `mingw-w64-pdcurses`
+ - `mingw-w64-termcap`
+ - `mingw-w64-readline`
+
+To build without readline, pass `--disable-readline` to `configure.py`. Note
+that even with readline, the `rlcli` tool does not work well with cmd.exe or
+powershell.
 
 The build is static. DLLs for libevent, luajit, winpthreads, etc. don't need
 to be distributed with the executables.
