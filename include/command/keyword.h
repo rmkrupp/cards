@@ -20,8 +20,6 @@
 #ifndef COMMAND_KEYWORD_H
 #define COMMAND_KEYWORD_H
 
-#include "attributes.h"
-
 #include <stddef.h>
 
 enum keyword {
