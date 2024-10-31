@@ -20,8 +20,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "attributes.h"
-
 /* the state of a server */
 struct server {
     struct config * config; /* the configuration, set on creation */
@@ -33,19 +31,20 @@ struct server {
  *
  * this will also create a networker inside this server
  */
-struct server * NONNULL(1) server_create(struct config * config);
+[[nodiscard]] struct server * server_create(
+        struct config * config) [[gnu::nonnull(1)]];
 
 /* destroy this server and its networker
  *
  * does not free the config, since that was passed in and might be reused
  */
-void NONNULL(1) server_destroy(struct server * server);
+void server_destroy(struct server * server) [[gnu::nonnull(1)]];
 
 /* enter the server's event loop
  *
  * return result is the same as networker_run()
  * (because right now all this does is networker_run(server->networker))
  */
-int NONNULL(1) server_run(struct server * server);
+int server_run(struct server * server) [[gnu::nonnull(1)]];
 
 #endif /* SERVER_H */

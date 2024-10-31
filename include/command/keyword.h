@@ -35,9 +35,11 @@ struct keyword_lookup_result {
     enum keyword keyword;
 };
 
-const char * ATTR_CONST keyword_string(int offset);
+/* offset->string function because we are using %pic */
+const char * __attribute__ ((const))keyword_string(int offset);
 
 /* this is the functions from gperf */
-const struct keyword_lookup_result * keyword_lookup(const char * str, size_t len);
+const struct keyword_lookup_result * __attribute__ ((const)) keyword_lookup(
+        const char * str, size_t len) ;
 
 #endif /* COMMAND_KEYWORD_H */

@@ -298,7 +298,8 @@ w.rule(
         name = 'cc',
         deps = 'gcc',
         depfile = '$out.d',
-        command = '$cc $includes -MMD -MF $out.d $defines $cflags $in -c -o $out'
+        command = '$cc -std=gnu23 $includes -MMD -MF $out.d $defines ' +
+                  '$cflags $in -c -o $out'
     )
 w.newline()
 
@@ -306,7 +307,8 @@ w.rule(
         name = 'bin',
         deps = 'gcc',
         depfile = '$out.d',
-        command = '$cc $includes -MMD -MF $out.d $defines $cflags $in -o $out $ldflags $libs'
+        command = '$cc -std=gnu23 $includes -MMD -MF $out.d $defines ' +
+                  '$cflags $in -o $out $ldflags $libs'
     )
 w.newline()
 
@@ -320,7 +322,6 @@ w.newline()
 # SOURCES
 #
 
-w.build('$builddir/config.o', 'cc', 'src/config.c')
 w.build('$builddir/config_loader.o', 'cc', 'src/config_loader.c')
 w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
@@ -395,7 +396,6 @@ bin_target(
             '$builddir/command/keyword.o',
             '$builddir/command/lex.o',
             '$builddir/command/parse.o',
-            '$builddir/config.o',
             '$builddir/config_loader.o',
             '$builddir/main.o',
             '$builddir/networker.o',

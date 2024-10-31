@@ -100,7 +100,7 @@ static const char * charmsg(char c)
 static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
 /* create a particle with the given type and NULL value */
-struct particle * particle_create(enum particle_type type)
+[[nodiscard]] struct particle * particle_create(enum particle_type type)
 {
     struct particle * particle = malloc(sizeof(*particle));
     *particle = (struct particle) {
@@ -116,7 +116,7 @@ struct particle * particle_create(enum particle_type type)
  * TODO: this does duplicate work between strndup and strnlen finding
  *       the length
  */
-struct particle * particle_create_value(
+[[nodiscard]] struct particle * particle_create_value(
         enum particle_type type, const char * value, size_t n)
 {
     struct particle * particle = malloc(sizeof(*particle));
@@ -129,7 +129,7 @@ struct particle * particle_create_value(
 }
 
 /* destroy this particle */
-void particle_destroy(struct particle * particle)
+void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 {
     free(particle->value);
     free(particle);
@@ -140,7 +140,7 @@ void particle_destroy(struct particle * particle)
  * the caller is the owner of the refstring, and so must call
  * refstring_destroy() on it when finished
  */
-struct refstring * particle_string(struct particle * particle)
+[[nodiscard]] struct refstring * particle_string(struct particle * particle)
 {
     if (!particle) {
         return refstring_createf("NULL");
@@ -171,7 +171,7 @@ struct refstring * particle_string(struct particle * particle)
 }
 
 /* create a new buffer */
-struct particle_buffer * particle_buffer_create()
+[[nodiscard]] struct particle_buffer * particle_buffer_create()
 {
     struct particle_buffer * buffer = malloc(sizeof(*buffer));
     *buffer = (struct particle_buffer) { };
@@ -179,7 +179,8 @@ struct particle_buffer * particle_buffer_create()
 }
 
 /* destroy this buffer */
-void particle_buffer_destroy(struct particle_buffer * buffer)
+void particle_buffer_destroy(
+        struct particle_buffer * buffer) [[gnu::nonnull(1)]]
 {
     particle_buffer_free_all(buffer);
     free(buffer->particles);
@@ -187,7 +188,8 @@ void particle_buffer_destroy(struct particle_buffer * buffer)
 }
 
 /* free every particle in this buffer and set buffer->n_particles to zero */
-void particle_buffer_free_all(struct particle_buffer * buffer)
+void particle_buffer_free_all(
+        struct particle_buffer * buffer) [[gnu::nonnull(1)]]
 {
     for (size_t n = 0; n < buffer->n_particles; n++) {
         particle_destroy(buffer->particles[n]);
@@ -200,7 +202,8 @@ void particle_buffer_free_all(struct particle_buffer * buffer)
  * NOTE: the current implementation grows to exactly minimum, no matter
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
  */
-void particle_buffer_grow(struct particle_buffer * buffer, size_t amount)
+void particle_buffer_grow(
+        struct particle_buffer * buffer, size_t amount) [[gnu::nonnull(1)]]
 {
     buffer->particles = realloc(
             buffer->particles,
@@ -214,7 +217,8 @@ void particle_buffer_grow(struct particle_buffer * buffer, size_t amount)
  * NOTE: the current implementation grows to exactly minimum, no matter
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
  */
-void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
+void particle_buffer_at_least(
+        struct particle_buffer * buffer, size_t minimum) [[gnu::nonnull(1)]]
 {
     if (minimum > buffer->capacity) {
         particle_buffer_grow(buffer, minimum - buffer->capacity);
@@ -223,7 +227,9 @@ void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum)
 
 /* */
 void particle_buffer_add(
-        struct particle_buffer * buffer, struct particle * particle)
+        struct particle_buffer * buffer,
+        struct particle * particle
+    ) [[gnu::nonnull(1)]]
 {
     if (buffer->n_particles == buffer->capacity) {
         particle_buffer_grow(buffer, PARTICLE_BUFFER_GROW_INCREMENT);
@@ -350,7 +356,7 @@ void lex(
         const char * input,
         struct particle_buffer * buffer,
         struct lex_result * result_out
-    )
+    ) [[gnu::nonnull(1, 2, 3)]]
 {
     struct particle * particle;
     size_t n;

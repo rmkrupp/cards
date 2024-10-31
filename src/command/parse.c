@@ -27,23 +27,23 @@ struct parser {
     // nothing
 };
 
-struct parser * parser_create()
+[[nodiscard]] struct parser * parser_create()
 {
     struct parser * parser = malloc(sizeof(*parser));
     *parser = (struct parser) { };
     return parser;
 }
 
-void NONNULL(1) parser_destroy(struct parser * parser)
+void parser_destroy(struct parser * parser) [[gnu::nonnull(1)]]
 {
     free(parser);
 }
 
-void NONNULL(1) parser_parse(
+void parser_parse(
         struct parser * parser,
         struct particle_buffer * particles,
         struct parse_result * result
-    )
+    ) [[gnu::nonnull(1, 2, 3)]]
 {
     /* TODO */
     (void)parser;

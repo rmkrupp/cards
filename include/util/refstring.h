@@ -20,19 +20,17 @@
 #ifndef REFSTRING_H
 #define REFSTRING_H
 
-#include "attributes.h"
-
 #include <stddef.h>
 
 /* create a refstring with a copy of this string */
-struct refstring * refstring_create(const char * string);
+[[nodiscard]] struct refstring * refstring_create(const char * string);
 
 /* create a refstring from the result of this format string */
-struct refstring * FORMAT(printf, 1, 2) refstring_createf(
-        const char * string, ...);
+[[nodiscard]] struct refstring * refstring_createf(
+        const char * string, ...) [[gnu::format(printf, 1, 2)]];
 
 /* create a refstring using at most n bytes of this string */
-struct refstring * refstring_create_from_stringn(
+[[nodiscard]] struct refstring * refstring_create_from_stringn(
         const char * string, size_t n);
 
 /* destroy this refstring
@@ -41,14 +39,16 @@ struct refstring * refstring_create_from_stringn(
  * calls to refstring dup) so this will only free the underlying memory if
  * it was the last reference
  */
-void NONNULL(1) refstring_destroy(struct refstring * refstring);
+void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]];
 
 /* get the string out of this refstring */
-const char * NONNULL(1) refstring_string(struct refstring * refstring);
+const char * refstring_string(
+        struct refstring * refstring) [[gnu::nonnull(1)]];
 
 /* "duplicate" a refstring (this returns its argument, but with its reference
  * count increased by one
  */
-struct refstring * NONNULL(1) refstring_dup(struct refstring * refstring);
+[[nodiscard]] struct refstring * refstring_dup(
+        struct refstring * refstring) [[gnu::nonnull(1)]];
 
 #endif /* REFSTRING_H */

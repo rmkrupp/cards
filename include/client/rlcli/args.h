@@ -20,7 +20,6 @@
 #ifndef CLIENT_RLCLI_ARGS
 #define CLIENT_RLCLI_ARGS
 
-#include "attributes.h"
 #include <stddef.h>
 
 /* the result of parse_args */
@@ -39,7 +38,7 @@ struct arguments
  * which is controlled by the configure.py --use-argp flag, and the --build
  * option (argp is off automatically for w64 builds.)
  */
-int NONNULL(1) parse_args(
-        struct arguments * args, int argc, char ** argv);
+int parse_args(
+        struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]];
 
 #endif /* CLIENT_RLCLI_ARGS */

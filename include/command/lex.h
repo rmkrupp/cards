@@ -47,24 +47,27 @@ struct particle {
 };
 
 /* return a new particle of type */
-struct particle * particle_create(enum particle_type type);
+[[nodiscard]] struct particle * particle_create(enum particle_type type);
 
 /* create a particle with the given type and and value
  *
  * makes a duplicate of the value, consuming at most n bytes from the argument
  */
-struct particle * particle_create_value(
+[[nodiscard]] struct particle * particle_create_value(
         enum particle_type type, const char * value, size_t n);
 
 /* destroy this particle */
-void particle_destroy(struct particle * particle);
+void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]];
 
 /* return a refstring describing the particle
  *
  * the caller is the owner of the refstring, and so must call
  * refstring_destroy() on it when finished
+ *
+ * note: this CAN accept a NULL particle
+ * TODO: do we need this?
  */
-struct refstring * particle_string(struct particle * particle);
+[[nodiscard]] struct refstring * particle_string(struct particle * particle);
 
 /* the type of lex results
  *
@@ -96,27 +99,38 @@ struct particle_buffer {
 };
 
 /* create a new buffer */
-struct particle_buffer * particle_buffer_create();
+[[nodiscard]] struct particle_buffer * particle_buffer_create();
 
 /* destroy this buffer */
-void particle_buffer_destroy(struct particle_buffer * buffer);
+void particle_buffer_destroy(
+        struct particle_buffer * buffer) [[gnu::nonnull(1)]];
 
 /* free every particle in this buffer and set buffer->n_particles to zero */
-void particle_buffer_free_all(struct particle_buffer * buffer);
+void particle_buffer_free_all(
+        struct particle_buffer * buffer) [[gnu::nonnull(1)]];
 
 /* grow buffer->capacity by amount */
-void particle_buffer_grow(struct particle_buffer * buffer, size_t amount);
+void particle_buffer_grow(
+        struct particle_buffer * buffer, size_t amount) [[gnu::nonnull(1)]];
 
 /* if buffer->capacity < minimum, grow to (at least) minimum
  *
  * NOTE: the current implementation grows to exactly minimum, no matter
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
  */
-void particle_buffer_at_least(struct particle_buffer * buffer, size_t minimum);
+void particle_buffer_at_least(
+        struct particle_buffer * buffer, size_t minimum) [[gnu::nonnull(1)]];
 
-/* add this particle to this buffer, growing the buffer if necessary */
+/* add this particle to this buffer, growing the buffer if necessary
+ *
+ * NOTE: again, allow a null particle here
+ * TODO: should we? (unlike particle_string() there's no code change between
+ *       allowing and not allowing for this function)
+ */
 void particle_buffer_add(
-        struct particle_buffer * buffer, struct particle * particle);
+        struct particle_buffer * buffer,
+        struct particle * particle
+    ) [[gnu::nonnull(1)]];
 
 /* turn input string into particles
  *
@@ -133,7 +147,7 @@ void lex(
         const char * input,
         struct particle_buffer * buffer,
         struct lex_result * result_out
-    );
+    ) [[gnu::nonnull(1, 2, 3)]];
 
 #endif /* COMMAND_LEX_H */
 

@@ -22,7 +22,7 @@
 
 #include <stddef.h>
 
-char * util_strdup(const char * s);
+[[nodiscard]] char * util_strdup(const char * s);
 char * util_strndup(const char * s, size_t n);
 
 #endif /* UTIL_STRDUP_H */

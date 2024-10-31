@@ -20,7 +20,6 @@
 #ifndef COMMAND_PARSE_H
 #define COMMAND_PARSE_H
 
-#include "attributes.h"
 #include "lex.h"
 
 enum command_type {
@@ -37,8 +36,8 @@ struct command {
     size_t n_subcommands;
 };
 
-struct parser * parser_create();
-void NONNULL(1) parser_destroy(struct parser * parser);
+[[nodiscard]] struct parser * parser_create();
+void parser_destroy(struct parser * parser) [[gnu::nonnull(1)]];
 
 enum parse_result_type {
     PARSE_OKAY,
@@ -49,10 +48,10 @@ struct parse_result {
     enum parse_result_type type;
 };
 
-void NONNULL(1) parser_parse(
+void parser_parse(
         struct parser * parser,
         struct particle_buffer * particles,
         struct parse_result * result
-    );
+    ) [[gnu::nonnull(1, 2, 3)]];
 
 #endif /* COMMAND_PARSE_H */

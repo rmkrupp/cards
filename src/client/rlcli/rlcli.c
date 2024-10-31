@@ -24,6 +24,10 @@
 #include "client/rlcli/args.h"
 
 #include <pthread.h>
+
+/* these defines are needed to make rl_message work right */
+#define USE_VARARGS
+#define PREFER_STDARG
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -36,6 +40,7 @@
 #if defined(__MINGW32__)
 #include <windef.h>
 #endif /* __MINGW32__ */
+
 struct bufferevent * global_bev = NULL;
 
 static int hook()

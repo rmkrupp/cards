@@ -36,7 +36,8 @@ EXIT, KEYWORD_EXIT
 SHUTDOWN, KEYWORD_SHUTDOWN
 %%
 /* offset->string function because we are using %pic */
-const char * ATTR_CONST keyword_string(int offset)
+const char * __attribute__ ((const)) keyword_string(int offset)
 {
     return &keyword_pool[offset];
 }
+

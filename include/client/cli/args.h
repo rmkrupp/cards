@@ -20,7 +20,6 @@
 #ifndef CLIENT_CLI_ARGS
 #define CLIENT_CLI_ARGS
 
-#include "attributes.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -41,7 +40,7 @@ struct arguments
  * which is controlled by the configure.py --disable-argp flag and --build
  * option (argp is off automatically for w64 builds.)
  */
-int NONNULL(1) parse_args(
-        struct arguments * args, int argc, char ** argv);
+int parse_args(
+        struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]];
 
 #endif /* CLIENT_CLI_ARGS */

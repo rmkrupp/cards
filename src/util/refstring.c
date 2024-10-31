@@ -32,7 +32,7 @@ struct refstring {
     long references;
 };
 
-struct refstring * refstring_create(const char * string)
+[[nodiscard]] struct refstring * refstring_create(const char * string)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
@@ -42,8 +42,8 @@ struct refstring * refstring_create(const char * string)
     return refstring;
 }
 
-struct refstring * FORMAT(printf, 1, 2) refstring_createf(
-        const char * format, ...)
+[[nodiscard]] struct refstring * refstring_createf(
+        const char * format, ...) [[gnu::format(printf, 1, 2)]]
 {
 
     va_list args1, args2;
@@ -65,7 +65,7 @@ struct refstring * FORMAT(printf, 1, 2) refstring_createf(
     return refstring;
 }
 
-struct refstring * refstring_create_from_stringn(
+[[nodiscard]] struct refstring * refstring_create_from_stringn(
         const char * string, size_t n)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
@@ -76,7 +76,7 @@ struct refstring * refstring_create_from_stringn(
     return refstring;
 }
 
-void NONNULL(1) refstring_destroy(struct refstring * refstring)
+void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
     refstring->references--;
@@ -86,16 +86,17 @@ void NONNULL(1) refstring_destroy(struct refstring * refstring)
     }
 }
 
-const char * NONNULL(1) refstring_string(struct refstring * refstring)
+const char * refstring_string(
+        struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
     return refstring->string;
 }
 
-struct refstring * NONNULL(1) refstring_dup(struct refstring * refstring)
+[[nodiscard]] struct refstring * refstring_dup(
+        struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
     refstring->references++;
     return refstring;
 }
-

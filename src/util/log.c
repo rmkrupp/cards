@@ -44,7 +44,8 @@ struct logger {
  * so it must not rely on that logger instance for logging
  * (which is fine, it doesn't log anything.)
  */
-struct logger * NONNULL(1) logger_create(struct config * config)
+[[nodiscard]] struct logger * logger_create(
+        struct config * config) [[gnu::nonnull(1)]]
 {
     /* TODO */
     (void)config;
@@ -55,18 +56,18 @@ struct logger * NONNULL(1) logger_create(struct config * config)
 }
 
 /* destroy this logger */
-void NONNULL(1) logger_destroy(struct logger * logger)
+void logger_destroy(struct logger * logger) [[gnu::nonnull(1)]]
 {
     free(logger);
 }
 
 /* log using this logger at this level with this format and args */
-void NONNULL(1, 3) FORMAT(printf, 3, 4) logger_logf(
+void logger_logf(
         struct logger * logger,
         enum log_level level,
         const char * format,
         ...
-    )
+    ) [[gnu::format(printf, 3, 4), gnu::nonnull(1, 3)]]
 {
     /* TODO: use the logger */
     (void)logger;

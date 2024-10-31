@@ -82,8 +82,8 @@ static error_t parse_opt(int key, char * argv, struct argp_state * state)
     return 0;
 }
 
-int NONNULL(1) parse_args(
-        struct arguments * args, int argc, char ** argv)
+int parse_args(
+        struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]]
 {
     struct argp argp = (struct argp) {
         .options = options,

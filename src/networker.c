@@ -67,10 +67,10 @@ struct networker_connection_iter {
 };
 
 /* create a connection with the given networker and bufferevent */
-static struct connection * NONNULL(1, 2) connection_create(
+[[nodiscard]] static struct connection * connection_create(
         struct networker * networker,
         struct bufferevent * bev
-    )
+    ) [[gnu::nonnull(1, 2)]]
 {
     struct connection * connection = malloc(sizeof(*connection));
     *connection = (struct connection) {
@@ -95,7 +95,8 @@ static struct connection * NONNULL(1, 2) connection_create(
 /* destroy a connection, remove it from its networker, and remove its player
  * from the game
  */
-static void NONNULL(1) connection_destroy(struct connection * connection)
+static void connection_destroy(
+        struct connection * connection) [[gnu::nonnull(1)]]
 {
     for (size_t n = 0; n < connection->networker->n_connections; n++) {
         if (connection->networker->connections[n] == connection) {
@@ -154,7 +155,8 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 }
 
 /* dummy event callback */
-static void example_event_cb(struct bufferevent * bev, short events, void * ptr)
+static void example_event_cb(
+        struct bufferevent * bev, short events, void * ptr)
 {
     (void)bev;
     struct connection * connection = ptr;
@@ -210,9 +212,7 @@ static void networker_listener_accept_cb(
 
 /* listener error callback exits the eventloop on listener error */
 static void networker_listener_error_cb(
-        struct evconnlistener * listener,
-        void * ptr
-    )
+        struct evconnlistener * listener, void * ptr)
 {
     struct networker * networker = ptr;
     networker->errors++;
@@ -229,7 +229,8 @@ static void networker_listener_error_cb(
 }
 
 /* reutrn a new networker based on config and holding game */
-struct networker * NONNULL(1) networker_create(struct config * config)
+[[nodiscard]] struct networker * networker_create(
+        struct config * config) [[gnu::nonnull(1)]]
 {
     int port = (int)config->port;
 
@@ -293,7 +294,7 @@ struct networker * NONNULL(1) networker_create(struct config * config)
 }
 
 /* free the resources (connections, events, etc.) of this networker */
-void NONNULL(1) networker_destroy(struct networker * networker)
+void networker_destroy(struct networker * networker) [[gnu::nonnull(1)]]
 {
     evconnlistener_free(networker->listener);
     for (size_t n = 0; n < networker->n_connections; n++) {
@@ -307,15 +308,15 @@ void NONNULL(1) networker_destroy(struct networker * networker)
 }
 
 /* run the eventloop of this networker */
-int NONNULL(1) networker_run(struct networker * networker)
+int networker_run(struct networker * networker) [[gnu::nonnull(1)]]
 {
     event_base_dispatch(networker->base);
     return networker->errors;
 }
 
 /* returns a new iterator over the networker's connections */
-struct networker_connection_iter * NONNULL(1) networker_connection_iter_create(
-        struct networker * networker)
+[[nodiscard]] struct networker_connection_iter * networker_connection_iter_create(
+        struct networker * networker) [[gnu::nonnull(1)]]
 {
     struct networker_connection_iter * iter = malloc(sizeof(*iter));
     *iter = (struct networker_connection_iter) {
@@ -326,16 +327,15 @@ struct networker_connection_iter * NONNULL(1) networker_connection_iter_create(
 }
 
 /* destroys this iterator */
-void NONNULL(1) networker_connection_iter_destroy(
-        struct networker_connection_iter * iter)
+void networker_connection_iter_destroy(
+        struct networker_connection_iter * iter) [[gnu::nonnull(1)]]
 {
     free(iter);
 }
 
 /* returns the next connection and advances the iterator */
-struct connection * NONNULL(1) networker_connection_iter_iterate(
-        struct networker_connection_iter * iter
-    )
+struct connection * networker_connection_iter_iterate(
+        struct networker_connection_iter * iter) [[gnu::nonnull(1)]]
 {
     if (iter->index >= iter->networker->n_connections) {
         return NULL;

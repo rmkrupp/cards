@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -25,6 +26,21 @@
 
 #include "lua.h"
 #include "config.h"
+
+/* VERSION is defined as a string by the build scripts and provided to any
+ * configuration scripts as config.version
+ */
+#ifndef VERSION
+#error no VERSION defined
+#endif /* VERSION */
+
+#ifndef CONFIG_DUMMY_DEFAULT
+#define CONFIG_DUMMY_DEFAULT false
+#endif /* CONFIG_DUMMY_DEFAULT */
+
+#ifndef CONFIG_PORT_DEFAULT
+#define CONFIG_PORT_DEFAULT 10101
+#endif /* CONFIG_PORT_DEFAULT */
 
 /* the type of config option */
 enum config_option_type {
@@ -63,7 +79,7 @@ struct config_loader {
 static int default_config_callback(struct config_option * option)
 {
     if (!option->context) {
-        fprintf(stderr, "[config] warning: option %s with default callback has NULL target\n", option->name);
+        fprintf(stderr, "[config] warning: option %s with default callback has null target\n", option->name);
         return 0;
     }
 
@@ -83,7 +99,7 @@ static int default_config_callback(struct config_option * option)
 }
 
 /* returns a new config_loader (i.e. with no options) */
-static struct config_loader * config_loader_create()
+[[nodiscard]] static struct config_loader * config_loader_create()
 {
     struct config_loader * loader = malloc(sizeof(*loader));
     *loader = (struct config_loader) { };
@@ -91,7 +107,8 @@ static struct config_loader * config_loader_create()
 }
 
 /* frees the resources of a config loader */
-static void config_loader_destroy(struct config_loader * loader)
+static void config_loader_destroy(
+        struct config_loader * loader) [[gnu::nonnull(1)]]
 {
     for (size_t n = 0; n < loader->n_options; n++) {
         free(loader->options[n].name);
@@ -114,7 +131,7 @@ static void config_loader_add_option_boolean(
         bool default_value,
         int (*callback)(struct config_option *),
         void * context
-    )
+    ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
@@ -146,7 +163,7 @@ static void config_loader_add_option_integer(
         long default_value,
         int (*callback)(struct config_option *),
         void * context
-    )
+    ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
@@ -178,7 +195,7 @@ static void config_loader_add_option_string(
         const char * default_value,
         int (*callback)(struct config_option *),
         void * context
-    )
+    ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
@@ -210,7 +227,8 @@ static void config_loader_add_option_string(
  * form of the config.<whatever> value doesn't match the value in the Lua
  * state (e.g. because it's 1.1 and getting truncated to just 1)
  */
-static int config_loader_update(struct config_loader * loader, lua_State * L)
+static int config_loader_update(
+        struct config_loader * loader, lua_State * L) [[gnu::nonnull(1, 2)]]
 {
     lua_getfield(L, LUA_GLOBALSINDEX, "config");
 
@@ -244,7 +262,10 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
         switch (option->type) {
             case CONFIG_BOOLEAN:
                 if (lua_type(L, -1) != LUA_TBOOLEAN) {
-                    fprintf(stderr, "[config] config.%s must be of type boolean, not %s\n", k, lua_typename(L, lua_type(L, -1)));
+                    fprintf(stderr,
+                            "[config] config.%s must be of type boolean, not %s\n",
+                            k, lua_typename(L, lua_type(L, -1))
+                        );
                     error++;
                     lua_pop(L, 1);
                     continue;
@@ -255,7 +276,10 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
 
             case CONFIG_INTEGER:
                 if (lua_type(L, -1) != LUA_TNUMBER) {
-                    fprintf(stderr, "[config] config.%s must be of type integer, not %s\n", k, lua_typename(L, lua_type(L, -1)));
+                    fprintf(stderr,
+                            "[config] config.%s must be of type integer, not %s\n",
+                            k, lua_typename(L, lua_type(L, -1))
+                        );
                     error++;
                     lua_pop(L, 1);
                     continue;
@@ -264,7 +288,10 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
                 lua_Number num = lua_tonumber(L, -1);
 
                 if (num != (lua_Number)(long)num) {
-                    fprintf(stderr, "[config] warning: config.%s will truncate from %g to %ld\n", k, num, (long)num);
+                    fprintf(stderr,
+                            "[config] warning: config.%s will truncate from %g to %ld\n",
+                            k, num, (long)num
+                        );
                 }
 
                 option->value_integer = num;
@@ -272,7 +299,10 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
 
             case CONFIG_STRING:
                 if (lua_type(L, -1) != LUA_TSTRING) {
-                    fprintf(stderr, "[config] config.%s must be of type string, not %s\n", k, lua_typename(L, lua_type(L, -1)));
+                    fprintf(stderr,
+                            "[config] config.%s must be of type string, not %s\n",
+                            k, lua_typename(L, lua_type(L, -1))
+                        );
                     error++;
                     lua_pop(L, 1);
                     continue;
@@ -296,7 +326,8 @@ static int config_loader_update(struct config_loader * loader, lua_State * L)
 }
 
 /* populate a config from a list of Lua scripts */
-int NONNULL(1) config_load(struct config * config, int nfiles, char ** files)
+int config_load(
+        struct config * config, int nfiles, char ** files) [[gnu::nonnull(1)]]
 {
     int err;
 
@@ -397,4 +428,11 @@ int NONNULL(1) config_load(struct config * config, int nfiles, char ** files)
     config_loader_destroy(loader);
 
     return 0;
+}
+
+/* free resources used by this config */
+void config_free(struct config * config) [[gnu::nonnull(1)]]
+{
+    // do nothing
+    (void)config;
 }

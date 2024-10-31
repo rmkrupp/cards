@@ -39,8 +39,8 @@ static struct option options[] = {
     { }
 };
 
-int NONNULL(1) parse_args(
-        struct arguments * args, int argc, char ** argv)
+int parse_args(
+        struct arguments * args, int argc, char ** argv) [[gnu:nonnull(1)]]
 {
     while (1) {
         int index = 0;

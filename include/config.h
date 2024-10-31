@@ -20,26 +20,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "attributes.h"
-
 #include <stdbool.h>
-
-/* VERSION is defined as a string by the build scripts and provided to any
- * configuration scripts as config.version
- */
-#ifndef VERSION
-#error no VERSION defined
-#endif /* VERSION */
-
-#ifndef CONFIG_DUMMY_DEFAULT
-#define CONFIG_DUMMY_DEFAULT false
-#endif /* CONFIG_DUMMY_DEFAULT */
-
-#ifndef CONFIG_PORT_DEFAULT
-#define CONFIG_PORT_DEFAULT 10101
-#endif /* CONFIG_PORT_DEFAULT */
-
-/* holds values populated by a config_loader */
+/* holds values populated by config_load */
 struct config {
     struct logger * logger;
     long port;
@@ -47,9 +29,10 @@ struct config {
 };
 
 /* free resources used by this config */
-void config_free(struct config * config);
+void config_free(struct config * config) [[gnu::nonnull(1)]];
 
 /* populate a config from a list of Lua scripts */
-int NONNULL(1) config_load(struct config * config, int nfiles, char ** files);
+int config_load(
+        struct config * config, int nfiles, char ** files) [[gnu::nonnull(1)]];
 
 #endif /* CONFIG_H */

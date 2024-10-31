@@ -25,7 +25,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define LINE_MAX 1024 * 1024 * 1024
+static constexpr size_t LINE_MAX = 1024 * 1024 * 1024;
 
 static void lex_test()
 {
@@ -180,5 +180,4 @@ int main(int argc, char ** argv)
             return 1;
     }
 }
-
 

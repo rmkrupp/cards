@@ -20,32 +20,31 @@
 #ifndef NETWORKER_H
 #define NETWORKER_H
 
-#include "attributes.h"
-
 #include "config.h"
 
 /* returns a new networker based on config and holding game */
-struct networker * NONNULL(1) networker_create(
-        struct config * config);
+[[nodiscard]] struct networker * networker_create(
+        struct config * config) [[gnu::nonnull(1)]];
 
 /* destroy this networker */
-void NONNULL(1) networker_destroy(struct networker * networker);
+void networker_destroy(struct networker * networker) [[gnu::nonnull(1)]];
 
 /* begin this networker's event loop
  * returns 0 if exited without error, number of errors otherwise
  */
-int NONNULL(1) networker_run(struct networker * networker);
+int networker_run(struct networker * networker) [[gnu::nonnull(1)]];
 
 /* returns a new iterator over the networker's connections */
-struct networker_connection_iter * NONNULL(1) networker_connection_iter_create(
-        struct networker * networker);
+[[nodiscard]] struct networker_connection_iter *
+networker_connection_iter_create(
+        struct networker * networker) [[gnu::nonnull(1)]];
 
 /* destroys this iterator */
-void NONNULL(1) networker_connection_iter_destroy(
-        struct networker_connection_iter * iter);
+void networker_connection_iter_destroy(
+        struct networker_connection_iter * iter) [[gnu::nonnull(1)]];
 
 /* returns the next connection and advances the iterator */
-struct connection * NONNULL(1) networker_connection_iter_iterate(
-        struct networker_connection_iter * iter);
+struct connection * networker_connection_iter_iterate(
+        struct networker_connection_iter * iter) [[gnu::nonnull(1)]];
 
 #endif /* NETWORKER_H */

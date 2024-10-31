@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char * util_strdup(const char * s)
+[[nodiscard]] char * util_strdup(const char * s)
 {
 #if defined(__linux__)
     return strdup(s);
@@ -33,7 +33,7 @@ char * util_strdup(const char * s)
 #endif
 }
 
-char * util_strndup(const char * s, size_t n)
+[[nodiscard]] char * util_strndup(const char * s, size_t n)
 {
 #if defined(__linux__)
     return strndup(s, n);
