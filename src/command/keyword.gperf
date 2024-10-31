@@ -20,6 +20,8 @@
  */
 #include "command/keyword.h"
 %}
+
+%compare-strncmp
 %readonly-tables
 %enum
 %define slot-name offset
@@ -29,12 +31,15 @@
 %omit-struct-type
 %struct-type
 %pic
+
 struct keyword_lookup_result;
+
 %%
 SAY, KEYWORD_SAY
 EXIT, KEYWORD_EXIT
 SHUTDOWN, KEYWORD_SHUTDOWN
 %%
+
 /* offset->string function because we are using %pic */
 const char * __attribute__ ((const)) keyword_string(int offset)
 {

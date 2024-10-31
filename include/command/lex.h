@@ -22,6 +22,7 @@
 
 #include <stddef.h>
 
+#include "command/keyword.h"
 #include "util/refstring.h"
 
 /* the different types of particles */
@@ -29,11 +30,13 @@ enum particle_type {
     PARTICLE_END, /* always the last particle in a complete command
                    * in general, corresponds to a newline
                    */
-    PARTICLE_KEYWORD, /* a keyword, has a value of the keyword */
-    PARTICLE_NUMBER, /* a (integer) number, has a value of the string form of
+    PARTICLE_KEYWORD, /* a keyword, has .value of string of the keyword,
+                       * and a .keyword based on a lookup of that string
+                       */
+    PARTICLE_NUMBER, /* an (integer) number, has a .value of the string form of
                       * itself
                       */
-    PARTICLE_NAME, /* a name, the value is the string form without the ""s */
+    PARTICLE_NAME, /* a name, the .value is the string form without the ""s */
     PARTICLE_BEGIN_NEST, /* the open paren */
     PARTICLE_END_NEST /* the close paren */
 };
@@ -44,6 +47,7 @@ struct particle {
     char * value;
     /* TODO: test to make sure this is set right for all particles */
     size_t length;
+    enum keyword keyword;
 };
 
 /* return a new particle of type */
@@ -141,10 +145,13 @@ void particle_buffer_add(
  *
  * otherwise, the caller must track its own offset into the buffer
  *
+ * this modifies input. specifically, it converts all [a-z] into [A-Z]
+ * when they are within a KEYWORD
+ *
  * the result status is written to result_out
  */
 void lex(
-        const char * input,
+        char * input,
         struct particle_buffer * buffer,
         struct lex_result * result_out
     ) [[gnu::nonnull(1, 2, 3)]];

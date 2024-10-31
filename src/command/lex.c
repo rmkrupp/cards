@@ -131,7 +131,10 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 /* destroy this particle */
 void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 {
-    free(particle->value);
+    if (particle->type != PARTICLE_KEYWORD ||
+            particle->keyword == KEYWORD_NO_MATCH) {
+        free(particle->value);
+    }
     free(particle);
 }
 
@@ -151,7 +154,11 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
             return refstring_createf("END");
 
         case PARTICLE_KEYWORD:
-            return refstring_createf("KEYWORD<%s>", particle->value);
+            return refstring_createf(
+                    "KEYWORD%s<%s>",
+                    particle->keyword == KEYWORD_NO_MATCH ? "*" : "",
+                    particle->value
+                );
 
         case PARTICLE_NUMBER:
             return refstring_createf("NUMBER<%s>", particle->value);
@@ -309,22 +316,35 @@ static struct particle * consume_number(const char * input, size_t * n)
 /* subfunction of lex()
  * TODO: see consume_name
  */
-static struct particle * consume_keyword(const char * input, size_t * n)
+static struct particle * consume_keyword(char * input, size_t * n)
 {
-    for (size_t i = *n + 1; ; i++) {
+    size_t start = *n;
+    for (size_t i = start + 1; ; i++) {
         if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
-            particle->value = util_strndup(&input[*n], i - *n);
-            particle->length = i - *n;
-            for (size_t j = 0; j < i - *n; j++) {
-                if (particle->value[j] >= 'a' && particle->value[j] <= 'z') {
-                    particle->value[j] = particle->value[j] - 'a' + 'A';
+            size_t length = i - start;
+
+            const struct keyword_lookup_result * lookup_result =
+                keyword_lookup(&input[start], i - start);
+
+            if (lookup_result) {
+                particle->keyword = lookup_result->keyword;
+                particle->value = (char *)keyword_string(lookup_result->offset);
+                particle->length = length;
+            } else {
+                particle->keyword = KEYWORD_NO_MATCH;
+                particle->value = malloc(length + 1);
+                particle->length = length;
+                for (size_t j = 0; j < length; j++) {
+                    particle->value[j] = input[start + j];
                 }
+                particle->value[length] = '\0';
             }
             *n = i - 1;
             return particle;
         }
         if (input[i] >= 'a' && input[i] <= 'z') {
+            input[i] = input[i] - 'a' + 'A';
             // okay
         } else if (input[i] >= 'A' && input[i] <= 'Z') {
             // okay
@@ -353,7 +373,7 @@ static struct particle * consume_keyword(const char * input, size_t * n)
  * the result status is written to result_out
  */
 void lex(
-        const char * input,
+        char * input,
         struct particle_buffer * buffer,
         struct lex_result * result_out
     ) [[gnu::nonnull(1, 2, 3)]]
@@ -411,6 +431,8 @@ void lex(
                 break;
 
             case 'a' ... 'z':
+                input[n] = input[n] - 'a' + 'A';
+                [[fallthrough]];
             case 'A' ... 'Z':
             case '+':
             case '-':

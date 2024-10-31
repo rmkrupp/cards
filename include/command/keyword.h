@@ -23,6 +23,8 @@
 #include <stddef.h>
 
 enum keyword {
+    KEYWORD_NO_MATCH,
+
     KEYWORD_SAY,
     KEYWORD_EXIT,
     KEYWORD_SHUTDOWN

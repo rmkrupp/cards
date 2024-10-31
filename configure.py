@@ -426,6 +426,7 @@ bin_target(
         name = 'test/lex_test',
         inputs = [
             '$builddir/command/lex.o',
+            '$builddir/command/keyword.o',
             '$builddir/test/lex_test.o',
             '$builddir/util/refstring.o',
             '$builddir/util/strdup.o'
