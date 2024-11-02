@@ -21,6 +21,7 @@
 import argparse
 import os
 import sys
+import subprocess
 from datetime import datetime
 import misc.ninja_syntax as ninja
 
@@ -66,6 +67,12 @@ parser.add_argument('--force-version', metavar='STRING',
                     help='override the version string')
 parser.add_argument('--add-version-suffix', metavar='SUFFIX',
                     help='append the version string')
+
+hash_opts = parser.add_argument_group('hash library options')
+hash_opts.add_argument('--enable-hash-statistics', action='store_true',
+                    help='compile with -DHASH_STATISTICS')
+hash_opts.add_argument('--disable-hash-warnings', action='store_true',
+                    help='compile with -DHASH_NO_WARNINGS')
 
 args = parser.parse_args()
 
@@ -152,7 +159,7 @@ if args.cc:
     if (args.build == 'w64' and args.cc != 'x86_64-w64-mingw32-gcc') or (args.build != 'w64' and args.cc != 'gcc'):
         w.comment('using this cc because we were generated with --cc=' + args.cc)
     w.variable(key = 'cc', value = args.cc)
-if args.build == 'w64':
+elif args.build == 'w64':
     w.variable(key = 'cc', value = 'x86_64-w64-mingw32-gcc')
 else:
     w.variable(key = 'cc', value = 'gcc')
@@ -209,7 +216,7 @@ else:
 # INCLUDES
 #
 
-w.variable(key = 'includes', value = '-Iinclude')
+w.variable(key = 'includes', value = '-Iinclude -Ilibs/hash/include')
 w.newline()
 
 #
@@ -257,6 +264,20 @@ else:
     w.comment('the verbose lexer is enabled')
     enable_verbose_lexer()
 w.newline()
+
+#
+# --enable-hash-statistics
+#
+if args.enable_hash_statistics:
+    w.comment('-DHASH_STATISTICS because we were generated with --enable-hash-statistics')
+    w.variable('defines', '$defines -DHASH_STATISTICS')
+
+#
+# --disable-hash-warnings
+#
+if args.disable_hash_warnings:
+    w.comment('-DHASH_NO_WARNINGS because we were generated with --disable-hash-warnings')
+    w.variable('defines', '$defines -DHASH_NO_WARNINGS')
 
 #
 # CFLAGS/LDFLAGS OVERRIDES
@@ -342,6 +363,7 @@ w.newline()
 
 w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
 w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
+w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
 
 w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
 w.build('$builddir/client/cli/args_getopt.o', 'cc', 'src/client/cli/args_getopt.c')
@@ -358,6 +380,8 @@ w.newline()
 w.build('$builddir/command/keyword.c', 'gperf', 'src/command/keyword.gperf')
 w.newline()
 
+w.build('$builddir/libs/hash/hash.o', 'cc', 'libs/hash/src/hash.c')
+w.newline()
 #
 # OUTPUTS
 #
@@ -478,6 +502,25 @@ bin_target(
         why_disabled = [
             'we were generated with --disable-tool=rlcli',
             'we were generated with --disable-readline'
+        ],
+        targets = [all_targets, tools_targets]
+    )
+
+bin_target(
+        name = 'test/hash_test',
+        inputs = [
+            '$builddir/test/hash_test.o',
+            '$builddir/libs/hash/hash.o',
+            '$builddir/util/strdup.o'
+        ],
+        variables = [
+            ('libs', '')
+        ],
+        is_disabled = [
+            'hash_test' in args.disable_tool
+        ],
+        why_disabled = [
+            'we were generated with --disable-tool=hash_test',
         ],
         targets = [all_targets, tools_targets]
     )

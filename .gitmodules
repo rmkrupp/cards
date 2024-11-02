@@ -1,0 +1,3 @@
+[submodule "libs/hash"]
+	path = libs/hash
+	url = https://github.com/rmkrupp/hash
