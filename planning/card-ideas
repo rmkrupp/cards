@@ -19,4 +19,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ---
 
-[card ideas go here]
+Character:
+
+-could have a character that requires a few copies of it to become a character
+
+Potential skills:
+
+-stockpile - has food to eat to get HP back up or remove status ailment
+-swift - resolves ties as attacker being winner
+-cause ailment
+-card draw(s)
+-allows to destroy a card after an attack
+-strength against X trait
+
+Equipment:
+
+Most equipment will add some sort of energy to the pool
+
+-boost DEF/ATT
+-cause poison/burn/dizzy on attack/defend
+-prevent poison/burn/dizzy
+-lower amount of energy needed
+
+Spell:
+
+Option to make any card stay with energy attached
+
+-poison/burn/dizzy opponent character
+-cards that add X amount of energy to the game
+-boost DEF/ATT
+-draw card from discard/grave
+-draw X amount of cards from deck
+-add another card draw at beginning of turn
+-add another card draw at final stage of turn
+-destroy opponent equipment/spell
+-antidote to remove status ailment
+-add more HP
+
+Trigger:
+
+-probably same as spells... not sure yet
+
