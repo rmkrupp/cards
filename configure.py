@@ -53,7 +53,7 @@ parser.add_argument('--lua-backend',
 parser.add_argument('--disable-tool', action='append', default=[],
                     choices=[
                         'gperf_test', 'lex_test', 'hash_test',
-                        'cli', 'rlcli'
+                        'sorted_set_test', 'cli', 'rlcli'
                     ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-server', action='store_true',
@@ -355,6 +355,7 @@ w.newline()
 w.build('$builddir/util/log.o', 'cc', 'src/util/log.c')
 w.build('$builddir/util/refstring.o', 'cc', 'src/util/refstring.c')
 w.build('$builddir/util/strdup.o', 'cc', 'src/util/strdup.c')
+w.build('$builddir/util/sorted_set.o', 'cc', 'src/util/sorted_set.c')
 w.newline()
 
 w.build('$builddir/command/keyword.o', 'cc', 'out/command/keyword.c',
@@ -367,6 +368,7 @@ w.newline()
 w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
 w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
 w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
+w.build('$builddir/test/sorted_set_test.o', 'cc', 'src/test/sorted_set_test.c')
 
 w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
 w.build('$builddir/client/cli/args_getopt.o', 'cc', 'src/client/cli/args_getopt.c')
@@ -523,6 +525,24 @@ bin_target(
         ],
         why_disabled = [
             'we were generated with --disable-tool=hash_test',
+        ],
+        targets = [all_targets, tools_targets]
+    )
+
+bin_target(
+        name = 'test/sorted_set_test',
+        inputs = [
+            '$builddir/test/sorted_set_test.o',
+            '$builddir/util/sorted_set.o'
+        ],
+        variables = [
+            ('libs', '')
+        ],
+        is_disabled = [
+            'sorted_set_test_test' in args.disable_tool
+        ],
+        why_disabled = [
+            'we were generated with --disable-tool=sorted_set_test',
         ],
         targets = [all_targets, tools_targets]
     )
