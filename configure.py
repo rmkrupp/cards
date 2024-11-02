@@ -51,7 +51,10 @@ parser.add_argument('--lua-backend',
                     choices=['lua51', 'luajit', 'none'], default='luajit',
                     help='set the lua backend (default: luajit)')
 parser.add_argument('--disable-tool', action='append', default=[],
-                    choices=['gperf_test', 'lex_test', 'cli', 'rlcli'],
+                    choices=[
+                        'gperf_test', 'lex_test', 'hash_test',
+                        'cli', 'rlcli'
+                    ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-server', action='store_true',
                     help='don\'t build the server')
@@ -510,8 +513,7 @@ bin_target(
         name = 'test/hash_test',
         inputs = [
             '$builddir/test/hash_test.o',
-            '$builddir/libs/hash/hash.o',
-            '$builddir/util/strdup.o'
+            '$builddir/libs/hash/hash.o'
         ],
         variables = [
             ('libs', '')

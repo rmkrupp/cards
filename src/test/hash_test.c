@@ -1,5 +1,5 @@
-/* File: src/test/test.c
- * Part of hash <github.com/rmkrupp/hash>
+/* File: src/test/hash_test.c
+ * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
  * Copyright (C) 2024 Rebecca Krupp <beka.krupp@gmail.com>
