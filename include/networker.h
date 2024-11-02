@@ -22,6 +22,9 @@
 
 #include "config.h"
 
+/* a networker */
+struct networker;
+
 /* returns a new networker based on config and holding game */
 [[nodiscard]] struct networker * networker_create(
         struct config * config) [[gnu::nonnull(1)]];
@@ -33,6 +36,12 @@ void networker_destroy(struct networker * networker) [[gnu::nonnull(1)]];
  * returns 0 if exited without error, number of errors otherwise
  */
 int networker_run(struct networker * networker) [[gnu::nonnull(1)]];
+
+/* a connection */
+struct connection;
+
+/* an iterator over a networker's connections */
+struct networker_connection_iter;
 
 /* returns a new iterator over the networker's connections */
 [[nodiscard]] struct networker_connection_iter *

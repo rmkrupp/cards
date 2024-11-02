@@ -22,6 +22,8 @@
 
 #include "lex.h"
 
+struct parser;
+
 enum command_type {
     COMMAND_SUBCOMMAND,
     COMMAND_SAY,
