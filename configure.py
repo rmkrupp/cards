@@ -322,7 +322,7 @@ w.rule(
         name = 'cc',
         deps = 'gcc',
         depfile = '$out.d',
-        command = '$cc -std=gnu23 $includes -MMD -MF $out.d $defines ' +
+        command = '$cc -std=gnu2x $includes -MMD -MF $out.d $defines ' +
                   '$cflags $in -c -o $out'
     )
 w.newline()
@@ -331,7 +331,7 @@ w.rule(
         name = 'bin',
         deps = 'gcc',
         depfile = '$out.d',
-        command = '$cc -std=gnu23 $includes -MMD -MF $out.d $defines ' +
+        command = '$cc -std=gnu2x $includes -MMD -MF $out.d $defines ' +
                   '$cflags $in -o $out $ldflags $libs'
     )
 w.newline()
@@ -539,7 +539,7 @@ bin_target(
             ('libs', '')
         ],
         is_disabled = [
-            'sorted_set_test_test' in args.disable_tool
+            'sorted_set_test' in args.disable_tool
         ],
         why_disabled = [
             'we were generated with --disable-tool=sorted_set_test',
