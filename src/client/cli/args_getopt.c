@@ -40,7 +40,7 @@ static struct option options[] = {
 };
 
 int parse_args(
-        struct arguments * args, int argc, char ** argv) [[gnu:nonnull(1)]]
+        struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]]
 {
     while (1) {
         int index = 0;
