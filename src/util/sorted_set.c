@@ -23,6 +23,16 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+ * TODO: do we need some sort of apply_and_destroy function or similar to allow
+ *       a zero-copy move of key from sorted_set to hash_inputs (would also
+ *       have to add a non-copying add to hash_inputs in the hash lib)?
+ *
+ *       or a dedicated sorted_set->hash function that does this? is there a
+ *       way to be smart about handingling hash_create failing? (is that even
+ *       needed? can that just be a slow path where we recreate the set?)
+ */
+
 /* a sorted set */
 struct sorted_set {
     struct node ** next;
