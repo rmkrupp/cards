@@ -129,7 +129,8 @@ static size_t random_level()
     size_t level = 1;
     for (;;) {
         uint32_t x = rand();
-        for (size_t i = 0; i < 31; i++) {
+        /* RAND_MAX is at least (1<<15)-1 */
+        for (size_t i = 0; i < 15; i++) {
             if (x & 1) {
                 return level;
             }
