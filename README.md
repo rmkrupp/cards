@@ -1,12 +1,12 @@
 # cards
 a card game engine for a card game
 
-Build with `./configure.py && ninja`
-
-## Dependencies
-
 This project has submodules. When you clone it run `git submodule update
 --init`.
+
+Build with `./configure.py --build=release && ninja`
+
+## Dependencies
 
 ### Build
 
