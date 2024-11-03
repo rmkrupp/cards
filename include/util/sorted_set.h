@@ -71,4 +71,9 @@ void sorted_set_apply(
         void * ptr
     );
 
+/* print to stdout a graphviz/dot form description of the internals of this
+ * set
+ */
+void sorted_set_dump(struct sorted_set * sorted_set);
+
 #endif /* UTIL_SORTED_SET_H */

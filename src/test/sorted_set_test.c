@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 void printer(const char * key, size_t length, void * data, void * ptr)
 {
@@ -33,17 +34,23 @@ void printer(const char * key, size_t length, void * data, void * ptr)
 
 int main(int argc, char ** argv)
 {
+    (void)argc;
+    (void)argv;
+
+    srand(time(NULL));
+
     struct sorted_set * sorted_set = sorted_set_create();
 
     char buffer[64];
     buffer[63] = '\0';
-    for (size_t i = 0; i < 100000; i++) {
+    for (size_t i = 0; i < 1000; i++) {
         for (size_t j = 0; j < 63; j++) {
             buffer[j] = rand() % 26 + 'a';
         }
         sorted_set_add_key(sorted_set, buffer, 63, NULL);
     }
 
+    /*
     printf("%s\n", sorted_set_add_key(sorted_set, "foo", 3, NULL) ? "dup" : "ok");
     printf("%s\n", sorted_set_add_key(sorted_set, "bar", 3, NULL) ? "dup" : "ok");
     printf("%s\n", sorted_set_add_key(sorted_set, "jimothy", 7, NULL) ? "dup" : "ok");
@@ -52,8 +59,11 @@ int main(int argc, char ** argv)
     for (int i = 1; i < argc; i++) {
         printf("%s\n", sorted_set_add_key(sorted_set, argv[i], strlen(argv[i]), NULL) ? "dup" : "okay");
     }
+    */
 
     //sorted_set_apply(sorted_set, &printer, NULL);
+
+    sorted_set_dump(sorted_set);
 
     sorted_set_destroy(sorted_set);
 }

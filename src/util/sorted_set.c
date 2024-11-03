@@ -19,93 +19,79 @@
  */
 #include "util/sorted_set.h"
 
+#include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <assert.h>
-#include <math.h>
 
 /* a sorted set */
 struct sorted_set {
-    struct node * root;
-    size_t depth_hint;
+    struct node ** next;
+    size_t layers;
 };
 
 /* a node in the BST */
 struct node {
-    struct node * left,
-                * right;
+    struct node ** next; /* this property must line up with sorted_set because
+                          * we cast sorted_set into node in the add function
+                          *
+                          * only next is used from this, though.
+                          */
+
     char * key;
     size_t length;
     void * data;
 };
 
-/* do a post-order traversal (e.g. for freeing), applying fn to each node
- *
- * preallocate a traversal stack of size depth_hint
- *
- * returns the largest stack required
- */
-static size_t sorted_set_postorder_traversal(
-        struct node * root,
-        size_t depth_hint,
-        void (*fn)(struct node * node)
-    ) [[gnu::nonnull(1, 3)]]
+#include <stdio.h>
+
+void sorted_set_dump(struct sorted_set * sorted_set)
 {
-    struct node ** stack = malloc(sizeof(*stack) * (depth_hint + 1));
-    size_t stack_capacity = depth_hint + 1;
-    size_t stack_size = 0;
-    size_t stack_max = 0;
-
-    struct node * last = NULL;
-    struct node * node = root;
-
-    while (node || stack_size) {
+    printf("digraph dump {\n");
+    for (size_t layer = 0; layer < sorted_set->layers; layer++) {
+        struct node * node = sorted_set->next[layer];
+        printf("\"root %lu\"\n", layer);
+        printf("\"tail %lu\"\n", layer);
         if (node) {
-            if (stack_size == stack_capacity) {
-                stack = realloc(stack, sizeof(*stack) * (stack_capacity + 1));
-                stack_capacity++;
-            }
-            stack[stack_size] = node;
-            if (stack_size == stack_max) {
-                stack_max++;
-            }
-            stack_size++;
-
-            node = node->left;
-        } else {
-            struct node * peek = stack[stack_size - 1];
-            if (peek->right && last != peek->right) {
-                node = peek->right;
-            } else {
-                fn(peek);
-                last = stack[--stack_size];
+            printf("\"root %lu\" -> \"%p %lu\"\n", layer, node, layer);
+            while (node) {
+                if (node->next[layer]) {
+                    printf("\"%p %lu\" -> \"%p %lu\"\n", node, layer, node->next[layer], layer);
+                } else {
+                    printf("\"%p %lu\" -> \"tail %lu\"", node, layer, layer);
+                }
+                node = node->next[layer];
             }
         }
     }
-
-    free(stack);
-    return stack_max;
+    printf("}\n");
 }
 
 /* create an empty sorted set */
 [[nodiscard]] struct sorted_set * sorted_set_create()
 {
     struct sorted_set * sorted_set = malloc(sizeof(*sorted_set));
-    *sorted_set = (struct sorted_set) { };
+    *sorted_set = (struct sorted_set) {
+        .next = malloc(sizeof(*sorted_set->next)),
+        .layers = 1
+    };
+    sorted_set->next[0] = NULL;
     return sorted_set;
-}
-
-static void free_node(struct node * node)
-{
-    free(node->key);
-    free(node);
 }
 
 /* destroy this sorted set */
 void sorted_set_destroy(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
 {
-    sorted_set_postorder_traversal(
-            sorted_set->root, sorted_set->depth_hint, &free_node);
+    if (sorted_set->layers > 0) {
+        struct node * node = sorted_set->next[0];
+        while (node) {
+            struct node * next = node->next[0];
+            free(node->key);
+            free(node->next);
+            free(node);
+            node = next;
+        }
+        free(sorted_set->next);
+    }
     free(sorted_set);
 }
 
@@ -122,6 +108,24 @@ static int key_compare(const struct node * a, const struct node * b)
     return 0;
 }
 
+static size_t random_level()
+{
+    size_t level = 1;
+    for (;;) {
+        uint32_t x = rand();
+        for (size_t i = 0; i < 31; i++) {
+            if (x & 1) {
+                return level;
+            }
+            x >>= 1;
+            level++;
+        }
+    }
+    /* you know, if you win the lottery, this could overflow the size_t.
+     * it would take a long time, though.
+     */
+}
+
 /* add this key of length to the sorted set, associating it with data
  *
  * returns SORTED_SET_ADD_KEY_UNIQUE if the key was not already in the set,
@@ -135,59 +139,87 @@ enum sorted_set_add_key_result sorted_set_add_key(
     ) [[gnu::nonnull(1, 2)]]
 {
     // TODO make a non-copying version
-    // TODO this is an unbalanced BST
 
-    char * key_copy = malloc(length + 1);
-    for (size_t i = 0; i < length; i++) {
-        key_copy[i] = key[i];
-    }
-    key_copy[length] = '\0';
+    size_t new_level = random_level();
 
-    struct node * z = malloc(sizeof(*z));
-    *z = (struct node) {
-        .key = key_copy,
+    struct node * new_node = malloc(sizeof(*new_node));
+    *new_node = (struct node) {
+        .key = (char *)key, /* cast away the const, we're going to make our
+                             * own copy of key down below if we actually keep
+                             * it but for now we don't have to
+                             */
         .length = length,
         .data = data
     };
 
-    struct node * y = NULL;
-    struct node * x = sorted_set->root;
-    while (x) {
-        y = x;
+    struct node ** update = malloc(sizeof(*update) * sorted_set->layers);
+    for (size_t i = new_level; i < sorted_set->layers; i++) {
+        update[i] = NULL;
+    }
 
-        int compare = key_compare(z, x);
+    size_t layer = sorted_set->layers - 1;
+    struct node * node = (struct node *)sorted_set;
 
-        if (compare == 0) {
-            free(z->key);
-            free(z);
-            return SORTED_SET_ADD_KEY_DUPLICATE;
+    for (;;) {
+        while (node->next[layer]) {
+            int compare = key_compare(new_node, node->next[layer]);
+            if (compare == 0) {
+                // duplicate
+                free(new_node);
+                free(update);
+                return SORTED_SET_ADD_KEY_DUPLICATE;
+            }
+
+            if (compare < 0) {
+                node = node->next[layer];
+            }
+
+            if (compare > 0) {
+                break;
+            }
         }
-        
-        if (compare < 0) { // z < x
-            x = x->left;
-        } else { // z > x
-            x = x->right;
+
+        update[layer] = node;
+
+        if (layer == 0) {
+            break;
         }
+        layer--;
     }
 
-    if (!y) {
-        sorted_set->root = z;
-        return SORTED_SET_ADD_KEY_UNIQUE;
+    /* at this point we know the key isn't a duplicate */
+    new_node->key = malloc(length + 1);
+    for (size_t i = 0; i < length; i++ ) {
+        new_node->key[i] = key[i];
     }
 
-    int compare = key_compare(z, y);
+    new_node->next = malloc(sizeof(*new_node->next) * new_level);
 
-    if (compare == 0) {
-        free(z->key);
-        free(z);
-        return SORTED_SET_ADD_KEY_UNIQUE;
-    }
-
-    if (compare < 0) {
-        y->left = z;
+    if (new_level <= sorted_set->layers) {
+        for (size_t i = 0; i < new_level; i++) {
+            new_node->next[i] = update[i]->next[i];
+            update[i]->next[i] = new_node;
+        }
     } else {
-        y->right = z;
+        for (size_t i = 0; i < sorted_set->layers; i++) {
+            new_node->next[i] = update[i]->next[i];
+            update[i]->next[i] = new_node;
+        }
+
+        sorted_set->next = realloc(
+                sorted_set->next,
+                sizeof(*sorted_set->next) * new_level
+            );
+
+        for (size_t i = sorted_set->layers; i < new_level; i++) {
+            sorted_set->next[i] = new_node;
+            new_node->next[i] = NULL;
+        }
+
+        sorted_set->layers = new_level;
     }
+
+    free(update);
 
     return SORTED_SET_ADD_KEY_UNIQUE;
 }
@@ -215,37 +247,13 @@ void sorted_set_apply(
         void * ptr
     )
 {
-    if (!sorted_set->root) {
+    if (sorted_set->layers == 0) {
         return;
     }
 
-    struct node ** stack =
-        malloc(sizeof(*stack) * (sorted_set->depth_hint + 1));
-    size_t stack_capacity = sorted_set->depth_hint + 1;
-    size_t stack_size = 0;
-    size_t stack_max = 0;
-
-    struct node * node = sorted_set->root;
-
-    while (stack_size || node) {
-        if (node) {
-            if (stack_size == stack_capacity) {
-                stack = realloc(stack, sizeof(*stack) * (stack_capacity + 1));
-                stack_capacity++;
-            }
-            stack[stack_size] = node;
-            if (stack_size == stack_max) {
-                stack_max++;
-            }
-            stack_size++;
-
-            node = node->left;
-        } else {
-            node = stack[--stack_size];
-            fn(node->key, node->length, node->data, ptr);
-            node = node->right;
-        }
+    struct node * node = sorted_set->next[0];
+    while (node) {
+        fn(node->key, node->length, node->data, ptr);
+        node = node->next[0];
     }
-
-    free(stack);
 }
