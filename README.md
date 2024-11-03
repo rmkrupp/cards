@@ -5,6 +5,9 @@ Build with `./configure.py && ninja`
 
 ## Dependencies
 
+This project has submodules. When you clone it run `git submodule update
+--init`.
+
 ### Build
 
  - gcc etc.
