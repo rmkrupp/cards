@@ -224,13 +224,6 @@ enum sorted_set_add_key_result sorted_set_add_key(
     return SORTED_SET_ADD_KEY_UNIQUE;
 }
 
-/* do a post-order traversal (e.g. for freeing), applying fn to each node
- *
- * preallocate a traversal stack of size depth_hint
- *
- * returns the largest stack required
- */
-
 /* apply this function to every key in sorted order
  *
  * the ptr passed to sorted_set_apply is passed to the callback as well
