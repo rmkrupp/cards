@@ -27,6 +27,7 @@
 struct sorted_set {
     struct node ** next;
     size_t layers;
+    size_t size;
 };
 
 /* a node in the BST */
@@ -44,7 +45,7 @@ struct node {
 
 #include <stdio.h>
 
-void sorted_set_dump(struct sorted_set * sorted_set)
+void sorted_set_dump(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
 {
     printf("digraph dump {\n");
     for (size_t layer = 0; layer < sorted_set->layers; layer++) {
@@ -93,6 +94,11 @@ void sorted_set_destroy(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
         free(sorted_set->next);
     }
     free(sorted_set);
+}
+
+size_t sorted_set_size(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
+{
+    return sorted_set->size;
 }
 
 /* returns 0 when equal, negative when a < b, positive when a > b */
@@ -170,11 +176,11 @@ enum sorted_set_add_key_result sorted_set_add_key(
                 return SORTED_SET_ADD_KEY_DUPLICATE;
             }
 
-            if (compare < 0) {
+            if (compare > 0) {
                 node = node->next[layer];
             }
 
-            if (compare > 0) {
+            if (compare < 0) {
                 break;
             }
         }
@@ -188,6 +194,8 @@ enum sorted_set_add_key_result sorted_set_add_key(
     }
 
     /* at this point we know the key isn't a duplicate */
+    sorted_set->size++;
+
     new_node->key = malloc(length + 1);
     for (size_t i = 0; i < length; i++ ) {
         new_node->key[i] = key[i];

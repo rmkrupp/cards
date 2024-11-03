@@ -39,6 +39,9 @@ struct sorted_set;
 /* destroy this sorted set */
 void sorted_set_destroy(struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
 
+/* return the number of keys added to this set */
+size_t sorted_set_size(struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
+
 /* the result of sorted_set_add_key() */
 enum sorted_set_add_key_result {
     SORTED_SET_ADD_KEY_UNIQUE, /* the key was added because it was not already
@@ -74,6 +77,6 @@ void sorted_set_apply(
 /* print to stdout a graphviz/dot form description of the internals of this
  * set
  */
-void sorted_set_dump(struct sorted_set * sorted_set);
+void sorted_set_dump(struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
 
 #endif /* UTIL_SORTED_SET_H */
