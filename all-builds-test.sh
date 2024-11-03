@@ -2,9 +2,9 @@
 
 function build() {
     if ./configure.py $@ && ninja ; then
-        echo "build '$@' passed" | tee log -a
+        echo "build '$@' passed"
     else
-        echo "build '$@' failed" | tee log -a
+        echo "build '$@' failed"
     fi
 
 }
