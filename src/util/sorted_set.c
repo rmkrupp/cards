@@ -53,30 +53,6 @@ struct node {
     void * data;
 };
 
-#include <stdio.h>
-
-void sorted_set_dump(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
-{
-    printf("digraph dump {\n");
-    for (size_t layer = 0; layer < sorted_set->layers; layer++) {
-        struct node * node = sorted_set->next[layer];
-        printf("\"root %lu\"\n", layer);
-        printf("\"tail %lu\"\n", layer);
-        if (node) {
-            printf("\"root %lu\" -> \"%p %lu\"\n", layer, node, layer);
-            while (node) {
-                if (node->next[layer]) {
-                    printf("\"%p %lu\" -> \"%p %lu\"\n", node, layer, node->next[layer], layer);
-                } else {
-                    printf("\"%p %lu\" -> \"tail %lu\"", node, layer, layer);
-                }
-                node = node->next[layer];
-            }
-        }
-    }
-    printf("}\n");
-}
-
 /* create an empty sorted set */
 [[nodiscard]] struct sorted_set * sorted_set_create()
 {
