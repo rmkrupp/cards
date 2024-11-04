@@ -19,9 +19,18 @@ Build with `./configure.py --build=release && ninja`
 
  - libevent
  - either Lua 5.1 or luajit
+ - sqlite3
  - readline (unless `--disable-readline`, which stops `rlcli` from building)
  - argp (unless `--disable-argp`, which falls back to `getopt` for `rlcli` and
    `cli`.
+
+Some dependencies are not necessary if certain outputs are not being built.
+The options to disable various outputs for configure.py are:
+
+ - `--disable-server`
+ - `--disable-client=CLIENT`
+ - `--disable-test-tool=TOOL`
+ - `--disable-tool=TOOL`
 
 ## W64
 

@@ -57,6 +57,11 @@ parser.add_argument('--disable-test-tool', action='append', default=[],
                         'gperf_test', 'lex_test', 'hash_test',
                         'sorted_set_test'
                     ],
+                    help='don\'t build a specific test tool')
+parser.add_argument('--disable-tool', action='append', default=[],
+                    choices=[
+                        'cards_compile'
+                    ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-client', action='append', default=[],
                     choices=[
@@ -380,7 +385,11 @@ w.build('$builddir/util/sorted_set.o', 'cc', 'src/util/sorted_set.c')
 w.newline()
 
 w.build('$builddir/command/keyword.o', 'cc', 'out/command/keyword.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers -Wno-unused-parameter')])
+        variables=[
+            ('cflags',
+             '$cflags -Wno-missing-field-initializers ' +
+             '-Wno-unused-parameter')
+        ])
 
 w.build('$builddir/command/lex.o', 'cc', 'src/command/lex.c')
 w.build('$builddir/command/parse.o', 'cc', 'src/command/parse.c')
@@ -391,15 +400,26 @@ w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
 w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
 w.build('$builddir/test/sorted_set_test.o', 'cc', 'src/test/sorted_set_test.c')
 
+w.build('$builddir/tools/cards_compile/cards_compile.o', 'cc',
+        'src/tools/cards_compile/cards_compile.c')
+w.build('$builddir/tools/cards_compile/args_getopt.o', 'cc',
+        'src/tools/cards_compile/args_getopt.c')
+w.build('$builddir/tools/cards_compile/args_argp.o', 'cc',
+        'src/tools/cards_compile/args_argp.c',
+        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
+
 w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
-w.build('$builddir/client/cli/args_getopt.o', 'cc', 'src/client/cli/args_getopt.c')
+w.build('$builddir/client/cli/args_getopt.o', 'cc',
+        'src/client/cli/args_getopt.c')
 w.build('$builddir/client/cli/args_argp.o', 'cc', 'src/client/cli/args_argp.c',
         variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
 w.newline()
 
 w.build('$builddir/client/rlcli/rlcli.o', 'cc', 'src/client/rlcli/rlcli.c')
-w.build('$builddir/client/rlcli/args_getopt.o', 'cc', 'src/client/rlcli/args_getopt.c')
-w.build('$builddir/client/rlcli/args_argp.o', 'cc', 'src/client/rlcli/args_argp.c',
+w.build('$builddir/client/rlcli/args_getopt.o', 'cc',
+        'src/client/rlcli/args_getopt.c')
+w.build('$builddir/client/rlcli/args_argp.o', 'cc',
+        'src/client/rlcli/args_argp.c',
         variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
 w.newline()
 
@@ -564,6 +584,30 @@ bin_target(
         ],
         why_disabled = [
             'we were generated with --disable-test-tool=sorted_set_test',
+        ],
+        targets = [all_targets, tools_targets]
+    )
+
+if args.disable_argp:
+    w.comment('# building cards_compile with getopt because we were generated with --disable-argp')
+    cards_compile_args_input = [ '$builddir/tools/cards_compile/args_getopt.o' ]
+else:
+    cards_compile_args_input = [ '$builddir/tools/cards_compile/args_argp.o' ]
+
+bin_target(
+        name = 'tools/cards_compile',
+        inputs = [
+            '$builddir/tools/cards_compile/cards_compile.o',
+            '$builddir/util/strdup.o'
+        ] + cards_compile_args_input,
+        variables = [
+            ('libs', '-lsqlite3')
+        ],
+        is_disabled = [
+            'cards_compile' in args.disable_tool
+        ],
+        why_disabled = [
+            'we were generated with --disable-tool=cards_compile',
         ],
         targets = [all_targets, tools_targets]
     )
