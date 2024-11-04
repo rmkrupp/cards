@@ -1,4 +1,4 @@
-/* File: src/client/rlcli/args_getopt.c
+/* File: src/tools/cards_compile/args_getopt.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "client/rlcli/args.h"
+#include "tools/cards_compile/args.h"
 
 #include "util/strdup.h"
 
