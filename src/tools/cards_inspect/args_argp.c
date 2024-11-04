@@ -65,6 +65,10 @@ static error_t parse_opt(int key, char * argv, struct argp_state * state)
             }
             break;
 
+        case ARGP_KEY_ERROR:
+            free(args->database_name);
+            break;
+
         default:
             return ARGP_ERR_UNKNOWN;
     }
@@ -82,5 +86,5 @@ int parse_args(
         .args_doc = args_doc
     };
 
-    return argp_parse(&argp, argc, argv, ARGP_NO_EXIT, 0, args);
+    return argp_parse(&argp, argc, argv, 0, 0, args);
 }
