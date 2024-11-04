@@ -62,10 +62,21 @@ int parse_args(
         }
     }
 
-    if (optind == argc) {
-        return 0;
-    } else {
+    if (optind < argc) {
         usage();
         return 1;
     }
+
+    args->database_name = util_strdup(argv[optind]);
+    optind++;
+
+    for (int i = 0; optind + i < argc; i++) {
+        args->filenames = realloc(
+                args->filenames,
+                sizeof(*args->filenames) * (args->n_filenames + 1)
+            );
+        args->filenames[i] = util_strdup(args->filenames[i]);
+    }
+
+    return 0;
 }

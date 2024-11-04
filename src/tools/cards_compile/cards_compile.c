@@ -30,7 +30,6 @@
 #include <sys/stat.h>
 
 #include "tools/cards_compile/args.h"
-#include "limits.h"
 
 static void free_args(struct arguments * args)
 {
