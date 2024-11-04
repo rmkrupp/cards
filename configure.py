@@ -434,7 +434,14 @@ w.newline()
 all_targets = []
 tools_targets = []
 
-def bin_target(name, inputs, targets=[], variables=[], is_disabled=False, why_disabled=''):
+def bin_target(name,
+               inputs,
+               argp_inputs=[],
+               getopt_inputs=[],
+               targets=[],
+               variables=[],
+               is_disabled=False,
+               why_disabled=''):
     fullname = exesuffix(name, args.build == 'w64')
 
     if type(is_disabled) == bool:
@@ -444,6 +451,12 @@ def bin_target(name, inputs, targets=[], variables=[], is_disabled=False, why_di
     assert(len(is_disabled) == len(why_disabled))
 
     if True not in is_disabled:
+        if args.disable_argp and (len(argp_inputs) > 0 or len(getopt_inputs) > 0):
+            w.comment('# building ' + name + ' with getopt because we were generated with --disable-argp')
+            inputs += getopt_inputs
+        else:
+            inputs += argp_inputs
+
         for group in targets:
             group += [fullname]
         w.build(fullname, 'bin', inputs, variables=variables)
@@ -517,25 +530,31 @@ bin_target(
         inputs = [
             '$builddir/client/cli/cli.o',
             '$builddir/util/strdup.o'
-        ] + cli_args_input,
+        ],
+        argp_inputs = [
+            '$builddir/client/cli/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/client/cli/args_getopt.o'
+        ],
         variables = [('libs', '-levent $w64netlibs')],
         is_disabled = 'cli' in args.disable_client,
         why_disabled = 'we were generated with --disable-client=cli',
         targets = [all_targets, tools_targets]
     )
 
-if args.disable_argp:
-    w.comment('# building rlcli with getopt because we were generated with --disable-argp')
-    rlcli_args_input = [ '$builddir/client/rlcli/args_getopt.o' ]
-else:
-    rlcli_args_input = [ '$builddir/client/rlcli/args_argp.o' ]
-
 bin_target(
         name = 'test/rlcli',
         inputs = [
             '$builddir/client/rlcli/rlcli.o',
             '$builddir/util/strdup.o'
-        ] + rlcli_args_input ,
+        ],
+        argp_inputs = [
+            '$builddir/client/rlcli/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/client/rlcli/args_getopt.o'
+        ],
         variables = [
             ('libs', '-levent $w64netlibs -lreadline $w64curses'),
             ('cflags', '$cflags -pthread')
@@ -587,18 +606,18 @@ bin_target(
         targets = [all_targets, tools_targets]
     )
 
-if args.disable_argp:
-    w.comment('# building cards_compile with getopt because we were generated with --disable-argp')
-    cards_compile_args_input = [ '$builddir/tools/cards_compile/args_getopt.o' ]
-else:
-    cards_compile_args_input = [ '$builddir/tools/cards_compile/args_argp.o' ]
-
 bin_target(
         name = 'tools/cards_compile',
         inputs = [
             '$builddir/tools/cards_compile/cards_compile.o',
             '$builddir/util/strdup.o'
-        ] + cards_compile_args_input,
+        ],
+        argp_inputs = [
+            '$builddir/tools/cards_compile/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/tools/cards_compile/args_getopt.o'
+        ],
         variables = [
             ('libs', '-lsqlite3')
         ],
