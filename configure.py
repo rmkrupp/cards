@@ -587,12 +587,8 @@ bin_target(
         variables = [
             ('libs', '')
         ],
-        is_disabled = [
-            'hash_test' in args.disable_test_tool
-        ],
-        why_disabled = [
-            'we were generated with --disable-test-tool=hash_test',
-        ],
+        is_disabled = 'hash_test' in args.disable_test_tool,
+        why_disabled = 'we were generated with --disable-test-tool=hash_test',
         targets = [all_targets, tools_targets]
     )
 
@@ -605,12 +601,8 @@ bin_target(
         variables = [
             ('libs', '')
         ],
-        is_disabled = [
-            'sorted_set_test' in args.disable_test_tool
-        ],
-        why_disabled = [
-            'we were generated with --disable-test-tool=sorted_set_test',
-        ],
+        is_disabled = 'sorted_set_test' in args.disable_test_tool,
+        why_disabled = 'we were generated with --disable-test-tool=sorted_set_test',
         targets = [all_targets, tools_targets]
     )
 
@@ -629,12 +621,8 @@ bin_target(
         variables = [
             ('libs', '-lsqlite3')
         ],
-        is_disabled = [
-            'cards_compile' in args.disable_tool
-        ],
-        why_disabled = [
-            'we were generated with --disable-tool=cards_compile',
-        ],
+        is_disabled = 'cards_compile' in args.disable_tool,
+        why_disabled = 'we were generated with --disable-tool=cards_compile',
         targets = [all_targets, tools_targets]
     )
 
