@@ -116,7 +116,6 @@ def enable_release():
         w.variable(key = 'cflags', value = '$cflags -O3')
     else:
         w.variable(key = 'cflags', value = '$cflags -O2')
-    w.variable(key = 'cflags', value = '$cflags -O2')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
 
 def enable_w64():
