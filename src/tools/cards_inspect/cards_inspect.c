@@ -23,11 +23,6 @@
 #include <string.h>
 #include <sqlite3.h>
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-
 #include "lua.h"
 
 #include "tools/cards_inspect/args.h"
