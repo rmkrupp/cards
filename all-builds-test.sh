@@ -28,3 +28,19 @@ build --disable-argp --build=release
 build --disable-verbose-lexer --build=release
 build --enable-hash-statistics --build=release
 build --disable-hash-warnings --build=release
+
+build --build=w64
+#build --lua-backend=lua51 --build=w64
+build --lua-backend=none --build=w64
+build --disable-server --build=w64
+#build --disable-readline --build=w64
+#build --disable-argp --build=w64
+build --disable-verbose-lexer --build=w64
+build --enable-hash-statistics --build=w64
+build --disable-hash-warnings --build=w64
+
+
+# Clean up a bit
+./configure.py && ninja -tclean
+./configure.py --build=w64 && ninja -tclean
+./configure.py
