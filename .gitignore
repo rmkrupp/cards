@@ -3,6 +3,7 @@ cards.exe
 build.ninja
 /test/
 /tools/
+/clients/
 /out/
 __pycache__
 *.db

@@ -534,7 +534,7 @@ else:
     cli_args_input = [ '$builddir/client/cli/args_argp.o' ]
 
 bin_target(
-        name = 'test/cli',
+        name = 'clients/cli',
         inputs = [
             '$builddir/client/cli/cli.o',
             '$builddir/util/strdup.o'
@@ -552,7 +552,7 @@ bin_target(
     )
 
 bin_target(
-        name = 'test/rlcli',
+        name = 'clients/rlcli',
         inputs = [
             '$builddir/client/rlcli/rlcli.o',
             '$builddir/util/strdup.o'
