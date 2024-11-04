@@ -560,7 +560,7 @@ bin_target(
             'sorted_set_test' in args.disable_test_tool
         ],
         why_disabled = [
-            'we were generated with --disable-tool=sorted_set_test',
+            'we were generated with --disable-test-tool=sorted_set_test',
         ],
         targets = [all_targets, tools_targets]
     )
