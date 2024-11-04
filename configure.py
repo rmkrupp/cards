@@ -52,12 +52,17 @@ parser.add_argument('--O3', '--o3', action='store_true',
 parser.add_argument('--lua-backend',
                     choices=['lua51', 'luajit', 'none'], default='luajit',
                     help='set the lua backend (default: luajit)')
-parser.add_argument('--disable-tool', action='append', default=[],
+parser.add_argument('--disable-test-tool', action='append', default=[],
                     choices=[
                         'gperf_test', 'lex_test', 'hash_test',
-                        'sorted_set_test', 'cli', 'rlcli'
+                        'sorted_set_test'
                     ],
                     help='don\'t build a specific tool')
+parser.add_argument('--disable-client', action='append', default=[],
+                    choices=[
+                        'cli', 'rlcli'
+                    ],
+                    help='don\'t build a specific client')
 parser.add_argument('--disable-server', action='store_true',
                     help='don\'t build the server')
 parser.add_argument('--disable-readline', action='store_true',
@@ -459,8 +464,8 @@ bin_target(
             '$builddir/test/gperf_test.o'
         ],
         variables = [('libs', '')],
-        is_disabled = 'gperf_test' in args.disable_tool,
-        why_disabled = 'we were generated with --disable-tool=gperf_test',
+        is_disabled = 'gperf_test' in args.disable_test_tool,
+        why_disabled = 'we were generated with --disable-test-tool=gperf_test',
         targets = [all_targets, tools_targets]
     )
 
@@ -474,8 +479,8 @@ bin_target(
             '$builddir/util/strdup.o'
         ],
         variables = [('libs', '')],
-        is_disabled = 'lex_test' in args.disable_tool,
-        why_disabled = 'we were generated with --disable-tool=lex_test',
+        is_disabled = 'lex_test' in args.disable_test_tool,
+        why_disabled = 'we were generated with --disable-test-tool=lex_test',
         targets = [all_targets, tools_targets]
     )
 
@@ -492,8 +497,8 @@ bin_target(
             '$builddir/util/strdup.o'
         ] + cli_args_input,
         variables = [('libs', '-levent $w64netlibs')],
-        is_disabled = 'cli' in args.disable_tool,
-        why_disabled = 'we were generated with --disable-tool=cli',
+        is_disabled = 'cli' in args.disable_client,
+        why_disabled = 'we were generated with --disable-client=cli',
         targets = [all_targets, tools_targets]
     )
 
@@ -514,11 +519,11 @@ bin_target(
             ('cflags', '$cflags -pthread')
         ],
         is_disabled = [
-            'rlcli' in args.disable_tool,
+            'rlcli' in args.disable_client,
             args.disable_readline
         ],
         why_disabled = [
-            'we were generated with --disable-tool=rlcli',
+            'we were generated with --disable-client=rlcli',
             'we were generated with --disable-readline'
         ],
         targets = [all_targets, tools_targets]
@@ -534,10 +539,10 @@ bin_target(
             ('libs', '')
         ],
         is_disabled = [
-            'hash_test' in args.disable_tool
+            'hash_test' in args.disable_test_tool
         ],
         why_disabled = [
-            'we were generated with --disable-tool=hash_test',
+            'we were generated with --disable-test-tool=hash_test',
         ],
         targets = [all_targets, tools_targets]
     )
@@ -552,7 +557,7 @@ bin_target(
             ('libs', '')
         ],
         is_disabled = [
-            'sorted_set_test' in args.disable_tool
+            'sorted_set_test' in args.disable_test_tool
         ],
         why_disabled = [
             'we were generated with --disable-tool=sorted_set_test',
