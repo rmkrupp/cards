@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
 #include <sqlite3.h>
 
 #include <unistd.h>
@@ -52,8 +53,13 @@ int main(int argc, char ** argv)
 
     char * errmsg = NULL;
     sqlite3 * db;
-    if (sqlite3_open("data/cards.db", &db)) {
-        fprintf(stderr, "error opening database: %s\n", sqlite3_errmsg(db));
+    if (sqlite3_open(args.database_name, &db)) {
+        fprintf(
+                stderr,
+                "error opening database \"%s\": %s\n",
+                args.database_name,
+                sqlite3_errmsg(db)
+            );
         sqlite3_close(db);
         free_args(&args);
         return 1;
@@ -91,7 +97,7 @@ int main(int argc, char ** argv)
 
     const char statement[] =
         "INSERT INTO cards (filename, script) VALUES (?, ?)";
-    sqlite3_stmt * stmt;
+    sqlite3_stmt * stmt = NULL;
     if (sqlite3_prepare_v2(db, statement, sizeof(statement), &stmt, NULL)) {
         fprintf(
                 stderr,
@@ -148,7 +154,20 @@ int main(int argc, char ** argv)
             continue;
         }
 
-        if (sqlite3_bind_blob(stmt, 1, filename, strlen(filename), NULL)) {
+        if (sqlite3_reset(stmt)) {
+            fprintf(
+                    stderr,
+                    "error resetting statement (%s): %s\n",
+                    filename,
+                    sqlite3_errmsg(db)
+               );
+            munmap(data, stats.st_size);
+            close(fd);
+            errors++;
+            continue;
+        }
+
+        if (sqlite3_bind_text(stmt, 1, filename, strlen(filename), NULL)) {
             fprintf(
                     stderr,
                     "error binding statement (%s): %s\n",
