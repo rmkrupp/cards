@@ -44,7 +44,7 @@ int parse_args(
 {
     while (1) {
         int index = 0;
-        int c = getopt_long(argc, argv, "p:h:x", options, &index);
+        int c = getopt_long(argc, argv, "p:h:l:x", options, &index);
 
         if (c == -1) {
             break;

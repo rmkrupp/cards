@@ -34,7 +34,7 @@ static struct option options[] = {
     { "port", required_argument, 0, 'p' },
     { "hostname", required_argument, 0, 'h' },
     { "load", required_argument, 0, 'l' },
-    { "help", optional_argument, 0, 1000 },
+    { "help", 0, 0, 1000 },
     { }
 };
 
@@ -43,7 +43,7 @@ int parse_args(
 {
     while (1) {
         int index = 0;
-        int c = getopt_long(argc, argv, "p:h:", options, &index);
+        int c = getopt_long(argc, argv, "p:h:l:", options, &index);
 
         if (c == -1) {
             break;
