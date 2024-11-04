@@ -24,12 +24,9 @@
 
 #include <sqlite3.h>
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-
 #include "tools/cards_compile/args.h"
+
+#include "constants.h"
 
 static void free_args(struct arguments * args)
 {
@@ -113,45 +110,92 @@ int main(int argc, char ** argv)
     size_t okay = 0;
     for (size_t i = 0; i < args.n_filenames; i++) {
         char * filename = args.filenames[i];
-        int fd = open(filename, O_RDONLY);
+        FILE * f = fopen(filename, "r");
 
-        if (fd == -1) {
+        if (!f) {
             fprintf(
                     stderr,
                     "error opening \"%s\": %s\n",
                     filename,
-                    strerror(errno)
+                    strerror(ferror(f))
                 );
             errors++;
             continue;
         }
 
-        struct stat stats;
-        if (fstat(fd, &stats) == -1) {
+        if (fseek(f, 0, SEEK_END)) {
             fprintf(
                     stderr,
-                    "error fstating \"%s\": %s\n",
+                    "error fseeking \"%s\": %s\n",
                     filename,
-                    strerror(errno)
+                    strerror(ferror(f))
                 );
-            close(fd);
+            fclose(f);
             errors++;
             continue;
         }
 
-        void * data = mmap(NULL, stats.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+        long tell_size = ftell(f);
+        printf("tell_size = %ld\n", tell_size);
 
-        if (data == MAP_FAILED) {
+        if (tell_size < 0) {
             fprintf(
                     stderr,
-                    "error fstating \"%s\": %s\n",
-                    strerror(errno),
-                    filename
+                    "error ftelling \"%s\": %s\n",
+                    filename,
+                    strerror(ferror(f))
                 );
-            close(fd);
+            fclose(f);
             errors++;
             continue;
         }
+
+        if (fseek(f, 0, SEEK_SET)) {
+            fprintf(
+                    stderr,
+                    "error fseeking \"%s\": %s\n",
+                    filename,
+                    strerror(ferror(f))
+                );
+            fclose(f);
+            errors++;
+            continue;
+        }
+
+        static_assert(sizeof(size_t) >= sizeof(tell_size));
+        size_t size = (size_t)tell_size;
+
+        if (size >= card_script_size_max) {
+            fprintf(
+                    stderr,
+                    "error with \"%s\": size %ld is greater than maximum of %lu\n",
+                    filename,
+                    (unsigned long)size,
+                    (unsigned long)card_script_size_max
+                );
+            fclose(f);
+            errors++;
+            continue;
+        }
+
+        char * buffer = malloc(size + 1);
+
+        if (fread(buffer, size, 1, f) != 1) {
+            fprintf(
+                    stderr,
+                    "error reading \"%s\": %s\n",
+                    filename,
+                    strerror(ferror(f))
+                );
+            fclose(f);
+            free(buffer);
+            errors++;
+            continue;
+        }
+
+        buffer[size] = '\0';
+
+        fclose(f);
 
         if (sqlite3_reset(stmt)) {
             fprintf(
@@ -160,8 +204,7 @@ int main(int argc, char ** argv)
                     filename,
                     sqlite3_errmsg(db)
                );
-            munmap(data, stats.st_size);
-            close(fd);
+            free(buffer);
             errors++;
             continue;
         }
@@ -173,21 +216,19 @@ int main(int argc, char ** argv)
                     filename,
                     sqlite3_errmsg(db)
                );
-            munmap(data, stats.st_size);
-            close(fd);
+            free(buffer);
             errors++;
             continue;
         }
 
-        if (sqlite3_bind_blob(stmt, 2, data, stats.st_size, NULL)) {
+        if (sqlite3_bind_blob(stmt, 2, buffer, size + 1, NULL)) {
             fprintf(
                     stderr,
                     "error binding statement (%s): %s\n",
                     filename,
                     sqlite3_errmsg(db)
                );
-            munmap(data, stats.st_size);
-            close(fd);
+            free(buffer);
             errors++;
             continue;
         }
@@ -199,15 +240,12 @@ int main(int argc, char ** argv)
                     filename,
                     sqlite3_errmsg(db)
                 );
-            munmap(data, stats.st_size);
-            close(fd);
+            free(buffer);
             errors++;
             continue;
         }
 
-        munmap(data, stats.st_size);
-        close(fd);
-
+        free(buffer);
         okay++;
     }
 
