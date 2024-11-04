@@ -278,7 +278,7 @@ elif args.lua_backend == 'lua51':
     enable_lua51()
 else:
     w.comment('lua is disabled')
-    w.comment('(this implies --disable-server)')
+    w.comment('(this implies --disable-server and --disable-tool=cards_inspect)')
     args.disable_server = True
 w.newline()
 
@@ -654,10 +654,12 @@ bin_target(
             ('libs', '-lsqlite3 $lualib')
         ],
         is_disabled = [
+            args.lua_backend == 'none',
             'cards_inspect' in args.disable_tool
         ],
         why_disabled = [
-            'we were generated with --disable-tool=cards_inspect',
+            'we were generated with --lua-backend=none',
+            'we were generated with --disable-tool=cards_inspect'
         ],
         targets = [all_targets, tools_targets]
     )
