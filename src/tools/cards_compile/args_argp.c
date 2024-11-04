@@ -71,6 +71,11 @@ static error_t parse_opt(int key, char * argv, struct argp_state * state)
             return ARGP_ERR_UNKNOWN;
     }
 
+    if (!args->database_name) {
+        argp_usage(state);
+        return 1;
+    }
+
     return 0;
 }
 
