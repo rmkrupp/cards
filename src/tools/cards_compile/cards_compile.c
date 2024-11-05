@@ -221,7 +221,7 @@ int main(int argc, char ** argv)
             continue;
         }
 
-        if (sqlite3_bind_blob(stmt, 2, buffer, size + 1, NULL)) {
+        if (sqlite3_bind_blob(stmt, 2, buffer, size, NULL)) {
             fprintf(
                     stderr,
                     "error binding statement (%s): %s\n",
