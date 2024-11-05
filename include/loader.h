@@ -48,16 +48,17 @@ struct name {
 /* destroy a name set and free the names its holding */
 void name_set_destroy(struct name_set * name_set) [[gnu::nonnull(1)]];
 
-/* load names from a file
+/* add this name to this name set
  *
- * TODO: implement
+ * returns true if the key is added, false otherwise (because it was a
+ * duplicate)
  */
-void name_set_load_bundle(
+bool name_set_add(
         struct name_set * name_set,
-        const char * filename
+        const char * name,
+        size_t length,
+        void * data
     ) [[gnu::nonnull(1, 2)]];
-
-/* TODO: add a single name */
 
 /* compile a name set (transforming its internal sorted_set into a hash)
  *
@@ -71,6 +72,18 @@ const struct name * name_set_lookup(
         struct name_set * name_set,
         const char * name,
         size_t length
+    ) [[gnu::nonnull(1, 2)]];
+
+/* call this function every name */
+void name_set_apply(
+        struct name_set * name_set,
+        void (*fn)(
+            const char * name,
+            size_t length,
+            struct name_data * data,
+            void * ptr
+        ),
+        void * ptr
     ) [[gnu::nonnull(1, 2)]];
 
 #endif /* LOADER_H */

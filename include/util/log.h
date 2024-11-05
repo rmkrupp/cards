@@ -22,6 +22,8 @@
 
 #include "config.h"
 
+struct logger;
+
 /* log levels */
 enum log_level {
     LOG_VERBOSE,

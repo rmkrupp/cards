@@ -384,6 +384,8 @@ w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
 w.build('$builddir/server.o', 'cc', 'src/server.c')
 w.build('$builddir/loader.o', 'cc', 'src/loader.c')
+w.build('$builddir/script.o', 'cc', 'src/script.c')
+w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
 w.newline()
 
 w.build('$builddir/util/log.o', 'cc', 'src/util/log.c')
@@ -491,21 +493,23 @@ def bin_target(name,
 bin_target(
         name = 'cards',
         inputs = [
+            '$builddir/bundle.o',
             '$builddir/command/keyword.o',
             '$builddir/command/lex.o',
             '$builddir/command/parse.o',
             '$builddir/config_loader.o',
+            '$builddir/loader.o',
             '$builddir/main.o',
             '$builddir/networker.o',
+            '$builddir/script.o',
             '$builddir/server.o',
-            '$builddir/loader.o',
             '$builddir/util/log.o',
             '$builddir/util/refstring.o',
-            '$builddir/util/strdup.o',
             '$builddir/util/sorted_set.o',
+            '$builddir/util/strdup.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-levent $lualib $w64netlibs')],
+        variables = [('libs', '-levent $lualib $w64netlibs -lsqlite3')],
         is_disabled = args.disable_server,
         why_disabled = 'we were generated with --disable-server',
         targets = [all_targets]
