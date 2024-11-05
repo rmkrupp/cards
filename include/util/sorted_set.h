@@ -85,6 +85,21 @@ void sorted_set_apply(
         void * ptr
     ) [[gnu::nonnull(1, 2)]];
 
+/* apply this function to every key in sorted order while destroying the
+ * sorted set.
+ *
+ * the value of the key is passed as a non-const to the callback and must
+ * either be retained or free'd as (unlike sorted_set_destroy) this function
+ * does not free it when destroying the sorted_set.
+ *
+ * the ptr passed to sorted_set_apply is passed to the callback as well
+ */
+void sorted_set_apply_and_destroy(
+        struct sorted_set * sorted_set,
+        void (*fn)(char * key, size_t length, void * data, void * ptr),
+        void * ptr
+    ) [[gnu::nonnull(1, 2)]];
+
 /* find this key in the sorted set and return a const pointer to it, or NULL
  * if it's not in the set
  */

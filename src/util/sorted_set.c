@@ -23,16 +23,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-/*
- * TODO: do we need some sort of apply_and_destroy function or similar to allow
- *       a zero-copy move of key from sorted_set to hash_inputs (would also
- *       have to add a non-copying add to hash_inputs in the hash lib)?
- *
- *       or a dedicated sorted_set->hash function that does this? is there a
- *       way to be smart about handingling hash_create failing? (is that even
- *       needed? can that just be a slow path where we recreate the set?)
- */
-
 /* a sorted set */
 struct sorted_set {
     struct node ** next;
@@ -265,6 +255,42 @@ void sorted_set_apply(
         fn(node->key, node->length, node->data, ptr);
         node = node->next[0];
     }
+}
+
+/* apply this function to every key in sorted order while destroying the
+ * sorted set.
+ *
+ * the value of the key is passed as a non-const to the callback and must
+ * either be retained or free'd as (unlike sorted_set_destroy) this function
+ * does not free it when destroying the sorted_set.
+ *
+ * the ptr passed to sorted_set_apply is passed to the callback as well.
+ *
+ * TODO could add a "stop traversal" return from fn
+ */
+void sorted_set_apply_and_destroy(
+        struct sorted_set * sorted_set,
+        void (*fn)(char * key, size_t length, void * data, void * ptr),
+        void * ptr
+    ) [[gnu::nonnull(1, 2)]]
+{
+    if (sorted_set->layers == 0) {
+        return;
+    }
+
+    struct node * node = sorted_set->next[0];
+    while (node) {
+        fn(node->key, node->length, node->data, ptr);
+
+        struct node * next = node->next[0];
+        free(node->next);
+        free(node);
+
+        node = next;
+    }
+
+    free(sorted_set->next);
+    free(sorted_set);
 }
 
 /* find this key in the sorted set and return a const pointer to it, or NULL
