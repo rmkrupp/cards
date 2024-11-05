@@ -150,7 +150,11 @@ void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]]
     sorted_set_apply_and_destroy(
             name_set->uncompiled, &add_to_hash_inputs, hash_inputs);
 
+#if defined(HASH_SIMULATE_FAILURE)
+    name_set->hash = NULL;
+#else
     name_set->hash = hash_create(hash_inputs);
+#endif /* HASH_SIMULATE_FAILURE */
 
     if (name_set->hash) {
         /* no need for _except_keys, the hash_inputs is empty */

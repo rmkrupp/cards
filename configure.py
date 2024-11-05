@@ -87,6 +87,8 @@ hash_opts.add_argument('--enable-hash-statistics', action='store_true',
                     help='compile with -DHASH_STATISTICS')
 hash_opts.add_argument('--disable-hash-warnings', action='store_true',
                     help='compile with -DHASH_NO_WARNINGS')
+hash_opts.add_argument('--enable-hash-simulate-failure', action='store_true',
+                    help='compile with -DHASH_SIMULATE_FAILURE')
 
 args = parser.parse_args()
 
@@ -305,6 +307,13 @@ if args.enable_hash_statistics:
 if args.disable_hash_warnings:
     w.comment('-DHASH_NO_WARNINGS because we were generated with --disable-hash-warnings')
     w.variable('defines', '$defines -DHASH_NO_WARNINGS')
+
+#
+# --enable-hash-simulate-failure
+#
+if args.enable_hash_simulate_failure:
+    w.comment('-DHASH_SIMULATE_FAILURE because we were generated with --enable-hash-simulate-failure')
+    w.variable('defines', '$defines -DHASH_SIMULATE_FAILURE')
 
 #
 # CFLAGS/LDFLAGS OVERRIDES
