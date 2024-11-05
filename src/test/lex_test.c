@@ -32,13 +32,15 @@ static void lex_test()
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
+    struct name_set * name_set = name_set_create();
+
     char * input = malloc(LINE_MAX);
 
     while (!feof(stdin)) {
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, buffer, &result);
+        lex(input, name_set, buffer, &result);
 
         if (result.type == LEX_ERROR) {
             if (!isatty(fileno(stdin))) {
@@ -78,6 +80,8 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
+    struct name_set * name_set = name_set_create();
+
     char * input = malloc(LINE_MAX);
 
     size_t total = 0;
@@ -87,7 +91,7 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, buffer, &result);
+        lex(input, name_set, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
@@ -110,6 +114,8 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
+    struct name_set * name_set = name_set_create();
+
     char * input = malloc(LINE_MAX);
 
     size_t total = 0;
@@ -119,7 +125,7 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, buffer, &result);
+        lex(input, name_set, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {

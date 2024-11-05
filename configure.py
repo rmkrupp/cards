@@ -519,9 +519,12 @@ bin_target(
         inputs = [
             '$builddir/command/lex.o',
             '$builddir/command/keyword.o',
+            '$builddir/loader.o',
             '$builddir/test/lex_test.o',
             '$builddir/util/refstring.o',
-            '$builddir/util/strdup.o'
+            '$builddir/util/strdup.o',
+            '$builddir/util/sorted_set.o',
+            '$builddir/libs/hash/hash.o'
         ],
         variables = [('libs', '')],
         is_disabled = 'lex_test' in args.disable_test_tool,

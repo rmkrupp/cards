@@ -268,7 +268,8 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
 /* subfunction of lex()
  * TODO: should this strndup really always copy length and not up to length?
  */
-static struct particle * consume_name(const char * input, size_t * n)
+static struct particle * consume_name(
+        const char * input, size_t * n, struct name_set * name_set)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i]) {
@@ -290,9 +291,24 @@ static struct particle * consume_name(const char * input, size_t * n)
         }
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
-            particle->value = util_strndup(&input[*n + 1], i - *n - 1);
-            particle->length = i - *n - 1;
+
+            particle->name =
+                name_set_lookup(name_set, &input[*n + 1], i - *n - 1);
+
+            if (!particle->name) {
+                particle->value = (char *)particle->name->name;
+                particle->length = particle->name->length;
+            } else {
+                particle->value = malloc(i - *n);
+                for (size_t j = 0; j < i - *n; j++) {
+                    particle->value[j] = input[*n + 1 + j];
+                }
+                particle->value[i - *n] = '\0';
+                particle->length = i - *n - 1;
+            }
+
             *n = i;
+
             return particle;
         }
     }
@@ -344,6 +360,8 @@ static struct particle * consume_keyword(char * input, size_t * n)
 
             if (lookup_result) {
                 particle->keyword = lookup_result->keyword;
+                /* TODO: this is one of those suspect casting-away of consts
+                 *       that are multiplying rapidly */
                 particle->value =
                     (char *)keyword_string(lookup_result->offset);
                 particle->length = length;
@@ -373,7 +391,7 @@ static struct particle * consume_keyword(char * input, size_t * n)
             fprintf(
                     stderr,
                     "lexer error 2 (bad char %s in keyword)\n",
-                    charmsg(input[i])'
+                    charmsg(input[i])
                 );
 #endif /* VERBOSE_LEXER */
             return NULL;
@@ -394,6 +412,7 @@ static struct particle * consume_keyword(char * input, size_t * n)
  */
 void lex(
         char * input,
+        struct name_set * name_set,
         struct particle_buffer * buffer,
         struct lex_result * result_out
     ) [[gnu::nonnull(1, 2, 3)]]
@@ -429,7 +448,7 @@ void lex(
                 break;
 
             case '"':
-                particle = consume_name(input, &n);
+                particle = consume_name(input, &n, name_set);
                 if (!particle) {
                     *result_out = (struct lex_result) {
                         .type = LEX_ERROR,

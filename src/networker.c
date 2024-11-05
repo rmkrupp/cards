@@ -25,6 +25,9 @@
 #include "command/lex.h"
 #include "command/parse.h"
 
+/* until name_set is somewhere else */
+#include "loader.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +46,9 @@ struct networker {
     struct connection ** connections;
     size_t n_connections;
     int errors;
+
+    /* TODO: move this somewhere else */
+    struct name_set * name_set;
 };
 
 /* a connection is the context given to each connection created by the
@@ -138,7 +144,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
             /* minimal lexing code for testing */
             struct lex_result result;
-            lex(line, connection->buffer, &result);
+            lex(line, connection->networker->name_set, connection->buffer, &result);
 
             if (result.type == LEX_ERROR) {
                 evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");
@@ -253,7 +259,8 @@ static void networker_listener_error_cb(
     struct networker * networker = malloc(sizeof(*networker));
 
     *networker = (struct networker) {
-        .logger = config->logger
+        .logger = config->logger,
+        .name_set = name_set_create()
     };
 
     networker->base = event_base_new();
@@ -304,6 +311,7 @@ void networker_destroy(struct networker * networker) [[gnu::nonnull(1)]]
     }
     free(networker->connections);
     event_base_free(networker->base);
+    name_set_destroy(networker->name_set);
     free(networker);
 }
 

@@ -23,6 +23,7 @@
 #include <stddef.h>
 
 #include "command/keyword.h"
+#include "loader.h"
 #include "util/refstring.h"
 
 /* the different types of particles */
@@ -36,7 +37,10 @@ enum particle_type {
     PARTICLE_NUMBER, /* an (integer) number, has a .value of the string form of
                       * itself
                       */
-    PARTICLE_NAME, /* a name, the .value is the string form without the ""s */
+    PARTICLE_NAME, /* a name, the .value is the string form without the ""s,
+                    * the .name is the result of matching against the set
+                    * supplied to the lexer
+                    */
     PARTICLE_BEGIN_NEST, /* the open paren */
     PARTICLE_END_NEST /* the close paren */
 };
@@ -47,7 +51,9 @@ struct particle {
     char * value;
     /* TODO: test to make sure this is set right for all particles */
     size_t length;
+
     enum keyword keyword;
+    const struct name * name;
 };
 
 /* return a new particle of type */
@@ -138,6 +144,8 @@ void particle_buffer_add(
 
 /* turn input string into particles
  *
+ * name_set is a set to match names against
+ *
  * buffer must be a particle buffer
  * if it is not empty, the particles will be appended,
  * thus is must be emptied after the particles have been consumed
@@ -152,6 +160,7 @@ void particle_buffer_add(
  */
 void lex(
         char * input,
+        struct name_set * name_set,
         struct particle_buffer * buffer,
         struct lex_result * result_out
     ) [[gnu::nonnull(1, 2, 3)]];
