@@ -92,42 +92,81 @@ void name_set_load_bundle(
     }
 }
 
-/* callback for the apply call in name_set_compile */
+/* callback for the first apply call in name_set_compile */
 static void add_to_hash_inputs(
-        const char * key, size_t length, void * data, void * ptr)
+        char * key, size_t length, void * data, void * ptr)
 {
     struct hash_inputs * hash_inputs = ptr;
-    /* discarding const on purpose (but see TODO) */
-    hash_inputs_add_no_copy(hash_inputs, (char *)key, length, data);
+    hash_inputs_add_no_copy(hash_inputs, key, length, data);
+}
+
+/* callback for the second apply call in name_set_compile */
+static void add_to_sorted_set_maker(
+        char * key, size_t length, void * data, void * ptr)
+{
+    struct sorted_set_maker * sorted_set_maker = ptr;
+    sorted_set_maker_add_key(sorted_set_maker, key, length, data);
 }
 
 /* take all the keys in uncompiled and try and put them in hash
  *
- * if there's already a hash, destroy it
+ * 1. create an empty hash_inputs and make sure it has space to store the
+ *    whole sorted_set
  *
- * this means we need to take all the keys out of the set in the event that
- * we do succeed in making the hash (because hash_destroy would free them,
- * and because we want the set of remaining uncompiled keys to be as small as
- * possible.)
+ * 2. move every key from the sorted_set into it, and destroy the sorted set
+ *
+ * 3. attempt to create the hash
+ *
+ * 4. (if 3 succeeds) destroy the now-empty hash_inputs and create a fresh
+ *    name_set->uncompiled sorted_set
+ *
+ * 4. (if 3 fails) using a sorted_set_maker, recreate the original sorted_set
+ *    in O(n) time and put the copy in name_set->uncompiled
+ *
+ * note: if we destroy the sorted_set as we put its keys into the
+ *       hash_inputs (i.e. sorted_set_apply_and_destroy) then the hash-success
+ *       path is faster because we don't need a separate traversal of the
+ *       sorted_set to free it. This traversal is O(n).
+ *
+ *       it makes the fail path slower, though, because we need to put the keys
+ *       back into the sorted set. This is O(n log(n)) if we do it the naive
+ *       way, O(n) if we make a special API that allows it to add a bunch of
+ *       pre-sorted keys at once. Theoretically, this could also let it ensure
+ *       it's using the "perfect" version of itself where the node heights are
+ *       distributed at exact multiples of 2.
+ *
+ *       update: this is now what we do, using a sorted_set_maker
  */
 void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]]
 {
+    /* TODO: is this the desired behavior? */
     if (name_set->hash) {
         hash_destroy(name_set->hash);
     }
-    
+
     struct hash_inputs * hash_inputs = hash_inputs_create();
 
     hash_inputs_at_least(hash_inputs, sorted_set_size(name_set->uncompiled));
-    sorted_set_apply(name_set->uncompiled, &add_to_hash_inputs, hash_inputs);
+    sorted_set_apply_and_destroy(
+            name_set->uncompiled, &add_to_hash_inputs, hash_inputs);
 
     name_set->hash = hash_create(hash_inputs);
 
-    hash_inputs_destroy_except_keys(hash_inputs);
-
     if (name_set->hash) {
-        sorted_set_destroy_except_keys(name_set->uncompiled);
+        /* no need for _except_keys, the hash_inputs is empty */
+        hash_inputs_destroy(hash_inputs);
         name_set->uncompiled = sorted_set_create();
+    } else {
+        /* the keys are still in the hash_inputs since making the hash
+         * failed
+         *
+         * we need to put them back in a sorted_set
+         */
+        struct sorted_set_maker * sorted_set_maker =
+            sorted_set_maker_create(hash_inputs_n_keys(hash_inputs));
+        hash_inputs_apply_and_destroy(
+                hash_inputs, &add_to_sorted_set_maker, sorted_set_maker);
+        name_set->uncompiled = sorted_set_maker_finalize(sorted_set_maker);
     }
 }
 
