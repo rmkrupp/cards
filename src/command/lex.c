@@ -111,10 +111,12 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
 /* create a particle with the given type and and value
  *
- * makes a duplicate of the value, consuming at most n bytes from the argument
+ * makes a duplicate of the value, consuming at most n bytes from the argument.
  *
  * TODO: this does duplicate work between strndup and strnlen finding
- *       the length
+ *       the length.
+ *
+ * TODO: is this function needed? it is not used by the lexer.
  */
 [[nodiscard]] struct particle * particle_create_value(
         enum particle_type type, const char * value, size_t n)
@@ -265,9 +267,7 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
     }
 }
 
-/* subfunction of lex()
- * TODO: should this strndup really always copy length and not up to length?
- */
+/* subfunction of lex() */
 static struct particle * consume_name(
         const char * input, size_t * n, struct name_set * name_set)
 {
@@ -314,16 +314,18 @@ static struct particle * consume_name(
     }
 }
 
-/* subfunction of lex()
- * TODO: see consume_name
- */
+/* subfunction of lex() */
 static struct particle * consume_number(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i] || input[i] == ' ' ||
                 input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
-            particle->value = util_strndup(&input[*n], i - *n);
+            particle->value = malloc(i - *n + 1);
+            for (size_t j = 0; j < i - *n; j++) {
+                particle->value[j] = input[*n + j];
+            }
+            particle->value[i - *n] = '\0';
             particle->length = i - *n;
             *n = i - 1;
             return particle;
@@ -343,9 +345,7 @@ static struct particle * consume_number(const char * input, size_t * n)
     }
 }
 
-/* subfunction of lex()
- * TODO: see consume_name
- */
+/* subfunction of lex() */
 static struct particle * consume_keyword(char * input, size_t * n)
 {
     size_t start = *n;

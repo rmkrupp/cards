@@ -133,6 +133,8 @@ static size_t random_level()
  *
  * returns SORTED_SET_ADD_KEY_UNIQUE if the key was not already in the set,
  * or SORTED_SET_ADD_KEY_DUPLICATE otherwise
+ *
+ * TODO: do we need a non-copying version?
  */
 enum sorted_set_add_key_result sorted_set_add_key(
         struct sorted_set * sorted_set,
@@ -141,8 +143,6 @@ enum sorted_set_add_key_result sorted_set_add_key(
         void * data
     ) [[gnu::nonnull(1, 2)]]
 {
-    // TODO make a non-copying version
-
     size_t new_level = random_level();
 
     struct node * new_node = malloc(sizeof(*new_node));

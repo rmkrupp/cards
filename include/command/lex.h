@@ -49,7 +49,6 @@ enum particle_type {
 struct particle {
     enum particle_type type;
     char * value;
-    /* TODO: test to make sure this is set right for all particles */
     size_t length;
 
     enum keyword keyword;
