@@ -255,7 +255,11 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
         return particle_create(PARTICLE_END_NEST);
     } else {
 #if VERBOSE_LEXER
-        fprintf(stderr, "lexer error 8 (bad char %s following end nest)\n", charmsg(input[*n + 1]));
+        fprintf(
+                stderr,
+                "lexer error 8 (bad char %s following end nest)\n",
+                charmsg(input[*n + 1])
+            );
 #endif /* VERBOSE_LEXER */
         return NULL;
     }
@@ -273,9 +277,14 @@ static struct particle * consume_name(const char * input, size_t * n)
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
-        if (input[i] == '\n' || input[i] == '\r' || input[i] == 0xb || input[i] == 0xc) {
+        if (input[i] == '\n' || input[i] == '\r' ||
+                input[i] == 0xb || input[i] == 0xc) {
 #if VERBOSE_LEXER
-            fprintf(stderr, "lexer error 6 (char %s in name)\n", charmsg(input[i]));
+            fprintf(
+                    stderr,
+                    "lexer error 6 (char %s in name)\n",
+                    charmsg(input[i])
+                );
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
@@ -295,7 +304,8 @@ static struct particle * consume_name(const char * input, size_t * n)
 static struct particle * consume_number(const char * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
-        if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+        if (!input[i] || input[i] == ' ' ||
+                input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
             particle->value = util_strndup(&input[*n], i - *n);
             particle->length = i - *n;
@@ -306,7 +316,11 @@ static struct particle * consume_number(const char * input, size_t * n)
             // okay
         } else {
 #if VERBOSE_LEXER
-            fprintf(stderr, "lexer error 4 (bad char %s in number)\n", charmsg(input[i]));
+            fprintf(
+                    stderr,
+                    "lexer error 4 (bad char %s in number)\n",
+                    charmsg(input[i])
+                );
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
@@ -320,7 +334,8 @@ static struct particle * consume_keyword(char * input, size_t * n)
 {
     size_t start = *n;
     for (size_t i = start + 1; ; i++) {
-        if (!input[i] || input[i] == ' ' || input[i] == '\n' || input[i] == ')') {
+        if (!input[i] || input[i] == ' ' ||
+                input[i] == '\n' || input[i] == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
             size_t length = i - start;
 
@@ -329,7 +344,8 @@ static struct particle * consume_keyword(char * input, size_t * n)
 
             if (lookup_result) {
                 particle->keyword = lookup_result->keyword;
-                particle->value = (char *)keyword_string(lookup_result->offset);
+                particle->value =
+                    (char *)keyword_string(lookup_result->offset);
                 particle->length = length;
             } else {
                 particle->keyword = KEYWORD_NO_MATCH;
@@ -354,7 +370,11 @@ static struct particle * consume_keyword(char * input, size_t * n)
             // okay
         } else {
 #if VERBOSE_LEXER
-            fprintf(stderr, "lexer error 2 (bad char %s in keyword)\n", charmsg(input[i]));
+            fprintf(
+                    stderr,
+                    "lexer error 2 (bad char %s in keyword)\n",
+                    charmsg(input[i])'
+                );
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
@@ -452,7 +472,11 @@ void lex(
 
             default:
 #if VERBOSE_LEXER
-                fprintf(stderr, "lexer error 1 (bad char %s in toplevel)\n", charmsg(input[n]));
+                fprintf(
+                        stderr,
+                        "lexer error 1 (bad char %s in toplevel)\n",
+                        charmsg(input[n])
+                    );
 #endif /* VERBOSE_LEXER */
                 *result_out = (struct lex_result) {
                     .type = LEX_ERROR,
