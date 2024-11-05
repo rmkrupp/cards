@@ -34,7 +34,7 @@ static char doc[] =
     "cards_compile -- bundle card scripts";
 
 static char args_doc[] =
-    "DATABASE CARDS...";
+    "DATABASE [CARDS...]";
 
 static struct argp_option options[] = {
     { "append", 'a', NULL, 0,
