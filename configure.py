@@ -374,6 +374,7 @@ w.build('$builddir/config_loader.o', 'cc', 'src/config_loader.c')
 w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
 w.build('$builddir/server.o', 'cc', 'src/server.c')
+w.build('$builddir/loader.o', 'cc', 'src/loader.c')
 w.newline()
 
 w.build('$builddir/util/log.o', 'cc', 'src/util/log.c')
@@ -488,9 +489,12 @@ bin_target(
             '$builddir/main.o',
             '$builddir/networker.o',
             '$builddir/server.o',
+            '$builddir/loader.o',
             '$builddir/util/log.o',
             '$builddir/util/refstring.o',
-            '$builddir/util/strdup.o'
+            '$builddir/util/strdup.o',
+            '$builddir/util/sorted_set.o',
+            '$builddir/libs/hash/hash.o'
         ],
         variables = [('libs', '-levent $lualib $w64netlibs')],
         is_disabled = args.disable_server,
