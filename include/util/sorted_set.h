@@ -33,11 +33,22 @@
 /* a sorted set */
 struct sorted_set;
 
+/* the result of a lookup on a set */
+struct sorted_set_lookup_result {
+    const char * key;
+    size_t length;
+    void * data;
+};
+
 /* create an empty sorted set */
 [[nodiscard]] struct sorted_set * sorted_set_create();
 
 /* destroy this sorted set */
 void sorted_set_destroy(struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
+
+/* destroy this sorted set without free'ing the keys */
+void sorted_set_destroy_except_keys(
+        struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
 
 /* return the number of keys added to this set */
 size_t sorted_set_size(struct sorted_set * sorted_set) [[gnu::nonnull(1)]];
@@ -72,6 +83,16 @@ void sorted_set_apply(
         struct sorted_set * sorted_set,
         void (*fn)(const char * key, size_t length, void * data, void * ptr),
         void * ptr
-    );
+    ) [[gnu::nonnull(1, 2)]];
+
+/* find this key in the sorted set and return a const pointer to it, or NULL
+ * if it's not in the set
+ */
+const struct sorted_set_lookup_result * sorted_set_lookup(
+        struct sorted_set * sorted_set,
+        const char * key,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]];
+
 
 #endif /* UTIL_SORTED_SET_H */

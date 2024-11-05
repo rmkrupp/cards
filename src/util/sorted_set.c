@@ -48,6 +48,9 @@ struct node {
                           * only next is used from this, though.
                           */
 
+    /* these three properties must stay in this order because we cast a pointer
+     * to the key field to a struct sorted_set_lookup_result pointer
+     */
     char * key;
     size_t length;
     void * data;
@@ -73,6 +76,23 @@ void sorted_set_destroy(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
         while (node) {
             struct node * next = node->next[0];
             free(node->key);
+            free(node->next);
+            free(node);
+            node = next;
+        }
+        free(sorted_set->next);
+    }
+    free(sorted_set);
+}
+
+/* destroy this sorted set without free'ing the keys */
+void sorted_set_destroy_except_keys(
+        struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
+{
+    if (sorted_set->layers > 0) {
+        struct node * node = sorted_set->next[0];
+        while (node) {
+            struct node * next = node->next[0];
             free(node->next);
             free(node);
             node = next;
@@ -187,6 +207,7 @@ enum sorted_set_add_key_result sorted_set_add_key(
     for (size_t i = 0; i < length; i++ ) {
         new_node->key[i] = key[i];
     }
+    new_node->key[length] = '\0';
 
     new_node->next = malloc(sizeof(*new_node->next) * new_level);
 
@@ -233,7 +254,7 @@ void sorted_set_apply(
         struct sorted_set * sorted_set,
         void (*fn)(const char * key, size_t length, void * data, void * ptr),
         void * ptr
-    )
+    ) [[gnu::nonnull(1, 2)]]
 {
     if (sorted_set->layers == 0) {
         return;
@@ -244,4 +265,45 @@ void sorted_set_apply(
         fn(node->key, node->length, node->data, ptr);
         node = node->next[0];
     }
+}
+
+/* find this key in the sorted set and return a const pointer to it, or NULL
+ * if it's not in the set
+ */
+const struct sorted_set_lookup_result * sorted_set_lookup(
+        struct sorted_set * sorted_set,
+        const char * key,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]]
+{
+    size_t layer = sorted_set->layers - 1;
+    struct node * node = (struct node *)sorted_set;
+
+    for (;;) {
+        while (node->next[layer]) {
+            int compare = key_compare(
+                    &(struct node) { .key = (char *)key, .length = length },
+                    node->next[layer]
+                );
+            if (compare == 0) {
+                return (const struct sorted_set_lookup_result *)
+                    &node->next[layer]->key;
+            }
+
+            if (compare > 0) {
+                node = node->next[layer];
+            }
+
+            if (compare < 0) {
+                break;
+            }
+        }
+
+        if (layer == 0) {
+            break;
+        }
+        layer--;
+    }
+
+    return NULL;
 }
