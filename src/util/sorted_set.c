@@ -307,3 +307,171 @@ const struct sorted_set_lookup_result * sorted_set_lookup(
 
     return NULL;
 }
+
+/* a sorted_set_maker
+ *
+ * this allows insertion of pre-sorted keys into a sorted_set in O(1) time
+ * when the number of keys is known ahead of time
+ */
+struct sorted_set_maker {
+    struct sorted_set * sorted_set; /* the embedded sorted_set */
+    struct node * next; /* where will the next added key go? */
+};
+
+/* create a sorted_set_maker that will make a sorted sorted with this number
+ * of keys
+ *
+ * it is an error to call this with n_keys == 0
+ */
+[[nodiscard]] struct sorted_set_maker * sorted_set_maker_create(
+        size_t n_keys)
+{
+    assert(n_keys > 0);
+
+    struct sorted_set_maker * sorted_set_maker =
+        malloc(sizeof(*sorted_set_maker));
+
+    *sorted_set_maker = (struct sorted_set_maker) {
+        .sorted_set = malloc(sizeof(*sorted_set_maker->sorted_set))
+    };
+
+    struct sorted_set * sorted_set = sorted_set_maker->sorted_set;
+
+    size_t layers = 0;
+    for (size_t n = n_keys; n > 1; n /= 2) {
+        layers++;
+    }
+
+    size_t * landmarks = malloc(sizeof(*landmarks) * layers);
+    size_t i = layers - 1;
+    for (size_t n = n_keys / 2; n > 1; n /= 2) {
+        landmarks[i] = n;
+        i--;
+    }
+
+    sorted_set->layers = layers;
+    sorted_set->next = malloc(sizeof(*sorted_set->next) * layers);
+    sorted_set->size = 0;
+
+    struct node ** update = malloc(sizeof(*update) * layers);
+    for (size_t i = 0; i < layers; i++) {
+        update[i] = (struct node *)sorted_set;
+    }
+
+    for (size_t i = 0; i < n_keys; i++) {
+        size_t layer = 0;
+        for (size_t j = layers - 1; j > 0; j--) {
+            if (i % landmarks[j] == 0) {
+                layer = j;
+                break;
+            }
+        }
+        layer++;
+
+        struct node * node = malloc(sizeof(*node));
+        *node = (struct node) {
+            .next = malloc(sizeof(*node->next) * (layer))
+        };
+
+        for (size_t j = 0; j < layer; j++) {
+            update[j]->next[j] = node;
+            update[j] = node;
+        }
+    }
+
+    for (size_t i = 0; i < layers; i++) {
+        update[i]->next[i] = NULL;
+    }
+
+    sorted_set_maker->next = sorted_set->next[0];
+    free(update);
+    free(landmarks);
+    return sorted_set_maker;
+}
+
+/* returns true if the number of keys added to this sorted_set_maker is equal
+ * to the number of keys preallocated on its creation
+ */
+bool sorted_set_maker_complete(
+        const struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]]
+{
+    return !sorted_set_maker->next;
+}
+
+/* finalize this sorted_set_maker, destroying it and returning the sorted_set
+ * that was made
+ *
+ * this must be called after a number of keys have been added to the maker
+ * equal to the number that were preallocated.
+ */
+struct sorted_set * sorted_set_maker_finalize(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]]
+{
+    assert(sorted_set_maker_complete(sorted_set_maker));
+    struct sorted_set * sorted_set = sorted_set_maker->sorted_set;
+    free(sorted_set_maker);
+    return sorted_set;
+}
+
+/* destroy this sorted_set_maker and any partially-constructed set inside it,
+ * and free any keys
+ */
+void sorted_set_maker_destroy(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]]
+{
+    struct node * node = sorted_set_maker->sorted_set->next[0];
+    while (node != sorted_set_maker->next) {
+        struct node * next = node->next[0];
+        free(node->next);
+        free(node->key);
+        free(node);
+        node = next;
+    }
+    while (node) {
+        struct node * next = node->next[0];
+        free(node->next);
+        free(node);
+        node = next;
+    }
+    free(sorted_set_maker->sorted_set->next);
+    free(sorted_set_maker->sorted_set);
+    free(sorted_set_maker);
+}
+
+/* destroy this sorted_set_maker and any partially-constructed set inside it,
+ * but do not free any keys
+ */
+void sorted_set_maker_destroy_except_keys(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]]
+{
+    struct node * node = sorted_set_maker->sorted_set->next[0];
+    while (node) {
+        struct node * next = node->next[0];
+        free(node->next);
+        free(node);
+        node = next;
+    }
+    free(sorted_set_maker->sorted_set->next);
+    free(sorted_set_maker->sorted_set);
+    free(sorted_set_maker);
+}
+
+/* add this key to this sorted_set_maker
+ *
+ * returns true if the sorted_set_maker is now complete
+ *
+ * it is an error to call this on a complete sorted_set_maker
+ */
+bool sorted_set_maker_add_key(
+        struct sorted_set_maker * sorted_set_maker,
+        char * key,
+        size_t length,
+        void * data
+    ) [[gnu::nonnull(1, 2)]]
+{
+    sorted_set_maker->next->key = key;
+    sorted_set_maker->next->length = length;
+    sorted_set_maker->next->data = data;
+    sorted_set_maker->next = sorted_set_maker->next->next[0];
+    return !sorted_set_maker->next;
+}

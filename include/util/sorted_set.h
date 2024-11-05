@@ -94,5 +94,57 @@ const struct sorted_set_lookup_result * sorted_set_lookup(
         size_t length
     ) [[gnu::nonnull(1, 2)]];
 
+/* a sorted_set_maker
+ *
+ * this allows insertion of pre-sorted keys into a sorted_set in O(1) time
+ * when the number of keys is known ahead of time
+ */
+struct sorted_set_maker;
+
+/* create a sorted_set_maker that will make a sorted sorted with this number
+ * of keys
+ */
+[[nodiscard]] struct sorted_set_maker * sorted_set_maker_create(
+        size_t n_keys);
+
+/* returns true if the number of keys added to this sorted_set_maker is equal
+ * to the number of keys preallocated on its creation
+ */
+bool sorted_set_maker_complete(
+        const struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]];
+
+/* finalize this sorted_set_maker, destroying it and returning the sorted_set
+ * that was made
+ *
+ * this must be called after a number of keys have been added to the maker
+ * equal to the number that were preallocated.
+ */
+struct sorted_set * sorted_set_maker_finalize(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]];
+
+/* destroy this sorted_set_maker and any partially-constructed set inside it,
+ * and free any keys
+ */
+void sorted_set_maker_destroy(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]];
+
+/* destroy this sorted_set_maker and any partially-constructed set inside it,
+ * but do not free any keys
+ */
+void sorted_set_maker_destroy_except_keys(
+        struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]];
+
+/* add this key to this sorted_set_maker
+ *
+ * returns true if the sorted_set_maker is now complete
+ *
+ * it is an error to call this on a complete sorted_set_maker
+ */
+bool sorted_set_maker_add_key(
+        struct sorted_set_maker * sorted_set_maker,
+        char * key,
+        size_t length,
+        void * data
+    ) [[gnu::nonnull(1, 2)]];
 
 #endif /* UTIL_SORTED_SET_H */
