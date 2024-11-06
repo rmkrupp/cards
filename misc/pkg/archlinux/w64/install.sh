@@ -34,7 +34,6 @@ fetch_build mingw-w64-zlib
 
 # libevent depends on...
 fetch_build mingw-w64-openssl
-fetch_build mingw-w64-pkg-config
 
 # cards depends on...
 fetch_build mingw-w64-luajit
