@@ -90,3 +90,4 @@ A non-exhaustive list...
    - [ ] Windows
  - [ ] Testing, especially for rigorous handling of inputs to server
  - [ ] Our personal card library and pre-defined decks, including flavor
+ - [ ] Add a basic website
