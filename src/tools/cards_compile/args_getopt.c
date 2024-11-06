@@ -27,7 +27,7 @@
 
 static void usage()
 {
-    fprintf(stderr, "Usage: cards_compile [--help] [-a|--append] DATABASE CARDS...\n");
+    fprintf(stderr, "Usage: cards_compile [--help] [-a|--append] DATABASE [CARDS...]\n");
 }
 
 static struct option options[] = {
