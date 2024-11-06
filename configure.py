@@ -59,7 +59,8 @@ parser.add_argument('--disable-test-tool', action='append', default=[],
                     help='don\'t build a specific test tool')
 parser.add_argument('--disable-tool', action='append', default=[],
                     choices=[
-                        'cards_compile', 'cards_inspect'
+                        'cards_compile', 'cards_inspect',
+                        'saves_create'
                     ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-client', action='append', default=[],
@@ -425,6 +426,14 @@ w.build('$builddir/tools/cards_inspect/args_argp.o', 'cc',
         'src/tools/cards_inspect/args_argp.c',
         variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
 
+w.build('$builddir/tools/saves_create/saves_create.o', 'cc',
+        'src/tools/saves_create/saves_create.c')
+w.build('$builddir/tools/saves_create/args_getopt.o', 'cc',
+        'src/tools/saves_create/args_getopt.c')
+w.build('$builddir/tools/saves_create/args_argp.o', 'cc',
+        'src/tools/saves_create/args_argp.c',
+        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
+
 w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
 w.build('$builddir/client/cli/args_getopt.o', 'cc',
         'src/client/cli/args_getopt.c')
@@ -653,6 +662,26 @@ bin_target(
             'we were generated with --lua-backend=none',
             'we were generated with --disable-tool=cards_inspect'
         ],
+        targets = [all_targets, tools_targets]
+    )
+
+bin_target(
+        name = 'tools/saves_create',
+        inputs = [
+            '$builddir/tools/saves_create/saves_create.o',
+            '$builddir/util/strdup.o'
+        ],
+        argp_inputs = [
+            '$builddir/tools/saves_create/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/tools/saves_create/args_getopt.o'
+        ],
+        variables = [
+            ('libs', '-lsqlite3')
+        ],
+        is_disabled = 'saves_create' in args.disable_tool,
+        why_disabled = 'we were generated with --disable-tool=cards_inspect',
         targets = [all_targets, tools_targets]
     )
 
