@@ -43,25 +43,24 @@ Install the `mingw-w64` group.
 
 AUR packages needed:
 
- - `mingw-w64-zlib`
  - `mingw-w64-environment`
- - `mingw-w64-openssl`
  - `mingw-w64-pkg-config`
- - `mingw-w64-libevent`
- - `mingw-w64-luajit`
-
-For readline-dependent tools (`rlcli`):
-
+ - `mingw-w64-configure`
  - `mingw-w64-pdcurses`
  - `mingw-w64-termcap`
  - `mingw-w64-readline`
+ - `mingw-w64-zlib`
+ - `mingw-w64-openssl`
+ - `mingw-w64-libevent`
+ - `mingw-w64-luajit`
+ - `mingw-w64-sqlite`
 
 To build without readline, pass `--disable-readline` to `configure.py`. Note
 that even with readline, the `rlcli` tool does not work well with cmd.exe or
-powershell.
+powershell, and that `mingw-w64-sqlite` depends on it regardless.
 
-The build is static. DLLs for libevent, luajit, winpthreads, etc. don't need
-to be distributed with the executables.
+The build is static. DLLs for libevent, luajit, sqlite, winpthreads, etc. don't
+need to be distributed with the executables.
 
 (See the helper scripts in `misc/pkg/archlinux/w64`.)
 
