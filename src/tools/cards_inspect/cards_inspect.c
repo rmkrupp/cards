@@ -107,7 +107,7 @@ int main(int argc, char ** argv)
     }
 
     if (args.validate) {
-        printf("%lu errors ocurred\n", (unsigned long)errors);
+        printf("%zu errors ocurred\n", errors);
     }
 
     sqlite3_finalize(stmt);

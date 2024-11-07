@@ -168,10 +168,10 @@ int main(int argc, char ** argv)
         if (size >= card_script_size_max) {
             fprintf(
                     stderr,
-                    "error with \"%s\": size %ld is greater than maximum of %lu\n",
+                    "error with \"%s\": size %zu is greater than maximum of %zu\n",
                     filename,
-                    (unsigned long)size,
-                    (unsigned long)card_script_size_max
+                    size,
+                    card_script_size_max
                 );
             fclose(f);
             errors++;
@@ -260,9 +260,9 @@ int main(int argc, char ** argv)
     }
 
     if (errors) {
-        fprintf(stderr, "%lu errors ocurred\n", (unsigned long)errors);
+        fprintf(stderr, "%zu errors ocurred\n", errors);
     }
-    printf("%lu lines added\n", (unsigned long)okay);
+    printf("%zu lines added\n", okay);
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
