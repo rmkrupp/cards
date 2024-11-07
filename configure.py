@@ -557,8 +557,14 @@ bin_target(
             '$builddir/libs/hash/hash.o'
         ],
         variables = [('libs', '-lsqlite3 $lualib')],
-        is_disabled = 'lex_test' in args.disable_test_tool,
-        why_disabled = 'we were generated with --disable-test-tool=lex_test',
+        is_disabled = [
+            args.lua_backend == 'none',
+            'lex_test' in args.disable_test_tool
+        ],
+        why_disabled = [
+            'we were generated with --lua-backend=none',
+            'we were generated with --disable-test-tool=lex_test'
+        ],
         targets = [all_targets, tools_targets]
     )
 
