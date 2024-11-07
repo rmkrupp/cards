@@ -380,19 +380,20 @@ w.newline()
 # SOURCES
 #
 
+w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
+w.build('$builddir/card.o', 'cc', 'src/card.c')
 w.build('$builddir/config_loader.o', 'cc', 'src/config_loader.c')
+w.build('$builddir/game.o', 'cc', 'src/game.c')
+w.build('$builddir/loader.o', 'cc', 'src/loader.c')
 w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
 w.build('$builddir/server.o', 'cc', 'src/server.c')
-w.build('$builddir/loader.o', 'cc', 'src/loader.c')
-w.build('$builddir/card.o', 'cc', 'src/card.c')
-w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
 w.newline()
 
 w.build('$builddir/util/log.o', 'cc', 'src/util/log.c')
 w.build('$builddir/util/refstring.o', 'cc', 'src/util/refstring.c')
-w.build('$builddir/util/strdup.o', 'cc', 'src/util/strdup.c')
 w.build('$builddir/util/sorted_set.o', 'cc', 'src/util/sorted_set.c')
+w.build('$builddir/util/strdup.o', 'cc', 'src/util/strdup.c')
 w.newline()
 
 w.build('$builddir/command/keyword.o', 'cc', 'out/command/keyword.c',
@@ -407,8 +408,8 @@ w.build('$builddir/command/parse.o', 'cc', 'src/command/parse.c')
 w.newline()
 
 w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
-w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
 w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
+w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
 
 w.build('$builddir/tools/cards_compile/cards_compile.o', 'cc',
         'src/tools/cards_compile/cards_compile.c')
@@ -512,6 +513,7 @@ bin_target(
             '$builddir/main.o',
             '$builddir/networker.o',
             '$builddir/card.o',
+            '$builddir/game.o',
             '$builddir/server.o',
             '$builddir/util/log.o',
             '$builddir/util/refstring.o',
@@ -542,14 +544,19 @@ bin_target(
         inputs = [
             '$builddir/command/lex.o',
             '$builddir/command/keyword.o',
+            '$builddir/command/parse.o',
             '$builddir/loader.o',
+            '$builddir/bundle.o',
+            '$builddir/game.o',
+            '$builddir/card.o',
             '$builddir/test/lex_test.o',
             '$builddir/util/refstring.o',
             '$builddir/util/strdup.o',
             '$builddir/util/sorted_set.o',
+            '$builddir/util/log.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '')],
+        variables = [('libs', '-lsqlite3 $lualib')],
         is_disabled = 'lex_test' in args.disable_test_tool,
         why_disabled = 'we were generated with --disable-test-tool=lex_test',
         targets = [all_targets, tools_targets]

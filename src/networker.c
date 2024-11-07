@@ -21,12 +21,10 @@
 #include "config.h"
 #include "util/log.h"
 
-/* until we have a proper parser object */
+#include "command/buffer.h"
 #include "command/lex.h"
 #include "command/parse.h"
-
-/* until name_set is somewhere else */
-#include "loader.h"
+#include "game.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,8 +45,7 @@ struct networker {
     size_t n_connections;
     int errors;
 
-    /* TODO: move this somewhere else */
-    struct name_set * name_set;
+    struct game * game;
 };
 
 /* a connection is the context given to each connection created by the
@@ -59,6 +56,7 @@ struct connection {
     struct networker * networker;
     struct bufferevent * bev;
 
+    /* TODO */
     /* for now, store one of these here,
      * soon we will have a parser object
      */
@@ -84,7 +82,7 @@ struct networker_connection_iter {
         .networker = networker,
         .bev = bev,
         .buffer = particle_buffer_create(),
-        .parser = parser_create()
+        .parser = parser_create(networker->game)
     };
 
     networker->connections = realloc(
@@ -144,7 +142,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
             /* minimal lexing code for testing */
             struct lex_result result;
-            lex(line, connection->networker->name_set, connection->buffer, &result);
+            lex(line, connection->parser, connection->buffer, &result);
 
             if (result.type == LEX_ERROR) {
                 evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");
@@ -260,7 +258,7 @@ static void networker_listener_error_cb(
 
     *networker = (struct networker) {
         .logger = config->logger,
-        .name_set = name_set_create()
+        .game = game_create(config)
     };
 
     networker->base = event_base_new();
@@ -311,7 +309,7 @@ void networker_destroy(struct networker * networker) [[gnu::nonnull(1)]]
     }
     free(networker->connections);
     event_base_free(networker->base);
-    name_set_destroy(networker->name_set);
+    game_destroy(networker->game);
     free(networker);
 }
 

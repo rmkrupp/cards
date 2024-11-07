@@ -1,4 +1,4 @@
-/* File: include/config.h
+/* File: include/game.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,31 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef GAME_H
+#define GAME_H
 
-#include <stdbool.h>
-/* holds values populated by config_load
- *
- * options must be one of:
- *  - char *
- *  - long
- *  - bool
- * because they are cast to a void pointer and then a pointer to that type
- * before they are writen to
- */
-struct config {
+#include "config.h"
+#include "loader.h"
+#include "util/log.h"
+
+struct game {
     struct logger * logger;
-    long port;
-    char * default_card_db;
-    bool dummy;
+    struct name_set * name_set;
 };
 
-/* free resources used by this config */
-void config_free(struct config * config) [[gnu::nonnull(1)]];
+[[nodiscard]] struct game * game_create(
+        struct config * config) [[gnu::nonnull(1)]];
+void game_destroy(struct game * game) [[gnu::nonnull(1)]];
 
-/* populate a config from a list of Lua scripts */
-int config_load(
-        struct config * config, int nfiles, char ** files) [[gnu::nonnull(1)]];
-
-#endif /* CONFIG_H */
+#endif /* GAME_H */

@@ -19,18 +19,17 @@
  */
 #include "command/parse.h"
 #include "command/keyword.h"
+#include "bundle.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-struct parser {
-    // nothing
-};
-
-[[nodiscard]] struct parser * parser_create()
+[[nodiscard]] struct parser * parser_create(struct game * game)
 {
     struct parser * parser = malloc(sizeof(*parser));
-    *parser = (struct parser) { };
+    *parser = (struct parser) {
+        .game = game
+    };
     return parser;
 }
 

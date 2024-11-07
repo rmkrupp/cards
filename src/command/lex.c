@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "command/lex.h"
+#include "command/parse.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -434,7 +435,7 @@ static struct particle * consume_keyword(char * input, size_t * n)
  */
 void lex(
         char * input,
-        struct name_set * name_set,
+        struct parser * parser,
         struct particle_buffer * buffer,
         struct lex_result * result_out
     ) [[gnu::nonnull(1, 2, 3)]]
@@ -470,7 +471,7 @@ void lex(
                 break;
 
             case '"':
-                particle = consume_name(input, &n, name_set);
+                particle = consume_name(input, &n, parser->game->name_set);
                 if (!particle) {
                     *result_out = (struct lex_result) {
                         .type = LEX_ERROR,

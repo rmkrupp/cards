@@ -29,6 +29,8 @@ enum keyword {
     KEYWORD_EXIT,
     KEYWORD_SHUTDOWN,
 
+    KEYWORD_LOAD,
+
     KEYWORD_LIFE,
 
     KEYWORD_ENERGY,

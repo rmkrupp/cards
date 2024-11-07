@@ -207,6 +207,8 @@ struct card * card_load(
             abilities[n_abilities] = ability;
             n_abilities++;
         }
+
+        lua_pop(L, 2);
     }
 
     /*

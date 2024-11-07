@@ -42,6 +42,10 @@
 #define CONFIG_PORT_DEFAULT 10101
 #endif /* CONFIG_PORT_DEFAULT */
 
+#ifndef CONFIG_DEFAULT_CARD_DB_DEFAULT
+#define CONFIG_DEFAULT_CARD_DB_DEFAULT "data/cards.db"
+#endif /* CONFIG_DEFAULT_CARD_DB_DEFAULT */
+
 /* the type of config option */
 enum config_option_type {
     CONFIG_BOOLEAN, /* a bool option */
@@ -337,6 +341,13 @@ int config_load(
             loader, "version", VERSION, NULL, NULL);
     config_loader_add_option_integer(
             loader, "port", CONFIG_PORT_DEFAULT, NULL, &config->port);
+    config_loader_add_option_string(
+            loader,
+            "default_card_db",
+            CONFIG_DEFAULT_CARD_DB_DEFAULT,
+            NULL,
+            &config->default_card_db
+        );
     config_loader_add_option_boolean(
             loader, "dummy", CONFIG_DUMMY_DEFAULT, NULL, &config->dummy);
 

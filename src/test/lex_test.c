@@ -18,6 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "command/lex.h"
+#include "command/parse.h"
+#include "game.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +35,8 @@ static void lex_test()
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
-    struct name_set * name_set = name_set_create();
+    struct game * game = game_create(&(struct config) {});
+    struct parser * parser = parser_create(game);
 
     char * input = malloc(LINE_MAX);
 
@@ -40,7 +44,7 @@ static void lex_test()
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, name_set, buffer, &result);
+        lex(input, parser, buffer, &result);
 
         if (result.type == LEX_ERROR) {
             if (!isatty(fileno(stdin))) {
@@ -73,6 +77,9 @@ static void lex_test()
     free(input);
 
     particle_buffer_destroy(buffer);
+
+    parser_destroy(parser);
+    game_destroy(game);
 }
 
 static void silent_lex_test(size_t * total_out, size_t * errors_out)
@@ -80,7 +87,8 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
-    struct name_set * name_set = name_set_create();
+    struct game * game = game_create(&(struct config) {});
+    struct parser * parser = parser_create(game);
 
     char * input = malloc(LINE_MAX);
 
@@ -91,7 +99,7 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, name_set, buffer, &result);
+        lex(input, parser, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
@@ -104,6 +112,8 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
     free(input);
 
     particle_buffer_destroy(buffer);
+    parser_destroy(parser);
+    game_destroy(game);
 
     *errors_out = errors;
     *total_out = total;
@@ -114,7 +124,8 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
     struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
-    struct name_set * name_set = name_set_create();
+    struct game * game = game_create(&(struct config) {});
+    struct parser * parser = parser_create(game);
 
     char * input = malloc(LINE_MAX);
 
@@ -125,7 +136,7 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, LINE_MAX, stdin);
         if (feof(stdin)) break;
 
-        lex(input, name_set, buffer, &result);
+        lex(input, parser, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
@@ -139,6 +150,8 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
     free(input);
 
     particle_buffer_destroy(buffer);
+    parser_destroy(parser);
+    game_destroy(game);
 
     *errors_out = errors;
     *total_out = total;
