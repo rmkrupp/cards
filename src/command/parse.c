@@ -19,8 +19,6 @@
  */
 #include "command/parse.h"
 #include "command/lex.h"
-#include "command/keyword.h"
-#include "bundle.h"
 #include "util/refstring.h"
 
 #include <stdio.h>

@@ -20,8 +20,10 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "config.h"
+/* forward declare */
+struct config;
 
+/* a logger */
 struct logger;
 
 /* log levels */

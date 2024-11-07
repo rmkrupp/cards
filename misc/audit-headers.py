@@ -42,4 +42,5 @@ for filename in sys.argv[1:]:
 print("AUDIT RESULTS")
 for filename, fileresults in results:
     for line, code in fileresults:
-        print("AUDIT", filename, "INCLUDE", line[:-1], "CODE", code)
+        if len(sys.argv) == 2 or code == 0:
+            print("AUDIT", filename, "INCLUDE", line[:-1], "CODE", code)

@@ -19,7 +19,10 @@
  */
 #include "util/strdup.h"
 
+#if !defined(__linux__)
 #include <stdlib.h>
+#endif
+
 #include <string.h>
 
 [[nodiscard]] char * util_strdup(const char * s)
