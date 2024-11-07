@@ -133,9 +133,27 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 /* destroy this particle */
 void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 {
-    if (particle->type != PARTICLE_KEYWORD ||
-            particle->keyword == KEYWORD_NO_MATCH) {
-        free(particle->value);
+    switch (particle->type) {
+        case PARTICLE_KEYWORD:
+            if (particle->keyword == KEYWORD_NO_MATCH) {
+                free(particle->value);
+            }
+            break;
+
+        case PARTICLE_NAME:
+            if (!particle->name) {
+                free(particle->value);
+            }
+            break;
+
+        case PARTICLE_NUMBER:
+            free(particle->value);
+            break;
+
+        case PARTICLE_BEGIN_NEST:
+        case PARTICLE_END_NEST:
+        case PARTICLE_END:
+            break;
     }
     free(particle);
 }
@@ -157,16 +175,20 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 
         case PARTICLE_KEYWORD:
             return refstring_createf(
-                    "KEYWORD%s<%s>",
-                    particle->keyword == KEYWORD_NO_MATCH ? "*" : "",
-                    particle->value
+                    "KEYWORD<%s>%s",
+                    particle->value,
+                    particle->keyword == KEYWORD_NO_MATCH ? "*" : ""
                 );
 
         case PARTICLE_NUMBER:
             return refstring_createf("NUMBER<%s>", particle->value);
 
         case PARTICLE_NAME:
-            return refstring_createf("NAME<%s>", particle->value);
+            return refstring_createf(
+                    "NAME<%s>%s",
+                    particle->value,
+                    particle->name ? "" : "*"
+                );
 
         case PARTICLE_BEGIN_NEST:
             return refstring_createf("(");
@@ -295,15 +317,15 @@ static struct particle * consume_name(
             particle->name =
                 name_set_lookup(name_set, &input[*n + 1], i - *n - 1);
 
-            if (!particle->name) {
+            if (particle->name) {
                 particle->value = (char *)particle->name->name;
                 particle->length = particle->name->length;
             } else {
                 particle->value = malloc(i - *n);
-                for (size_t j = 0; j < i - *n; j++) {
+                for (size_t j = 0; j < i - *n - 1; j++) {
                     particle->value[j] = input[*n + 1 + j];
                 }
-                particle->value[i - *n] = '\0';
+                particle->value[i - *n - 1] = '\0';
                 particle->length = i - *n - 1;
             }
 
