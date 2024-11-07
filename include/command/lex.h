@@ -26,6 +26,13 @@
 #include "command/parse.h"
 #include "util/refstring.h"
 
+/* forward declare this
+ *
+ * full definition is in command/parse.h but that imports this header first,
+ * so this is needed
+ */
+struct parser;
+
 /* return a new particle of type */
 [[nodiscard]] struct particle * particle_create(enum particle_type type);
 
