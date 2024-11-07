@@ -562,12 +562,6 @@ bin_target(
         targets = [all_targets, tools_targets]
     )
 
-if args.disable_argp:
-    w.comment('# building cli with getopt because we were generated with --disable-argp')
-    cli_args_input = [ '$builddir/client/cli/args_getopt.o' ]
-else:
-    cli_args_input = [ '$builddir/client/cli/args_argp.o' ]
-
 bin_target(
         name = 'clients/cli',
         inputs = [
