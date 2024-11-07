@@ -178,6 +178,16 @@ int main(int argc, char ** argv)
             continue;
         }
 
+        if (size == 0) {
+            fprintf(
+                    stderr,
+                    "warning: skipping empty file '%s'\n",
+                    filename
+                );
+            fclose(f);
+            continue;
+        }
+
         char * buffer = malloc(size + 1);
 
         if (fread(buffer, size, 1, f) != 1) {
