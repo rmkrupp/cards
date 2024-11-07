@@ -20,6 +20,17 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-constexpr size_t card_script_size_max = 16 * 1024 - 2;
+/* the maximum size of any card script blob
+ *
+ * enforced by the cards_compile tool and bundle_load()
+ *
+ * checked by the cards_inspect tool
+ *
+ * this is not a implementation-derived limit. the underlying maximum is
+ * limited only by whatever SQLITE_MAX_LENGTH our sqlite was compiled with
+ * (which defaults to 1 billion bytes), any limit Lua may have when loading
+ * scripts, and the memory available to the program.
+ */
+constexpr size_t card_script_size_max = 16 * 1024;
 
 #endif /* CONSTANTS_H */

@@ -21,6 +21,7 @@
 #define CONFIG_H
 
 #include <stdbool.h>
+
 /* holds values populated by config_load
  *
  * options must be one of:

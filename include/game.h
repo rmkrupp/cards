@@ -20,17 +20,22 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "config.h"
-#include "loader.h"
-#include "util/log.h"
+/* forward declare */
+struct config;
+struct logger;
+struct name_set;
 
+/* a game */
 struct game {
     struct logger * logger;
     struct name_set * name_set;
 };
 
+/* create a game with this config */
 [[nodiscard]] struct game * game_create(
         struct config * config) [[gnu::nonnull(1)]];
+
+/* destroy this game */
 void game_destroy(struct game * game) [[gnu::nonnull(1)]];
 
 #endif /* GAME_H */

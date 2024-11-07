@@ -24,6 +24,10 @@
 #include "util/log.h"
 #include <stddef.h>
 
+/* the result of loading a bundle
+ *
+ * see bundle_load()
+ */
 enum bundle_load_result {
     BUNDLE_LOAD_RESULT_OKAY,
     BUNDLE_LOAD_RESULT_ERROR_NONE,
@@ -32,8 +36,20 @@ enum bundle_load_result {
 
 /* load the bundle with this filename, adding any new names to this name set
  *
- * returns the number of cards that couldn't be loaded, or -1 if there was an
- * error with the bundle itself
+ * if n_errors_out is non-null, it is filled with the number of cards that
+ * couldn't be loaded
+ *
+ * returns BUNDLE_LOAD_RESULT_OKAY if the bundle was loaded successfully and
+ * for every card loaded, the card was either added to the set or n_errors_out
+ * (if non-NULL) was incremented
+ *
+ * returns BUNDLE_LOAD_RESULT_ERROR_NONE if the bundle could not be opened or
+ * the data was missing and no loading was attempted. in this case n_errors_out
+ * is not modified.
+ *
+ * returns BUNDLE_LOAD_RESULT_ERROR_SOME if there is an error with the bundle
+ * but one or more cards may have been loaded (or errors recorded.) in this
+ * case n_errors_out is modified.
  */
 enum bundle_load_result bundle_load(
         const char * bundle_name,

@@ -19,9 +19,11 @@
  */
 #include "game.h"
 #include "bundle.h"
+#include "config.h"
 
 #include <stdlib.h>
 
+/* create a game with this config */
 [[nodiscard]] struct game * game_create(
         struct config * config) [[gnu::nonnull(1)]]
 {
@@ -47,6 +49,7 @@
     return game;
 }
 
+/* destroy this game */
 void game_destroy(struct game * game) [[gnu::nonnull(1)]]
 {
     name_set_destroy(game->name_set);

@@ -20,6 +20,7 @@
 #include "bundle.h"
 
 #include "card.h"
+#include "constants.h"
 
 #include <sqlite3.h>
 
@@ -72,6 +73,17 @@ enum bundle_load_result bundle_load(
         const char * filename = (const char *)sqlite3_column_text(stmt, 0);
         const void * data = sqlite3_column_blob(stmt, 1);
         int size = sqlite3_column_bytes(stmt, 1);
+
+        if (size >= 0 && (size_t)size > card_script_size_max) {
+            LOGF_ERROR(
+                    logger,
+                    "error loading %s from bundle %s: blob exceeeds maximum card script size.\n",
+                    filename,
+                    bundle_name
+                );
+            errors++;
+            continue;
+        }
 
         if (!card_load(data, size, filename, name_set, logger)) {
             errors++;

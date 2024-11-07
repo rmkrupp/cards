@@ -22,6 +22,7 @@
 #include <sqlite3.h>
 
 #include "lua.h"
+#include "constants.h"
 
 #include "tools/cards_inspect/args.h"
 
@@ -72,6 +73,16 @@ int main(int argc, char ** argv)
         int size = sqlite3_column_bytes(stmt, 1);
 
         if (args.validate) {
+
+            if (size >= 0 && (size_t)size > card_script_size_max) {
+                fprintf(
+                        stderr,
+                        "card blob %s exceeds maximum size\n",
+                        filename
+                    );
+                errors++;
+            }
+
             lua_State * L = luaL_newstate();
 
             if (luaL_loadbuffer(L, script, size, (const char *)filename)) {
