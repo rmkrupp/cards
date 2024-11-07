@@ -19,7 +19,7 @@
  */
 #include "bundle.h"
 
-#include "script.h"
+#include "card.h"
 
 #include <sqlite3.h>
 
@@ -73,7 +73,7 @@ enum bundle_load_result bundle_load(
         const void * data = sqlite3_column_blob(stmt, 1);
         int size = sqlite3_column_bytes(stmt, 1);
 
-        if (!script_load(data, size, filename, name_set, logger)) {
+        if (!card_load(data, size, filename, name_set, logger)) {
             errors++;
         }
     }

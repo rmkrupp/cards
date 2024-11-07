@@ -1,4 +1,4 @@
-/* File: include/script.h
+/* File: include/card.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,27 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef SCRIPT_H
-#define SCRIPT_H
+#ifndef CARD_H
+#define CARD_H
 
 #include "util/log.h"
 #include "loader.h"
 #include <stddef.h>
 
-/* a card script */
-struct script;
+/* a card */
+struct card;
 
-/* destroy this script */
-void script_destroy(struct script * script) [[gnu::nonnull(1)]];
+/* a card ability */
+struct ability;
 
-/* create a script from this Lua data
+/* destroy this card */
+void card_destroy(struct card * card) [[gnu::nonnull(1)]];
+
+/* destroy this ability */
+void ability_destroy(struct ability * ability) [[gnu::nonnull(1)]];
+
+/* create a card from this Lua data
  *
- * add its name and the names of any of its abilities to name_set
+ * add its name and the names of any of its abilities to name_set, associating
+ * them with this card (thus, it is okay to ignore the return value of this
+ * call.)
  *
  * returns NULL if there is an error loading or running the Lua, or if the
- * cards name is not unique. Note that ability names do not need to be unique.
+ * card's name is not unique, or if the name field of the card or its abilities
+ * are absent or not string, or if the indices of abilities tables are not
+ * numbers. Note that ability names do not need to be unique.
  */
-struct script * script_load(
+struct card * card_load(
         const char * data,
         size_t length,
         const char * filename,
@@ -45,4 +55,4 @@ struct script * script_load(
         struct logger * logger
     ) [[gnu::nonnull(1, 3, 4)]];
 
-#endif /* SCRIPT_H */
+#endif /* CARD_H */

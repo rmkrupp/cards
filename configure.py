@@ -385,7 +385,7 @@ w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
 w.build('$builddir/server.o', 'cc', 'src/server.c')
 w.build('$builddir/loader.o', 'cc', 'src/loader.c')
-w.build('$builddir/script.o', 'cc', 'src/script.c')
+w.build('$builddir/card.o', 'cc', 'src/card.c')
 w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
 w.newline()
 
@@ -454,6 +454,7 @@ w.newline()
 
 w.build('$builddir/libs/hash/hash.o', 'cc', 'libs/hash/src/hash.c')
 w.newline()
+
 #
 # OUTPUTS
 #
@@ -510,7 +511,7 @@ bin_target(
             '$builddir/loader.o',
             '$builddir/main.o',
             '$builddir/networker.o',
-            '$builddir/script.o',
+            '$builddir/card.o',
             '$builddir/server.o',
             '$builddir/util/log.o',
             '$builddir/util/refstring.o',

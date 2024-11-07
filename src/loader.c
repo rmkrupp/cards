@@ -70,6 +70,19 @@ bool name_set_add(
         SORTED_SET_ADD_KEY_UNIQUE;
 }
 
+/* remove this name from this set
+ *
+ * will not remove it if the name_set has been compiled and it's in the hash
+ */
+struct name_data * name_set_remove(
+        struct name_set * name_set,
+        const char * name,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]]
+{
+    return sorted_set_remove_key(name_set->uncompiled, name, length);
+}
+
 /* callback for the first apply call in name_set_compile */
 static void add_to_hash_inputs(
         char * key, size_t length, void * data, void * ptr)

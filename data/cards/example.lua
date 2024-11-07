@@ -23,5 +23,8 @@ abilities = {
             local class = get_class(target)
             return class == "character"
         end
+    },
+    {
+        name = "fireball"
     }
 }

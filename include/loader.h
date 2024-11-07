@@ -60,6 +60,16 @@ bool name_set_add(
         void * data
     ) [[gnu::nonnull(1, 2)]];
 
+/* remove this name from this set
+ *
+ * will not remove it if the name_set has been compiled and it's in the hash
+ */
+struct name_data * name_set_remove(
+        struct name_set * name_set,
+        const char * name,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]];
+
 /* compile a name set (transforming its internal sorted_set into a hash)
  *
  * TODO: how this function works when called re: the names already
