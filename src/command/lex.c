@@ -19,12 +19,15 @@
  */
 #include "command/lex.h"
 #include "command/parse.h"
+#include "game.h"
+#include "loader.h"
 
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
 #include "util/strdup.h"
+#include "util/refstring.h"
 
 #ifndef VERBOSE_LEXER
 #define VERBOSE_LEXER 0

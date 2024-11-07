@@ -21,6 +21,7 @@
 #include "command/parse.h"
 #include "game.h"
 #include "config.h"
+#include "util/refstring.h"
 
 #include <stdio.h>
 #include <stdlib.h>

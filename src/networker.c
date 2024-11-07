@@ -18,20 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "networker.h"
-#include "config.h"
 #include "util/log.h"
 
-#include "command/buffer.h"
 #include "command/lex.h"
 #include "command/parse.h"
 #include "game.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
-#include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>

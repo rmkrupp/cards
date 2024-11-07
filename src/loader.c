@@ -24,9 +24,6 @@
 #include "util/sorted_set.h"
 #include "hash.h"
 
-/* TODO: get rid of this when load_bundle is not a stub */
-#include <stdio.h>
-
 /* a set for looking up name tokens */
 struct name_set {
     struct hash * hash;

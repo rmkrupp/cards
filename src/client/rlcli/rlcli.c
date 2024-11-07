@@ -19,7 +19,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "client/rlcli/args.h"
 
@@ -34,8 +33,6 @@
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
-#include <event2/dns.h>
-#include <event2/util.h>
 
 #if defined(__MINGW32__)
 #include <windef.h>

@@ -20,13 +20,15 @@
 #ifndef COMMAND_PARSE_H
 #define COMMAND_PARSE_H
 
-#include "command/lex.h"
-#include "game.h"
+/* forward declare */
+struct particle_buffer;
+struct game;
 
 struct parser {
     struct game * game;
 };
 
+/*
 enum command_type {
     COMMAND_SUBCOMMAND,
     COMMAND_SAY,
@@ -40,6 +42,7 @@ struct command {
     struct command * subcommands;
     size_t n_subcommands;
 };
+*/
 
 [[nodiscard]] struct parser * parser_create(struct game * game);
 void parser_destroy(struct parser * parser) [[gnu::nonnull(1)]];

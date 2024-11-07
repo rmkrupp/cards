@@ -18,11 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "command/parse.h"
+#include "command/lex.h"
 #include "command/keyword.h"
 #include "bundle.h"
+#include "util/refstring.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
 
 [[nodiscard]] struct parser * parser_create(struct game * game)
 {
