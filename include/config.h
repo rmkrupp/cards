@@ -21,7 +21,15 @@
 #define CONFIG_H
 
 #include <stdbool.h>
-/* holds values populated by config_load */
+/* holds values populated by config_load
+ *
+ * options must be one of:
+ *  - char *
+ *  - long
+ *  - bool
+ * because they are cast to a void pointer and then a pointer to that type
+ * before they are writen to
+ */
 struct config {
     struct logger * logger;
     long port;
