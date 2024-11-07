@@ -334,6 +334,58 @@ const struct sorted_set_lookup_result * sorted_set_lookup(
     return NULL;
 }
 
+/* remove this key of length from the sorted set, returning the keys data
+ * field, or NULL if the key is not in the set
+ */
+void * sorted_set_remove_key(
+        struct sorted_set * sorted_set,
+        const char * key,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]]
+{
+    size_t layer = sorted_set->layers - 1;
+    struct node * node = (struct node *)sorted_set;
+
+    struct node ** update = malloc(sizeof(*update) * sorted_set->layers);
+
+    for (;;) {
+        while (node->next[layer]) {
+            int compare = key_compare(
+                    &(struct node) { .key = (char *)key, .length = length },
+                    node->next[layer]
+                );
+            if (compare == 0) {
+                for (size_t i = 0; i < layer; i++) {
+                    update[i]->next[i] = node->next[layer]->next[i];
+                }
+                free(update);
+                void * data = node->next[layer]->data;
+                free(node->next);
+                free(node->key);
+                free(node);
+                return data;
+            }
+
+            if (compare > 0) {
+                node = node->next[layer];
+            }
+
+            if (compare < 0) {
+                break;
+            }
+        }
+
+        update[layer] = node;
+
+        if (layer == 0) {
+            break;
+        }
+        layer--;
+    }
+
+    return NULL;
+}
+
 /* a sorted_set_maker
  *
  * this allows insertion of pre-sorted keys into a sorted_set in O(1) time

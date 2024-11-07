@@ -75,6 +75,15 @@ enum sorted_set_add_key_result sorted_set_add_key(
         void * data
     ) [[gnu::nonnull(1, 2)]];
 
+/* remove this key of length from the sorted set, returning the keys data
+ * field, or NULL if the key is not in the set
+ */
+void * sorted_set_remove_key(
+        struct sorted_set * sorted_set,
+        const char * key,
+        size_t length
+    ) [[gnu::nonnull(1, 2)]];
+
 /* apply this function to every key in sorted order
  *
  * the ptr passed to sorted_set_apply is passed to the callback as well
