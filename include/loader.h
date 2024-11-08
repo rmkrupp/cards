@@ -21,6 +21,7 @@
 #define LOADER_H
 
 #include <stddef.h>
+#include <unitypes.h>
 
 /* a set for looking up name tokens */
 struct name_set;
@@ -34,12 +35,10 @@ enum name_type {
 
 /* the result of a name lookup */
 struct name {
-    const char * name;
-    size_t length;
-    struct name_data {
-        enum name_type type;
-        void * data;
-    } * data;
+    uint8_t * display_name;
+    size_t display_name_length;
+    enum name_type type;
+    void * data;
 };
 
 /* create an empty name set */
@@ -55,20 +54,23 @@ void name_set_destroy(struct name_set * name_set) [[gnu::nonnull(1)]];
  */
 bool name_set_add(
         struct name_set * name_set,
-        const char * name,
+        const uint8_t * name,
         size_t length,
-        void * data
+        void * data,
+        enum name_type type
     ) [[gnu::nonnull(1, 2)]];
 
 /* remove this name from this set
  *
  * will not remove it if the name_set has been compiled and it's in the hash
  */
+/*
 struct name_data * name_set_remove(
         struct name_set * name_set,
         const char * name,
         size_t length
     ) [[gnu::nonnull(1, 2)]];
+*/
 
 /* compile a name set (transforming its internal sorted_set into a hash)
  *
@@ -80,17 +82,15 @@ void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]];
 /* look up a name in this set */
 const struct name * name_set_lookup(
         struct name_set * name_set,
-        const char * name,
+        const uint8_t * name,
         size_t length
     ) [[gnu::nonnull(1, 2)]];
 
-/* call this function every name */
+/* call this function on every name in this set, passing it ptr */
 void name_set_apply(
         struct name_set * name_set,
         void (*fn)(
-            const char * name,
-            size_t length,
-            struct name_data * data,
+            struct name * name,
             void * ptr
         ),
         void * ptr

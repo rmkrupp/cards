@@ -24,6 +24,9 @@
 #include "util/sorted_set.h"
 #include "hash.h"
 
+#include <uninorm.h>
+#include <unicase.h>
+
 /* a set for looking up name tokens */
 struct name_set {
     struct hash * hash;
@@ -57,20 +60,63 @@ void name_set_destroy(struct name_set * name_set) [[gnu::nonnull(1)]]
  */
 bool name_set_add(
         struct name_set * name_set,
-        const char * name,
+        const uint8_t * key,
         size_t length,
-        void * data
+        void * data,
+        enum name_type type
     ) [[gnu::nonnull(1, 2)]]
 {
-    return sorted_set_add_key(
-            name_set->uncompiled, name, length, data) ==
-        SORTED_SET_ADD_KEY_UNIQUE;
+    /* first, transform */
+    size_t size_out_transform = 0;
+    uint8_t * buffer_out_transform = u8_tolower(
+            key,
+            length,
+            uc_locale_language(),
+            NULL,
+            NULL,
+            &size_out_transform
+        );
+
+    /* then, normalize/prepare for collation */
+    size_t size_out = 0;
+
+    char * buffer_out = u8_normxfrm(
+            buffer_out_transform,
+            size_out_transform,
+            UNINORM_NFC,
+            NULL,
+            &size_out
+        );
+
+    struct name * name = malloc(sizeof(*name));
+    *name = (struct name) {
+        .display_name = buffer_out_transform,
+        .display_name_length = size_out_transform,
+        .type = type,
+        .data = data
+    };
+
+    enum sorted_set_add_key_result result = sorted_set_add_key(
+            name_set->uncompiled,
+            buffer_out,
+            size_out,
+            name
+        );
+
+    if (result != SORTED_SET_ADD_KEY_UNIQUE) {
+        free(buffer_out);
+        free(name->display_name);
+        free(name);
+        return false;
+    }
+    return true;
 }
 
 /* remove this name from this set
  *
  * will not remove it if the name_set has been compiled and it's in the hash
  */
+/*
 struct name_data * name_set_remove(
         struct name_set * name_set,
         const char * name,
@@ -79,6 +125,7 @@ struct name_data * name_set_remove(
 {
     return sorted_set_remove_key(name_set->uncompiled, name, length);
 }
+*/
 
 /* callback for the first apply call in name_set_compile */
 static void add_to_hash_inputs(
@@ -165,21 +212,59 @@ void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]]
 /* look up a name in this set */
 const struct name * name_set_lookup(
         struct name_set * name_set,
-        const char * name, 
+        const uint8_t * key, 
         size_t length
     ) [[gnu::nonnull(1, 2)]]
 {
+    /* first, transform */
+    constexpr size_t size_buffer = 1024;
+    size_t size_out_transform = size_buffer;
+    static uint8_t transform_buffer[size_buffer];
+    uint8_t * buffer_out_transform;
+
+    buffer_out_transform = u8_tolower(
+            key,
+            length,
+            uc_locale_language(),
+            NULL,
+            transform_buffer,
+            &size_out_transform
+        );
+
+    /* then, normalize/prepare for collation */
+    size_t size_out = size_buffer;
+    static char normxfrm_buffer[size_buffer];
+
+    char * buffer_out = u8_normxfrm(
+            buffer_out_transform,
+            size_out_transform,
+            UNINORM_NFC,
+            normxfrm_buffer,
+            &size_out
+        );
+
+    if (buffer_out_transform != transform_buffer) {
+        free(buffer_out_transform);
+    }
+
     if (name_set->hash) {
         const struct hash_lookup_result * hash_result =
-            hash_lookup(name_set->hash, name, length);
+            hash_lookup(name_set->hash, buffer_out, size_out);
 
         if (hash_result) {
+            if (buffer_out != normxfrm_buffer) {
+                free(buffer_out);
+            }
             return (const struct name *)hash_result;
         }
     }
 
     const struct sorted_set_lookup_result * sorted_set_result =
-        sorted_set_lookup(name_set->uncompiled, name, length);
+        sorted_set_lookup(name_set->uncompiled, buffer_out, size_out);
+
+    if (buffer_out != normxfrm_buffer) {
+        free(buffer_out);
+    }
 
     if (sorted_set_result) {
         return (const struct name *)sorted_set_result;
@@ -188,28 +273,44 @@ const struct name * name_set_lookup(
     return NULL;
 }
 
+/* used internally by name_set_apply */
+struct name_set_apply_context {
+    void (*fn)(struct name * name, void * ptr);
+    void * ptr;
+};
+
+/* used internally by name_set_apply */
+static void name_set_apply_helper(
+        const char * key,
+        size_t length,
+        void * data,
+        void * ptr
+    )
+{
+    (void)key;
+    (void)length;
+    struct name_set_apply_context * context = ptr;
+    struct name * name = data;
+    context->fn(name, ptr);
+}
+
 /* call this function every name */
 void name_set_apply(
         struct name_set * name_set,
-        void (*fn)(
-            const char * name,
-            size_t length,
-            struct name_data * data,
-            void * ptr
-        ),
+        void (*fn)(struct name * name, void * ptr),
         void * ptr
     ) [[gnu::nonnull(1, 2)]]
 {
     if (name_set->hash) {
         hash_apply(
                 name_set->hash,
-                (void (*)(const char *, size_t, void *, void *))fn,
-                ptr
+                &name_set_apply_helper,
+                &(struct name_set_apply_context){ .fn = fn, .ptr = ptr, }
             );
     }
     sorted_set_apply(
             name_set->uncompiled,
-            (void (*)(const char *, size_t, void *, void *))fn,
-            ptr
+            &name_set_apply_helper,
+            &(struct name_set_apply_context){ .fn = fn, .ptr = ptr }
         );
 }

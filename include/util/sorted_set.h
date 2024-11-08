@@ -65,12 +65,22 @@ enum sorted_set_add_key_result {
 
 /* add this key of length to the sorted set, associating it with data
  *
+ * the sorted_set takes ownership of this memory. do not free it after calling
+ * this function, unless the memory is extracted via an apply_and_destroy or
+ * transformation into a hash (and then from the hash.)
+ *
+ * note that this function operates on a char * because it is designed to be
+ * called on the result of u8_normxfrm() being called on a uint8_t *. as far
+ * as this function (and the sorted set) is concerned, key is just a block of
+ * bytes of a given length where we can compare the contents of individual
+ * bytes with <, ==, and > and get consistent results.
+ *
  * returns SORTED_SET_ADD_KEY_UNIQUE if the key was not already in the set,
  * or SORTED_SET_ADD_KEY_DUPLICATE otherwise
  */
 enum sorted_set_add_key_result sorted_set_add_key(
         struct sorted_set * sorted_set,
-        const char * key,
+        char * key,
         size_t length,
         void * data
     ) [[gnu::nonnull(1, 2)]];
@@ -78,11 +88,13 @@ enum sorted_set_add_key_result sorted_set_add_key(
 /* remove this key of length from the sorted set, returning the keys data
  * field, or NULL if the key is not in the set
  */
+/*
 void * sorted_set_remove_key(
         struct sorted_set * sorted_set,
         const char * key,
         size_t length
     ) [[gnu::nonnull(1, 2)]];
+*/
 
 /* apply this function to every key in sorted order
  *
@@ -111,6 +123,10 @@ void sorted_set_apply_and_destroy(
 
 /* find this key in the sorted set and return a const pointer to it, or NULL
  * if it's not in the set
+ *
+ * this function does not take ownership of key
+ *
+ * see sorted_set_add for why this is a char * and not a uint8_t *
  */
 const struct sorted_set_lookup_result * sorted_set_lookup(
         struct sorted_set * sorted_set,
@@ -159,6 +175,8 @@ void sorted_set_maker_destroy_except_keys(
         struct sorted_set_maker * sorted_set_maker) [[gnu::nonnull(1)]];
 
 /* add this key to this sorted_set_maker
+ *
+ * see sorted_set_add_key for why key is a char * and not a uint8_t *
  *
  * returns true if the sorted_set_maker is now complete
  *

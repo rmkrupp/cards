@@ -26,10 +26,13 @@
 #include "loader.h"
 #include "util/log.h"
 
+#include <unistr.h>
+#include <unitypes.h>
+#include <unicase.h>
+#include <uninorm.h>
+
 /* a card script */
 struct card {
-    enum name_type type;
-    char * display_name;
     struct ability ** abilities;
     size_t n_abilities;
     lua_State * L;
@@ -37,8 +40,6 @@ struct card {
 
 /* a card ability */
 struct ability {
-    enum name_type type;
-    char * display_name;
     struct card ** owners;
     size_t n_owners;
 };
@@ -53,14 +54,12 @@ void card_destroy(struct card * card) [[gnu::nonnull(1)]]
 {
     lua_close(card->L);
     free(card->abilities);
-    free(card->display_name);
     free(card);
 }
 
 /* destroy this ability */
 void ability_destroy(struct ability * ability) [[gnu::nonnull(1)]]
 {
-    free(ability->display_name);
     free(ability->owners);
     free(ability);
 }
@@ -106,19 +105,21 @@ struct card * card_load(
         lua_close(L);
         return NULL;
     }
+
     size_t name_length;
-    const char * name = lua_tolstring(L, -1, &name_length);
+    /* TODO: triple check this cast is fine */
+    const uint8_t * name = (const uint8_t *)lua_tolstring(L, -1, &name_length);
 
     struct card * card = malloc(sizeof(*card));
+
     *card = (struct card) {
-        .type = NAME_TYPE_CARD,
         .L = L
     };
 
     lua_pop(L, 1);
 
-    if (!name_set_add(name_set, name, name_length, card)) {
-        LOGF_ERROR(logger, "duplicate card name '%s'\n", name);
+    if (!name_set_add(name_set, name, name_length, card, NAME_TYPE_CARD)) {
+        LOGF_ERROR(logger, "duplicate card name '%.*U'\n", name_length, name);
         lua_close(L);
         free(card);
         return NULL;
@@ -127,13 +128,19 @@ struct card * card_load(
     lua_getfield(L, LUA_GLOBALSINDEX, "abilities");
 
     if (lua_isnil(L, -1)) {
-        LOGF_INFO(logger, "%s: no attributes", name);
+        LOGF_INFO(logger, "%.*s: no attributes", name_length, name);
         return card;
     }
 
     if (lua_type(L, -1) != LUA_TTABLE) {
-        LOGF_ERROR(logger, "%s: attributes field must be a table\n", name);
-        name_set_remove(name_set, name, name_length);
+        LOGF_ERROR(
+                logger,
+                "%.*s: attributes field must be a table\n",
+                name_length,
+                name
+            );
+        /* TODO: handle this remove */
+        //name_set_remove(name_set, name, name_length);
         free(card);
         return NULL;
     }
@@ -145,12 +152,21 @@ struct card * card_load(
     while (lua_next(L, -2) != 0) {
         if (lua_type(L, -2) != LUA_TNUMBER) {
             LOGF_ERROR(
-                    logger, "%s: abilities must be indexed by number\n", name);
+                    logger,
+                    "%.*s: abilities must be indexed by number\n",
+                    name_length,
+                    name
+                );
             lua_pop(L, 1);
             continue;
         }
         if (lua_type(L, -1) != LUA_TTABLE) {
-            LOGF_ERROR(logger, "%s: each ability must be a table\n", name);
+            LOGF_ERROR(
+                    logger,
+                    "%.*s: each ability must be a table\n",
+                    name_length,
+                    name
+                );
             lua_pop(L, 1);
             continue;
         }
@@ -158,7 +174,8 @@ struct card * card_load(
         if (lua_isnil(L, -1) || lua_type(L, -1) != LUA_TSTRING) {
             LOGF_ERROR(
                     logger,
-                    "%s: abilities must have a string-type name field\n",
+                    "%.*s: abilities must have a string-type name field\n",
+                    name_length,
                     name
                 );
             lua_pop(L, 2);
@@ -167,12 +184,14 @@ struct card * card_load(
         size_t length;
         const char * key = lua_tolstring(L, -1, &length);
         const struct name * ability_name =
-            name_set_lookup(name_set, key, length);
-        if (ability_name && ability_name->data->type == NAME_TYPE_CARD) {
+            name_set_lookup(name_set, (const uint8_t *)key, length);
+        if (ability_name && ability_name->type == NAME_TYPE_CARD) {
             LOGF_ERROR(
                     logger,
-                    "%s: ability name %s conflicts with card name\n",
+                    "%.*s: ability name %.*s conflicts with card name\n",
+                    name_length,
                     name,
+                    length,
                     key
                 );
             lua_pop(L, 2);
@@ -183,13 +202,18 @@ struct card * card_load(
         struct ability * ability;
 
         if (ability_name) {
-            LOGF_INFO(logger, "%s: ability %s already exists\n", name, key);
-            ability = ability_name->data->data;
+            LOGF_INFO(
+                    logger,
+                    "%.*s: ability %.*s already exists\n",
+                    name_length,
+                    name,
+                    length,
+                    key
+                );
+            ability = (struct ability *)ability_name->data;
         } else {
             ability = malloc(sizeof(*abilities[n_abilities]));
-            *ability = (struct ability) {
-                .type = NAME_TYPE_ABILITY
-            };
+            *ability = (struct ability) { };
         }
 
         /* TODO */
@@ -211,10 +235,11 @@ struct card * card_load(
         lua_pop(L, 2);
     }
 
+    /* TODO */
     /*
     for (size_t i = 0; i < n_abilities; i++) {
         struct ability * ability = abilities[i];
-        if (!name_set_add(name_set, key, length, ability)) {
+        if (!name_set_add(name_set, key, length, ability, NAME_TYPE_ABILITY)) {
             LOGF_ERROR(
                     logger,
                     "%s: error adding ability %s\n",

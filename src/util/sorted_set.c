@@ -30,7 +30,7 @@ struct sorted_set {
     size_t size;
 };
 
-/* a node in the BST */
+/* a node in the skip list */
 struct node {
     struct node ** next; /* this property must line up with sorted_set because
                           * we cast sorted_set into node in the add function
@@ -39,7 +39,7 @@ struct node {
                           */
 
     /* these three properties must stay in this order because we cast a pointer
-     * to the key field to a struct sorted_set_lookup_result pointer
+     * to the display_key field to a struct sorted_set_lookup_result pointer
      */
     char * key;
     size_t length;
@@ -92,6 +92,7 @@ void sorted_set_destroy_except_keys(
     free(sorted_set);
 }
 
+/* return the number of keys added to this set */
 size_t sorted_set_size(struct sorted_set * sorted_set) [[gnu::nonnull(1)]]
 {
     return sorted_set->size;
@@ -102,14 +103,14 @@ static int key_compare(const struct node * a, const struct node * b)
 {
     size_t length = a->length > b->length ? a->length : b->length;
     for (size_t i = 0; i < length; i++) {
-        if ((unsigned char)a->key[i] != (unsigned char)b->key[i]) {
-            return (int)(unsigned char)a->key[i] -
-                (int)(unsigned char)b->key[i];
+        if (a->key[i] != b->key[i]) {
+            return (int)a->key[i] - (int)b->key[i];
         }
     }
     return 0;
 }
 
+/* start at 1. do forever { if 50% chance: increase it, otherwise stop } */
 static size_t random_level()
 {
     size_t level = 1;
@@ -131,44 +132,47 @@ static size_t random_level()
 
 /* add this key of length to the sorted set, associating it with data
  *
+ * the sorted_set takes ownership of this memory. do not free it after calling
+ * this function, unless the memory is extracted via an apply_and_destroy or
+ * transformation into a hash (and then from the hash.)
+ *
+ * note that this function operates on a char * because it is designed to be
+ * called on the result of u8_normxfrm() being called on a uint8_t *. as far
+ * as this function (and the sorted set) is concerned, key is just a block of
+ * bytes of a given length where we can compare the contents of individual
+ * bytes with <, ==, and > and get consistent results.
+ *
  * returns SORTED_SET_ADD_KEY_UNIQUE if the key was not already in the set,
  * or SORTED_SET_ADD_KEY_DUPLICATE otherwise
- *
- * TODO: do we need a non-copying version?
  */
 enum sorted_set_add_key_result sorted_set_add_key(
         struct sorted_set * sorted_set,
-        const char * key,
+        char * key,
         size_t length,
         void * data
     ) [[gnu::nonnull(1, 2)]]
 {
+    /* pick a random height for the new nodde */
     size_t new_level = random_level();
 
-    struct node * new_node = malloc(sizeof(*new_node));
-    *new_node = (struct node) {
-        .key = (char *)key, /* cast away the const, we're going to make our
-                             * own copy of key down below if we actually keep
-                             * it but for now we don't have to
-                             */
-        .length = length,
-        .data = data
-    };
-
+    /* trailing nodes */
     struct node ** update = malloc(sizeof(*update) * sorted_set->layers);
     for (size_t i = new_level; i < sorted_set->layers; i++) {
         update[i] = NULL;
     }
 
+    /* locate where new node should go */
     size_t layer = sorted_set->layers - 1;
     struct node * node = (struct node *)sorted_set;
 
     for (;;) {
         while (node->next[layer]) {
-            int compare = key_compare(new_node, node->next[layer]);
+            int compare = key_compare(
+                    &(struct node) { .key = key, .length = length },
+                    node->next[layer]
+                );
             if (compare == 0) {
-                // duplicate
-                free(new_node);
+                /* key is a duplicate */
                 free(update);
                 return SORTED_SET_ADD_KEY_DUPLICATE;
             }
@@ -193,14 +197,15 @@ enum sorted_set_add_key_result sorted_set_add_key(
     /* at this point we know the key isn't a duplicate */
     sorted_set->size++;
 
-    new_node->key = malloc(length + 1);
-    for (size_t i = 0; i < length; i++ ) {
-        new_node->key[i] = key[i];
-    }
-    new_node->key[length] = '\0';
+    struct node * new_node = malloc(sizeof(*new_node));
+    *new_node = (struct node) {
+        .key = key,
+        .length = length,
+        .data = data,
+        .next = malloc(sizeof(*new_node->next) * new_level)
+    };
 
-    new_node->next = malloc(sizeof(*new_node->next) * new_level);
-
+    /* update the nexts of update[] and set new_node's nexts */
     if (new_level <= sorted_set->layers) {
         for (size_t i = 0; i < new_level; i++) {
             new_node->next[i] = update[i]->next[i];
@@ -242,7 +247,12 @@ enum sorted_set_add_key_result sorted_set_add_key(
  */
 void sorted_set_apply(
         struct sorted_set * sorted_set,
-        void (*fn)(const char * key, size_t length, void * data, void * ptr),
+        void (*fn)(
+            const char * key,
+            size_t length,
+            void * data,
+            void * ptr
+        ),
         void * ptr
     ) [[gnu::nonnull(1, 2)]]
 {
@@ -270,7 +280,12 @@ void sorted_set_apply(
  */
 void sorted_set_apply_and_destroy(
         struct sorted_set * sorted_set,
-        void (*fn)(char * key, size_t length, void * data, void * ptr),
+        void (*fn)(
+            char * key,
+            size_t length,
+            void * data,
+            void * ptr
+        ),
         void * ptr
     ) [[gnu::nonnull(1, 2)]]
 {
@@ -295,6 +310,10 @@ void sorted_set_apply_and_destroy(
 
 /* find this key in the sorted set and return a const pointer to it, or NULL
  * if it's not in the set
+ *
+ * this function does not take ownership of key
+ *
+ * see sorted_set_add for why this is a char * and not a uint8_t *
  */
 const struct sorted_set_lookup_result * sorted_set_lookup(
         struct sorted_set * sorted_set,
@@ -308,6 +327,9 @@ const struct sorted_set_lookup_result * sorted_set_lookup(
     for (;;) {
         while (node->next[layer]) {
             int compare = key_compare(
+                    /* casting away the const is fine, key_compare doesn't
+                     * modify the node
+                     */
                     &(struct node) { .key = (char *)key, .length = length },
                     node->next[layer]
                 );
@@ -337,9 +359,10 @@ const struct sorted_set_lookup_result * sorted_set_lookup(
 /* remove this key of length from the sorted set, returning the keys data
  * field, or NULL if the key is not in the set
  */
+/*
 void * sorted_set_remove_key(
         struct sorted_set * sorted_set,
-        const char * key,
+        const uint8_t * key,
         size_t length
     ) [[gnu::nonnull(1, 2)]]
 {
@@ -385,6 +408,7 @@ void * sorted_set_remove_key(
 
     return NULL;
 }
+*/
 
 /* a sorted_set_maker
  *
@@ -535,6 +559,10 @@ void sorted_set_maker_destroy_except_keys(
 }
 
 /* add this key to this sorted_set_maker
+ *
+ * this takes ownership of key
+ *
+ * see sorted_set_add_key for why key is a char * and not a uint8_t *
  *
  * returns true if the sorted_set_maker is now complete
  *

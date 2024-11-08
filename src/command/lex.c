@@ -24,7 +24,6 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <string.h>
 
 #include <unistr.h>
 #include <uniname.h>
@@ -115,7 +114,7 @@
 
 static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
-#if defined(VERBOSE_LEXER)
+#if VERBOSE_LEXER
 
 /* for displaying errors
  *
@@ -239,7 +238,8 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 
         case PARTICLE_KEYWORD:
             return refstring_createf(
-                    "KEYWORD<%U>%s",
+                    "KEYWORD<%.*U>%s",
+                    particle->length,
                     particle->value,
                     particle->keyword == KEYWORD_NO_MATCH ? "*" : ""
                 );
@@ -249,8 +249,8 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 
         case PARTICLE_NAME:
             return refstring_createf(
-                    "NAME%U<%U>%s",
-                    u8"ñ",
+                    "NAME<%.*U>%s",
+                    particle->length,
                     particle->value,
                     particle->name ? "" : "*"
                 );
@@ -384,58 +384,24 @@ static struct particle * consume_name(
 
     struct particle * particle = particle_create(PARTICLE_NAME);
 
-    /* TODO maximum name size? (we are already limited by maximum command
-     *      size, though
-     */
-    size_t size_in = i - *n - 1;
-    /* TODO: is this the right size? */
-    constexpr size_t size_buffer_norm = 1024;
-    size_t size_out = size_buffer_norm;
-    static uint8_t normalization_buffer[size_buffer_norm];
-    /*
-    uint8_t * buffer_out = u8_normalize(
-            UNINORM_NFC,
-            &input[*n + 1],
-            size_in,
-            normalization_buffer,
-            &size_out
-        );
-    */
-    /* TODO: lowercase */
-    uint8_t * buffer_out = u8_tolower(
-            &input[*n + 1],
-            size_in,
-            uc_locale_language(),
-            UNINORM_NFC,
-            normalization_buffer,
-            &size_out
-        );
+    /* TODO: if lookups require a pre-transform, do it here */
 
-    /* TODO: name_set_lookup should take utf-8 */
-    particle->name = name_set_lookup(name_set, (char *)buffer_out, size_out);
+    particle->name = name_set_lookup(
+            name_set,
+            &input[*n + 1],
+            i - *n - 1
+        );
 
     if (particle->name) {
-        /* TODO: const issue. should there be const val? see keyword too */
-        particle->value = (uint8_t *)particle->name->name;
-        particle->length = particle->name->length;
-        if (buffer_out != normalization_buffer) {
-            free(buffer_out);
-        }
+        particle->value = particle->name->display_name;
+        particle->length = particle->name->display_name_length;
     } else {
-        /* TODO: we can't always add null terminator since norm doesn't give
-         *       us space for that
-         */
-        if (buffer_out == normalization_buffer) {
-            particle->value = malloc(size_out + 1);
-            for (size_t j = 0; j < size_out; j++) {
-                particle->value[j] = buffer_out[j];
-            }
-            particle->value[size_out] = 0;
-            particle->length = size_out;
-        } else {
-            particle->value = buffer_out;
-            particle->length = size_out;
+        /* TODO: this is a reason to do the pre-transform!!! */
+        particle->value = malloc(i - *n - 1);
+        for (size_t j = 0; j < i - *n - 1; j++) {
+            particle->value[j] = input[*n + 1 + j];
         }
+        particle->length = i - *n - 1;
     }
 
     *n = i;
