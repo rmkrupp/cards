@@ -113,6 +113,14 @@ static const char * charmsg(char c)
  *    aren't more complex, the lexer can basically stay as is. Note that both
  *    normalization and case-folding involve memory allocations because they
  *    can change the length of the string. We could use a buffer, though.
+ *
+ * 5) TODO: re-entrant lexer
+ *
+ *    Instead of always receiving input a complete newline-termianted string
+ *    at a time, we could switch to a reentrant lexing strategy that takes
+ *    in any amount of data and handles incomplete lexing. This might make
+ *    sense to do as part of the Unicode handling, though I don't know how easy
+ *    it is to handle "interrupted" multibyte codepoints?
  */
 
 /* how much to grow the particle_buffer by, in number of particles,

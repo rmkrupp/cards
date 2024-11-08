@@ -16,7 +16,11 @@
 
  - [ ] normalize card, ability, and subtype names when loaded
 
+ - [ ] reentrant lexer
+
  - [ ] normalize inputted names for matching against cards/abilities
+
+   - [ ] UTF-8 aware casefolding
 
  - [ ] determine if cards should have a Display Name, and if the non-display
        name should be specified explicitly or created automatically from the
