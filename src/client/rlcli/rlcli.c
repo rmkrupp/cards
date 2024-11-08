@@ -19,100 +19,95 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "client/rlcli/args.h"
 
-#include <pthread.h>
-
-/* these defines are needed to make rl_message work right */
-#define USE_VARARGS
-#define PREFER_STDARG
-#include <readline/readline.h>
-#include <readline/history.h>
+#include "linenoise.h"
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 
+/* NOTE: this does not actaully build under mingw/--build=w64 because lineoise
+ *       depends on termios.h and is not trivial to port to Windows
+ */
 #if defined(__MINGW32__)
 #include <windef.h>
 #endif /* __MINGW32__ */
 
-struct bufferevent * global_bev = NULL;
+/* this client is not currently built
+ *
+ * to build it, clone a copy of linenoise in libs and add the linenoise.h and
+ * linenoise.c to the build, and add a target to build this that uses this
+ * source, the appropriate rlcli args source, and linenoise.c
+ *
+ * it doesn't need to be build with pthreads or readline
+ */
 
-static int hook()
+struct in_readcb_arg {
+    struct linenoiseState * ls;
+    struct bufferevent * bev_net;
+    char * buffer;
+    size_t buffer_size;
+};
+
+void in_readcb(evutil_socket_t socket, short all, void * arg)
 {
-    struct bufferevent * bev = global_bev;
-    if (!bev) {
-        return 0;
+    (void)socket;
+    (void)all;
+    struct in_readcb_arg * in_readcb_arg = arg;
+    struct linenoiseState * ls = in_readcb_arg->ls;
+    char * buffer = in_readcb_arg->buffer;
+    size_t buffer_size = in_readcb_arg->buffer_size;
+    struct evbuffer * output = bufferevent_get_output(in_readcb_arg->bev_net);
+
+    char * line = linenoiseEditFeed(ls);
+    if (line == linenoiseEditMore) {
+        return;
     }
-    struct evbuffer * input = bufferevent_get_input(bev);
-    int needsclear = 1;
-    size_t n;
-    char * linein;
-    while ((linein = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY))) {
-        if (needsclear) {
-            rl_save_prompt();
-            needsclear = 0;
-        }
-        rl_message("%s\n", linein);
-        free(linein);
+    linenoiseEditStop(ls);
+    if (!line) {
+        evbuffer_add_printf(output, "exit\n");
+        return;
     }
-    if (needsclear == 0) {
-        rl_restore_prompt();
-        rl_redisplay();
-    }
-    return 0;
+    linenoiseHistoryAdd(line);
+    evbuffer_add_printf(output, "%s\n", line);
+    linenoiseFree(line);
+    linenoiseEditStart(ls, -1, -1, buffer, buffer_size, "# ");
 }
 
-static void * readline_fn(void * ctx)
+static void net_readcb(struct bufferevent * bev, void * ctx)
 {
-    struct bufferevent ** bevptr = ctx;
+    struct linenoiseState * ls = ctx;
 
-    while (*bevptr) {
-        char * line = readline("# ");
-        struct bufferevent * bev = *bevptr;
-        if (!bev) {
-            free(line);
-            return NULL;
-        }
-        if (line && line[0]) {
-            add_history(line);
+    struct evbuffer * input = bufferevent_get_input(bev);
+    size_t n;
+    char * line;
 
-            struct evbuffer * output = bufferevent_get_output(bev);
-            evbuffer_add_printf(output, "%s\n", line);
-        }
+    linenoiseHide(ls);
+    while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY))) {
+        printf("%s\r\n", line);
         free(line);
     }
-
-    return NULL;
+    linenoiseShow(ls);
 }
 
 static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
 {
-    (void)ctx;
+    struct linenoiseState * ls = ctx;
+
     if (events & BEV_EVENT_CONNECTED) {
-        if (rl_readline_state == RL_STATE_NONE) {
-            fprintf(stderr, "[cli] connected\n");
-        } else {
-            rl_message("[cli] connected\n");
-        }
+        printf("[cli] connected\r\n");
+        linenoiseShow(ls);
         bufferevent_enable(bev, EV_READ);
     } else if (events & BEV_EVENT_ERROR ) {
-        if (rl_readline_state == RL_STATE_NONE) {
-            fprintf(stderr, "[cli] error connecting\n");
-        } else {
-            rl_message("[cli] error connecting\n");
-            rl_redisplay();
-        }
+        linenoiseHide(ls);
+        printf("[cli] error connecting\r\n");
         event_base_loopexit(bufferevent_get_base(bev), NULL);
     } else if (events & BEV_EVENT_EOF) {
-        if (rl_readline_state == RL_STATE_NONE) {
-            fprintf(stderr, "[cli] disconnected\n");
-        } else {
-            rl_message("[cli] disconnected\n");
-            rl_redisplay();
-        }
+        linenoiseHide(ls);
+        printf("[cli] disconnected\r\n");
         event_base_loopexit(bufferevent_get_base(bev), NULL);
     }
 }
@@ -142,11 +137,21 @@ int main(int argc, char ** argv)
     }
 
 #if defined(__MINGW32__)
+    SetConsoleMode(0, 0x4);
+#endif /* __MINGW32__ */
+
+    size_t ls_buffer_size = 16 * 1024;
+    char * ls_buffer = malloc(ls_buffer_size);
+    struct linenoiseState ls;
+    linenoiseEditStart(&ls, -1, -1, ls_buffer, ls_buffer_size, "# ");
+    linenoiseHide(&ls);
+
+#if defined(__MINGW32__)
     WORD wVersionRequested = MAKEWORD(2, 2);
     WSADATA wsaData;
     int err;
     if ((err = WSAStartup(wVersionRequested, &wsaData))) {
-        fprintf(stderr, "[cli] WSAStartup() failed (code %d)\n", err);
+        fprintf(stderr, "[cli] WSAStartup() failed (code %d\r\n", err);
         free(args.portname);
         free(args.hostname);
         return 1;
@@ -168,7 +173,7 @@ int main(int argc, char ** argv)
     if (result) {
         fprintf(
                 stderr,
-                "[cli] error resolving '%s': %s\n",
+                "[cli] error resolving '%s': %s\r\n",
                 args.hostname,
                 evutil_gai_strerror(result)
             );
@@ -183,17 +188,16 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    struct bufferevent * bev_net = bufferevent_socket_new(
-            base, -1, 0);
+    struct bufferevent * bev_net = bufferevent_socket_new(base, -1, 0);
 
-    bufferevent_setcb(bev_net, NULL, NULL, net_eventcb, NULL);
+    bufferevent_setcb(bev_net, net_readcb, NULL, net_eventcb, &ls);
 
     if (bufferevent_socket_connect(
                 bev_net,
                 answer->ai_addr,
                 sizeof(*answer->ai_addr)
             )) {
-        fprintf(stderr, "[cli] error connecting\n");
+        fprintf(stderr, "[cli] error connecting\r\n");
         free_args(&args);
         evutil_freeaddrinfo(answer);
         bufferevent_free(bev_net);
@@ -217,10 +221,10 @@ int main(int argc, char ** argv)
     }
 
     for (size_t i = 0; i < args.n_load_files; i++) {
-        printf("[cli] loading input from \"%s\"\n", args.load_files[i]);
+        printf("[cli] loading input from \"%s\"\r\n", args.load_files[i]);
         FILE * f = fopen(args.load_files[i], "r");
         if (!f) {
-            fprintf(stderr, "[cli] error: %s\n", strerror(errno));
+            fprintf(stderr, "[cli] error: %s\r\n", strerror(errno));
             continue;
         }
         while (fgets(line, line_max, f)) {
@@ -235,32 +239,21 @@ int main(int argc, char ** argv)
 
     free_args(&args);
 
-    rl_event_hook = &hook;
+    struct in_readcb_arg arg = (struct in_readcb_arg) {
+        .ls = &ls,
+        .bev_net = bev_net,
+        .buffer = ls_buffer,
+        .buffer_size = ls_buffer_size
+    };
 
-    pthread_t readline_thread;
-    int res = pthread_create(&readline_thread, NULL, &readline_fn, &global_bev);
-
-    if (res) {
-        fprintf(stderr, "[cli] error creating thread (%d)\n", res);
-
-        bufferevent_free(bev_net);
-        event_base_free(base);
-        libevent_global_shutdown();
-
-#if defined(__MINGW32__)
-        WSACleanup();
-#endif /* __MINGW32__ */
-    }
-
-    global_bev = bev_net;
-
+    struct event * in_ev = event_new(
+            base, 0, EV_READ | EV_PERSIST, &in_readcb, &arg);
+    event_add(in_ev, NULL);
     event_base_dispatch(base);
 
-    global_bev = NULL;
-    rl_done = 1;
-
-    pthread_join(readline_thread, NULL);
-
+    linenoiseEditStop(&ls);
+    free(ls_buffer);
+    event_free(in_ev);
     bufferevent_free(bev_net);
     event_base_free(base);
     libevent_global_shutdown();

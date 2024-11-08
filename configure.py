@@ -442,7 +442,8 @@ w.build('$builddir/client/cli/args_argp.o', 'cc', 'src/client/cli/args_argp.c',
         variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
 w.newline()
 
-w.build('$builddir/client/rlcli/rlcli.o', 'cc', 'src/client/rlcli/rlcli.c')
+w.build('$builddir/client/rlcli/rlcli.o', 'cc', 'src/client/rlcli/rlcli.c',
+        variables=[('includes', '$includes -Ilibs/linenoise')])
 w.build('$builddir/client/rlcli/args_getopt.o', 'cc',
         'src/client/rlcli/args_getopt.c')
 w.build('$builddir/client/rlcli/args_argp.o', 'cc',
@@ -454,6 +455,9 @@ w.build('$builddir/command/keyword.c', 'gperf', 'src/command/keyword.gperf')
 w.newline()
 
 w.build('$builddir/libs/hash/hash.o', 'cc', 'libs/hash/src/hash.c')
+w.newline()
+
+w.build('$builddir/libs/linenoise/linenoise.o', 'cc', 'libs/linenoise/linenoise.c')
 w.newline()
 
 #
@@ -590,7 +594,8 @@ bin_target(
         name = 'clients/rlcli',
         inputs = [
             '$builddir/client/rlcli/rlcli.o',
-            '$builddir/util/strdup.o'
+            '$builddir/util/strdup.o',
+            '$builddir/libs/linenoise/linenoise.o'
         ],
         argp_inputs = [
             '$builddir/client/rlcli/args_argp.o'
@@ -599,16 +604,15 @@ bin_target(
             '$builddir/client/rlcli/args_getopt.o'
         ],
         variables = [
-            ('libs', '-levent $w64netlibs -lreadline $w64curses'),
-            ('cflags', '$cflags -pthread')
+            ('libs', '-levent')
         ],
         is_disabled = [
             'rlcli' in args.disable_client,
-            args.disable_readline
+            args.build == 'w64'
         ],
         why_disabled = [
             'we were generated with --disable-client=rlcli',
-            'we were generated with --disable-readline'
+            'we were generated with --build=w64',
         ],
         targets = [all_targets, tools_targets]
     )

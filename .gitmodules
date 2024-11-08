@@ -1,3 +1,9 @@
 [submodule "libs/hash"]
 	path = libs/hash
 	url = https://github.com/rmkrupp/hash
+[submodule "libs/--force"]
+	path = libs/--force
+	url = https://github.com/antirez/linenoise
+[submodule "libs/linenoise"]
+	path = libs/linenoise
+	url = https://github.com/antirez/linenoise
