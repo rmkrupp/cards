@@ -22,6 +22,7 @@
 
 #include <stddef.h>
 
+/* for w64 portability, we define our own version of these functions */
 [[nodiscard]] char * util_strdup(const char * s);
 char * util_strndup(const char * s, size_t n);
 
