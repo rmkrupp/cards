@@ -123,7 +123,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
     size_t n = 0;
     do {
-        char * line = evbuffer_readln(input, &n, EVBUFFER_EOL_LF);
+        char * line = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY);
         if (line) {
 
             if (strcmp(line, "exit") == 0) {
@@ -132,8 +132,23 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 return;
             }
 
+            if (strncmp(line, "say ", 4) == 0) {
+                for (size_t i = 0; i < connection->networker->n_connections; i++) {
+                    if (connection->networker->connections[i]) {
+                        struct evbuffer * output =
+                            bufferevent_get_output(
+                                    connection->networker->connections[i]->bev);
+                        evbuffer_add_printf(output, "%s\n", &line[4]);
+                    }
+                }
+                free(line);
+                continue;
+            }
+
             if (strcmp(line, "shutdown") == 0) {
                 event_base_loopexit(connection->networker->base, NULL);
+                free(line);
+                continue;
             }
 
             /* minimal lexing code for testing */
