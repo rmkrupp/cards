@@ -17,23 +17,74 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
-
 #include <event2/event.h>
 
-#include "config.h"
 #include "server.h"
+#include "config.h"
 #include "util/log.h"
 
 #if defined(__MINGW32__)
 #include <windef.h>
 #endif /* __MINGW32__ */
 
+#define __USE_GNU
+#include <stdlib.h>
+#include <locale.h>
+#include <uniconv.h>
+
+#include <getopt.h>
+
+static struct option options[] = {
+    { "locale", required_argument, 0, 'l' },
+    { "help", 0, 0, 1000 },
+    { }
+};
+
+static void usage()
+{
+    fprintf(
+            stderr,
+            "Usage: cards [--help] [-l|--locale LOCALE] [CONFIG...]\n"
+        );
+}
+
 int main(int argc, char ** argv) {
+    /* read the locale from the system, first attempting to use the
+     * environment variable LC_ALL, then LANG
+     */
+    char * lc_all = secure_getenv("LC_ALL");
+    if (!lc_all) {
+        lc_all = secure_getenv("LANG");
+    }
+    setlocale(LC_ALL, lc_all);
+
+    /* now we can try and read the locale from the command line */
+    while (1) {
+        int index = 0;
+        int c = getopt_long(argc, argv, "l:", options, &index);
+
+        if (c == -1) {
+            break;
+        }
+
+        switch (c) {
+            case 'l':
+                setlocale(LC_ALL, optarg);
+                break;
+
+            case 1000:
+            case '?':
+            default:
+                usage();
+                return 1;
+        }
+    }
+
+    printf("locale = %s\n", locale_charset());
 
     struct config config = (struct config) { };
 
-    if (config_load(&config, argc - 1, &argv[1])) {
+    if (config_load(&config, argc - optind, &argv[optind])) {
         return 1;
     }
 
