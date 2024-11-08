@@ -36,6 +36,8 @@
 
  - [ ] load commands from save game files and feed them all to a parser
 
+   - [ ] load card bundles from save game
+
  - [ ] set up player types within the game object
 
    - [ ] extract player lists from save games
@@ -50,7 +52,7 @@
    - [ ] implement state tracking (i.e. a counter) in the game object and flag
          state-changing commands as they come back from the parser
 
-   - [ ] save logs and metadata to save game files
+   - [ ] save logs, bundles, and metadata to save game files
 
 ### Tools
 
