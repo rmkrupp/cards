@@ -55,6 +55,13 @@ int main(int argc, char ** argv) {
 
     struct server * server = server_create(&config);
 
+    if (!server) {
+#if defined(__MINGW32__)
+        WSACleanup();
+#endif /* __MINGW32__ */
+        return 1;
+    }
+
     LOGF_VERBOSE(config.logger, "server_run()\n");
 
     server_run(server);
