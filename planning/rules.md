@@ -11,7 +11,7 @@ These cards fight opponent character cards or deal damage in some form, such as
 to life-energy, another character, etc.
 
 Character cards have traits that may affect many things, such as damage taken.
-For example, if a character is human and a spell the opponent is using affects
+For example, if a character is human and a effect the opponent is using affects
 humans more, then it will do more damage or have more effect relative to the
 amount of human that card is.
 
@@ -37,10 +37,10 @@ B's attack defense (1)
 
 5. A (2/1/1) attacks B (1/1/3) in attack mode.  Card B is destroyed.
 
-Character cards can have abilities that are invoked like spell cards.
+Character cards can have abilities that are invoked like effect cards.
 
 Characters also have an HP mechannic.  This is a separate reserve of points
-that can be lowered by status conditions or spells.  The character is destroyed
+that can be lowered by status conditions or effects.  The character is destroyed
 if they lose all of their HP.
 
 Cards with non-zero attack have a RANGE attribute that determines how many
@@ -57,16 +57,16 @@ the equipment card.
 Equipment can be attached and detached from any character in your field as many
 times as you like.
 
-### Spell Cards
+### Effect Cards
 
 These are single use cards that alter some aspect of the game when played.
-Spell cards have durations anywhere from instant to permanent.
+Effect cards have durations anywhere from instant to permanent.
 
 ### Trigger Cards
 
 These cards are single use and trigger when a condition the player has entered
 is met. This condition can be changed on the player's turn. Trigger cards, when
-triggered, are essentially spell cards.
+triggered, are essentially effect cards.
 
 ### Face
 
@@ -74,7 +74,7 @@ Character cards can be played face down in attack or defense mode or face up in
 attack or defense mode.  They cannot attack while face down, and if they are
 attacked they become face up.
 
-Spell cards cannot be played face down.
+Effect cards cannot be played face down.
 
 Trigger cards must be played face down unless they are to be immediately
 triggered.  When a trigger card is triggered, it becomes face up.
@@ -89,7 +89,7 @@ cards cannot be flipped from up to down without a special ability.
 
 For each player:
 
-All trigger, spell, and unattached equipment cards go in a special zone.
+All trigger, effect, and unattached equipment cards go in a special zone.
 
 All characters go in a single zone, numbered from the zone closest to the
 player to the zone farthest. There can be as many zones as there are
@@ -104,14 +104,14 @@ On your turn...
  1. You must draw 1 card.
  2. You can do as many of these as you want in any order (these actions apply
     only to cards in your field)
-    1. activate any spells, triggers, or abilities
+    1. activate any effects, triggers, or abilities
     2. play any number of cards
         1. if a character card is played it can go into any character zone
         2. Otherwise, it goes into the special zone
 
     3. change any cards from attack mode to defense mode
     4. change any cards from defense mode to attack mode
-    5. flip any face-down cards face-up (if they are spells or triggers this
+    5. flip any face-down cards face-up (if they are effects or triggers this
        activates them)
     6. move cards from one zone to another (this can create or destroy zones as
        needed)
@@ -121,7 +121,7 @@ On your turn...
        attached to another character card.
 
 3. You can attack with up to one card
-4. You can activate any spells, triggers, or abilities in play - you cannot
+4. You can activate any effects, triggers, or abilities in play - you cannot
 detach or reattach equipment in this phase.
 5. If there is a game limit on the number of cards in your hand, you must
    discard cards until the limit is met
@@ -142,7 +142,7 @@ played.
 Play-energy combines from all sources and is equal for all players.
 
 If play-energy decreases and a card no longer has its minimum play-energy, it
-cannot use any abilities (the effect of ongoing spells stop, triggers cannot be
+cannot use any abilities (the effect of ongoing effects stop, triggers cannot be
 triggered, and other activated abilities cannot be used) but a character card
 can still attack, defend, move, turn face up, or switch modes.
 
