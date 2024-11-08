@@ -20,6 +20,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <unitypes.h>
+
 /* forward declare */
 struct config;
 
@@ -52,7 +54,7 @@ void logger_logf(
         enum log_level level,
         const char * format,
         ...
-    ) [[gnu::format(printf, 3, 4), gnu::nonnull(1, 3)]];
+    ) [[gnu::nonnull(3)]];
 
 /* predefined macros that call logger_logf() with their corresponding
  * log level.

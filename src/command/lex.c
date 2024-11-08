@@ -26,35 +26,18 @@
 #include <assert.h>
 #include <string.h>
 
+#include <unistr.h>
+#include <uniname.h>
+#include <uninorm.h>
+#include <unicase.h>
+#include <unistdio.h>
+
 #include "util/strdup.h"
 #include "util/refstring.h"
+#include "util/log.h"
 
 #ifndef VERBOSE_LEXER
 #define VERBOSE_LEXER 0
-#endif /* VERBOSE_LEXER */
-
-#if VERBOSE_LEXER
-
-#include <stdio.h>
-#include <ctype.h>
-
-/* buffer of at least 5 bytes */
-static const char * charmsg(char c)
-{
-    static char buffer[5];
-
-    if (isprint(c) && !isspace(c)) {
-        buffer[0] = '\'';
-        buffer[1] = c;
-        buffer[2] = '\'';
-        buffer[3] = '\0';
-        return buffer;
-    } else {
-        snprintf(buffer, 5, "%hhx", c);
-        return buffer;
-    }
-}
-
 #endif /* VERBOSE_LEXER */
 
 /* GENERAL NOTES ON THE LEXER
@@ -132,6 +115,47 @@ static const char * charmsg(char c)
 
 static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 
+#if defined(VERBOSE_LEXER)
+
+/* for displaying errors
+ *
+ * takes the first ucs4_t off the front of s and gets its name
+ *
+ * returns a pointer to static memory (good until charmsg is called again)
+ * with that name, or with the special strings <0xFFFD> if the character was
+ * invalid (i.e. u8_mbtouc() failed) or <null> if unicode_character_name()
+ * returned null.
+ */
+static const uint8_t * charmsg(const uint8_t * s)
+{
+    static uint8_t buffer_out[UNINAME_MAX];
+    static char buffer_name[UNINAME_MAX];
+
+    static_assert(UNINAME_MAX >= 9);
+
+    ucs4_t c;
+
+    size_t n = u8_mbtouc(&c, s, 4);
+    assert(n > 0 && n <= 4);
+
+    if (c == 0xFFFD) {
+        u8_snprintf(buffer_out, UNINAME_MAX, "<0xFFFD>");
+        return buffer_out;
+    }
+
+    if (!unicode_character_name(c, buffer_name)) {
+        u8_snprintf(buffer_out, UNINAME_MAX, "<null>");
+        return buffer_out;
+    }
+
+    u8_snprintf(buffer_out, UNINAME_MAX, "%s", buffer_name);
+
+    return buffer_out;
+}
+
+#endif /* VERBOSE_LEXER */
+
+
 /* create a particle with the given type and NULL value */
 [[nodiscard]] struct particle * particle_create(enum particle_type type)
 {
@@ -152,14 +176,21 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
  * TODO: is this function needed? it is not used by the lexer.
  */
 [[nodiscard]] struct particle * particle_create_value(
-        enum particle_type type, const char * value, size_t n)
+        enum particle_type type, const uint8_t * value, size_t n)
 {
     struct particle * particle = malloc(sizeof(*particle));
+
     *particle = (struct particle) {
         .type = type,
-        .value = util_strndup(value, n),
-        .length = strnlen(value, n)
+        .value = malloc(n + 1),
+        .length = n
     };
+
+    for (size_t i = 0; i < n; i++) {
+        particle->value[i] = value[i];
+    }
+    particle->value[n] = 0;
+
     return particle;
 }
 
@@ -208,17 +239,18 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 
         case PARTICLE_KEYWORD:
             return refstring_createf(
-                    "KEYWORD<%s>%s",
+                    "KEYWORD<%U>%s",
                     particle->value,
                     particle->keyword == KEYWORD_NO_MATCH ? "*" : ""
                 );
 
         case PARTICLE_NUMBER:
-            return refstring_createf("NUMBER<%s>", particle->value);
+            return refstring_createf("NUMBER<%U>", particle->value);
 
         case PARTICLE_NAME:
             return refstring_createf(
-                    "NAME<%s>%s",
+                    "NAME%U<%U>%s",
+                    u8"ñ",
                     particle->value,
                     particle->name ? "" : "*"
                 );
@@ -230,7 +262,7 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
             return refstring_createf(")");
 
         default:
-            return refstring_create("UNKNOWN");
+            return refstring_createf("UNKNOWN");
     }
 }
 
@@ -303,7 +335,7 @@ void particle_buffer_add(
 }
 
 /* subfunction of lex() */
-static struct particle * consume_end_nest(const char * input, size_t * n)
+static struct particle * consume_end_nest(const uint8_t * input, size_t * n)
 {
     if (input[*n + 1] == '\0'
             || input[*n + 1] == ' '
@@ -312,10 +344,10 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
         return particle_create(PARTICLE_END_NEST);
     } else {
 #if VERBOSE_LEXER
-        fprintf(
-                stderr,
-                "lexer error 8 (bad char %s following end nest)\n",
-                charmsg(input[*n + 1])
+        LOGF_ERROR(
+                NULL,
+                "lexer error 8 (bad char %U following end nest)\n",
+                charmsg(&input[*n + 1])
             );
 #endif /* VERBOSE_LEXER */
         return NULL;
@@ -324,56 +356,95 @@ static struct particle * consume_end_nest(const char * input, size_t * n)
 
 /* subfunction of lex() */
 static struct particle * consume_name(
-        const char * input, size_t * n, struct name_set * name_set)
+        const uint8_t * input, size_t * n, struct name_set * name_set)
 {
-    for (size_t i = *n + 1; ; i++) {
+    size_t i;
+    for (i = *n + 1; ; i++) {
         if (!input[i]) {
 #if VERBOSE_LEXER
-            fprintf(stderr, "lexer error 7 (null char in name)\n");
+            LOGF_ERROR(NULL, "lexer error 7 (null byte in name)\n");
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
         if (input[i] == '\n' || input[i] == '\r' ||
                 input[i] == 0xb || input[i] == 0xc) {
 #if VERBOSE_LEXER
-            fprintf(
-                    stderr,
-                    "lexer error 6 (char %s in name)\n",
-                    charmsg(input[i])
+            LOGF_ERROR(
+                    NULL,
+                    "lexer error 6 (char %U in name)\n",
+                    charmsg(&input[i])
                 );
 #endif /* VERBOSE_LEXER */
             return NULL;
         }
         if (input[i] == '"') {
-            struct particle * particle = particle_create(PARTICLE_NAME);
-
-            /* TODO (UTF-8 support) normalize the input before looking it up */
-            particle->name =
-                name_set_lookup(name_set, &input[*n + 1], i - *n - 1);
-
-            if (particle->name) {
-                particle->value = (char *)particle->name->name;
-                particle->length = particle->name->length;
-            } else {
-                /* TODO (UTF-8 support) use a UTF-8 aware case change function
-                 */
-                particle->value = malloc(i - *n);
-                for (size_t j = 0; j < i - *n - 1; j++) {
-                    particle->value[j] = input[*n + 1 + j];
-                }
-                particle->value[i - *n - 1] = '\0';
-                particle->length = i - *n - 1;
-            }
-
-            *n = i;
-
-            return particle;
+            break;
         }
     }
+
+    struct particle * particle = particle_create(PARTICLE_NAME);
+
+    /* TODO maximum name size? (we are already limited by maximum command
+     *      size, though
+     */
+    size_t size_in = i - *n - 1;
+    /* TODO: is this the right size? */
+    constexpr size_t size_buffer_norm = 1024;
+    size_t size_out = size_buffer_norm;
+    static uint8_t normalization_buffer[size_buffer_norm];
+    /*
+    uint8_t * buffer_out = u8_normalize(
+            UNINORM_NFC,
+            &input[*n + 1],
+            size_in,
+            normalization_buffer,
+            &size_out
+        );
+    */
+    /* TODO: lowercase */
+    uint8_t * buffer_out = u8_tolower(
+            &input[*n + 1],
+            size_in,
+            uc_locale_language(),
+            UNINORM_NFC,
+            normalization_buffer,
+            &size_out
+        );
+
+    /* TODO: name_set_lookup should take utf-8 */
+    particle->name = name_set_lookup(name_set, (char *)buffer_out, size_out);
+
+    if (particle->name) {
+        /* TODO: const issue. should there be const val? see keyword too */
+        particle->value = (uint8_t *)particle->name->name;
+        particle->length = particle->name->length;
+        if (buffer_out != normalization_buffer) {
+            free(buffer_out);
+        }
+    } else {
+        /* TODO: we can't always add null terminator since norm doesn't give
+         *       us space for that
+         */
+        if (buffer_out == normalization_buffer) {
+            particle->value = malloc(size_out + 1);
+            for (size_t j = 0; j < size_out; j++) {
+                particle->value[j] = buffer_out[j];
+            }
+            particle->value[size_out] = 0;
+            particle->length = size_out;
+        } else {
+            particle->value = buffer_out;
+            particle->length = size_out;
+        }
+    }
+
+    *n = i;
+
+    return particle;
 }
 
 /* subfunction of lex() */
-static struct particle * consume_number(const char * input, size_t * n)
+static struct particle * consume_number(const uint8_t * input, size_t * n)
 {
     for (size_t i = *n + 1; ; i++) {
         if (!input[i] || input[i] == ' ' ||
@@ -393,10 +464,10 @@ static struct particle * consume_number(const char * input, size_t * n)
             // okay
         } else {
 #if VERBOSE_LEXER
-            fprintf(
-                    stderr,
-                    "lexer error 4 (bad char %s in number)\n",
-                    charmsg(input[i])
+            LOGF_ERROR(
+                    NULL,
+                    "lexer error 4 (bad char %U in number)\n",
+                    charmsg(&input[i])
                 );
 #endif /* VERBOSE_LEXER */
             return NULL;
@@ -405,7 +476,7 @@ static struct particle * consume_number(const char * input, size_t * n)
 }
 
 /* subfunction of lex() */
-static struct particle * consume_keyword(char * input, size_t * n)
+static struct particle * consume_keyword(uint8_t * input, size_t * n)
 {
     size_t start = *n;
     for (size_t i = start + 1; ; i++) {
@@ -416,16 +487,18 @@ static struct particle * consume_keyword(char * input, size_t * n)
 
             /* TODO (UTF-8 support) if we support UTF-8 keywords, normalize
              *      before lookup
+             *
+             *      use non-gperf for keyword lookups?
              */
             const struct keyword_lookup_result * lookup_result =
-                keyword_lookup(&input[start], i - start);
+                keyword_lookup((char *)&input[start], i - start);
 
             if (lookup_result) {
                 particle->keyword = lookup_result->keyword;
                 /* TODO: this is one of those suspect casting-away of consts
                  *       that are multiplying rapidly */
                 particle->value =
-                    (char *)keyword_string(lookup_result->offset);
+                    (uint8_t *)keyword_string(lookup_result->offset);
                 particle->length = length;
             } else {
                 /* TODO (UTF-8 support) if we support UTF-8 keywords, use a
@@ -457,10 +530,10 @@ static struct particle * consume_keyword(char * input, size_t * n)
             // okay
         } else {
 #if VERBOSE_LEXER
-            fprintf(
-                    stderr,
-                    "lexer error 2 (bad char %s in keyword)\n",
-                    charmsg(input[i])
+            LOGF_ERROR(
+                    NULL,
+                    "lexer error 2 (bad char %U in keyword)\n",
+                    charmsg(&input[i])
                 );
 #endif /* VERBOSE_LEXER */
             return NULL;
@@ -479,8 +552,10 @@ static struct particle * consume_keyword(char * input, size_t * n)
  *
  * the result status is written to result_out
  */
+/* TODO: inputs with length */
+/* TODO: reentrant */
 void lex(
-        char * input,
+        uint8_t * input,
         struct parser * parser,
         struct particle_buffer * buffer,
         struct lex_result * result_out
@@ -567,10 +642,10 @@ void lex(
 
             default:
 #if VERBOSE_LEXER
-                fprintf(
-                        stderr,
-                        "lexer error 1 (bad char %s in toplevel)\n",
-                        charmsg(input[n])
+                LOGF_ERROR(
+                        NULL,
+                        "lexer error 1 (bad char %U in toplevel)\n",
+                        charmsg(&input[n])
                     );
 #endif /* VERBOSE_LEXER */
                 *result_out = (struct lex_result) {

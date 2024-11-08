@@ -21,17 +21,24 @@
 #define REFSTRING_H
 
 #include <stddef.h>
+#include <unitypes.h>
 
-/* create a refstring with a copy of this string */
-[[nodiscard]] struct refstring * refstring_create(const char * string);
+/* a refstring */
+struct refstring;
+
+/* create a refstring with a copy of this null-terminated string */
+[[nodiscard]] struct refstring * refstring_create(const uint8_t * string);
 
 /* create a refstring from the result of this format string */
 [[nodiscard]] struct refstring * refstring_createf(
-        const char * string, ...) [[gnu::format(printf, 1, 2)]];
+        const char * string, ...);
 
-/* create a refstring using at most n bytes of this string */
+/* create a refstring using exactly n bytes of this string
+ *
+ * adds a null terminator
+ */
 [[nodiscard]] struct refstring * refstring_create_from_stringn(
-        const char * string, size_t n);
+        const uint8_t * string, size_t n);
 
 /* destroy this refstring
  *
@@ -42,7 +49,7 @@
 void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]];
 
 /* get the string out of this refstring */
-const char * refstring_string(
+const uint8_t * refstring_string(
         struct refstring * refstring) [[gnu::nonnull(1)]];
 
 /* "duplicate" a refstring (this returns its argument, but with its reference

@@ -153,7 +153,8 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
             /* minimal lexing code for testing */
             struct lex_result result;
-            lex(line, connection->parser, connection->buffer, &result);
+            /* TODO fix cast */
+            lex((uint8_t *)line, connection->parser, connection->buffer, &result);
 
             if (result.type == LEX_ERROR) {
                 evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");

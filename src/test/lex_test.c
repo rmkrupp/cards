@@ -23,13 +23,17 @@
 #include "config.h"
 #include "util/refstring.h"
 
+#include <unistdio.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
 
-static constexpr size_t LINE_MAX = 1024 * 1024 * 1024;
+/* TODO: fix casts */
+
+static constexpr size_t line_max = 1024 * 1024 * 1024;
 
 static void lex_test()
 {
@@ -39,22 +43,22 @@ static void lex_test()
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
 
-    char * input = malloc(LINE_MAX);
+    char * input = malloc(line_max);
 
     while (!feof(stdin)) {
-        fgets(input, LINE_MAX, stdin);
+        fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex(input, parser, buffer, &result);
+        lex((uint8_t *)input, parser, buffer, &result);
 
         if (result.type == LEX_ERROR) {
             if (!isatty(fileno(stdin))) {
                 size_t i;
                 for (i = 0; input[i]; i++);
                 if (i == 0 || input[i-1] != '\n') {
-                    printf("%s\n", input);
+                    ulc_fprintf(stdout, "%U\n", input);
                 } else {
-                    printf("%s", input);
+                    ulc_fprintf(stdout, "%U", input);
                 }
             }
             for (size_t i = 0; i < result.index; i++) {
@@ -65,7 +69,7 @@ static void lex_test()
 
             for (size_t n = 0; n < buffer->n_particles; n++) {
                 struct refstring * string = particle_string(buffer->particles[n]);
-                printf("%s%s", (n == 0) ? "" : " ", refstring_string(string));
+                ulc_fprintf(stdout, "%s%U", (n == 0) ? "" : " ", refstring_string(string));
                 refstring_destroy(string);
             }
             printf("\n");
@@ -91,16 +95,16 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
 
-    char * input = malloc(LINE_MAX);
+    char * input = malloc(line_max);
 
     size_t total = 0;
     size_t errors = 0;
 
     while (!feof(stdin)) {
-        fgets(input, LINE_MAX, stdin);
+        fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex(input, parser, buffer, &result);
+        lex((uint8_t *)input, parser, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
@@ -128,21 +132,21 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
 
-    char * input = malloc(LINE_MAX);
+    char * input = malloc(line_max);
 
     size_t total = 0;
     size_t errors = 0;
 
     while (!feof(stdin)) {
-        fgets(input, LINE_MAX, stdin);
+        fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex(input, parser, buffer, &result);
+        lex((uint8_t *)input, parser, buffer, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
             errors++;
-            printf("%s", input);
+            ulc_fprintf(stdout, "%U", input);
         }
 
         particle_buffer_free_all(buffer);
@@ -188,12 +192,12 @@ int main(int argc, char ** argv)
 
         case SILENT:
             silent_lex_test(&total, &errors);
-            printf("%" PRIu64 "/%" PRIu64 "\n", (uint64_t)errors, (uint64_t)total);
+            printf("%zu/%zu\n", errors, total);
             break;
 
         case ERRORS:
             errors_only_lex_test(&total, &errors);
-            printf("%" PRIu64 "/%" PRIu64 "\n", (uint64_t)errors, (uint64_t)total);
+            printf("%zu/%zu\n", errors, total);
             break;
 
         default:

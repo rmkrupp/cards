@@ -24,34 +24,46 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include <unitypes.h>
+#include <unistr.h>
+#include <unistdio.h>
+
 #include "util/strdup.h"
 
+/* TODO: if this API doesn't end up used in more places (i.e. outside of the
+ *       single use for displaying debug data for lexer results) we should get
+ *       rid of it
+ */
+
+/* a refstring */
 struct refstring {
-    char * string;
+    uint8_t * string;
     long references;
 };
 
-[[nodiscard]] struct refstring * refstring_create(const char * string)
+/* create a refstring from a copy of this null-terminated string */
+[[nodiscard]] struct refstring * refstring_create(const uint8_t * string)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
-        .string = util_strdup(string),
+        .string = u8_strdup(string),
         .references = 1
     };
     return refstring;
 }
 
+/* create a refstring from the result of this format string */
 [[nodiscard]] struct refstring * refstring_createf(
-        const char * format, ...) [[gnu::format(printf, 1, 2)]]
+        const char * format, ...)
 {
 
     va_list args1, args2;
     va_start(args1, format);
     va_copy(args2, args1);
 
-    int n = vsnprintf(NULL, 0, format, args1) + 1;
-    char * s = malloc(sizeof(*s) * n);
-    vsnprintf(s, n, format, args2);
+    int n = u8_vsnprintf(NULL, 0, format, args1) + 1;
+    uint8_t * s = malloc(sizeof(*s) * n);
+    u8_vsnprintf(s, n, format, args2);
 
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
@@ -64,17 +76,26 @@ struct refstring {
     return refstring;
 }
 
+/* create a refstring from exactly n bytes of this string
+ *
+ * adds a null terminator
+ */
 [[nodiscard]] struct refstring * refstring_create_from_stringn(
-        const char * string, size_t n)
+        const uint8_t * string, size_t n)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
     *refstring = (struct refstring) {
-        .string = util_strndup(string, n),
+        .string = malloc(n + 1),
         .references = 1
     };
+    for (size_t i = 0; i < n; i++) {
+        refstring->string[i] = string[i];
+    }
+    refstring->string[n] = 0;
     return refstring;
 }
 
+/* destroy this refstring */
 void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
@@ -85,13 +106,15 @@ void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]]
     }
 }
 
-const char * refstring_string(
+/* get a reference to the string inside this refstring */
+const uint8_t * refstring_string(
         struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
     return refstring->string;
 }
 
+/* duplicate this refstring */
 [[nodiscard]] struct refstring * refstring_dup(
         struct refstring * refstring) [[gnu::nonnull(1)]]
 {

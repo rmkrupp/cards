@@ -21,6 +21,7 @@
 #define COMMAND_LEX_H
 
 #include <stddef.h>
+#include <unitypes.h>
 
 #include "command/keyword.h"
 
@@ -51,7 +52,7 @@ enum particle_type {
 /* a single particle of a type and value */
 struct particle {
     enum particle_type type;
-    char * value;
+    uint8_t * value;
     size_t length;
 
     enum keyword keyword;
@@ -63,10 +64,11 @@ struct particle {
 
 /* create a particle with the given type and and value
  *
- * makes a duplicate of the value, consuming at most n bytes from the argument
+ * makes a duplicate of the value, consuming at exactly n bytes from the
+ * argument
  */
 [[nodiscard]] struct particle * particle_create_value(
-        enum particle_type type, const char * value, size_t n);
+        enum particle_type type, const uint8_t * value, size_t n);
 
 /* destroy this particle */
 void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]];
@@ -97,7 +99,7 @@ enum lex_result_type {
 /* the result of a lex command */
 struct lex_result {
     enum lex_result_type type; /* OKAY or ERROR */
-    size_t index; /* the index (in characters) consumed
+    size_t index; /* the index (in characters TODO: bytes?) consumed
                    * if OKAY, index equals the size of the buffer
                    * if ERROR, points to right after the last thing consumed
                    */
@@ -161,7 +163,7 @@ void particle_buffer_add(
  * the result status is written to result_out
  */
 void lex(
-        char * input,
+        uint8_t * input,
         struct parser * parser,
         struct particle_buffer * buffer,
         struct lex_result * result_out

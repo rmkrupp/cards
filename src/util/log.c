@@ -19,7 +19,7 @@
  */
 #include "util/log.h"
 
-#include <stdio.h>
+#include <unistdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -67,7 +67,7 @@ void logger_logf(
         enum log_level level,
         const char * format,
         ...
-    ) [[gnu::format(printf, 3, 4), gnu::nonnull(1, 3)]]
+    ) [[gnu::nonnull(3)]]
 {
     /* TODO: use the logger */
     (void)logger;
@@ -88,11 +88,12 @@ void logger_logf(
             break;
 
         default:
-            fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
+            ulc_fprintf(f, "logger_logf() warning: treating log_level %d as LOG_ERROR\n", level);
+            f = stderr;
             break;
     }
 
-    vfprintf(f, format, args);
+    ulc_vfprintf(f, format, args);
 
     va_end(args);
 }

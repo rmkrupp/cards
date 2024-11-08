@@ -525,7 +525,7 @@ bin_target(
             '$builddir/util/strdup.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-levent $lualib $w64netlibs -lsqlite3')],
+        variables = [('libs', '-levent $lualib $w64netlibs -lsqlite3 -lunistring')],
         is_disabled = args.disable_server,
         why_disabled = 'we were generated with --disable-server',
         targets = [all_targets]
@@ -560,7 +560,7 @@ bin_target(
             '$builddir/util/log.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-lsqlite3 $lualib')],
+        variables = [('libs', '-lsqlite3 $lualib -lunistring')],
         is_disabled = [
             args.lua_backend == 'none',
             'lex_test' in args.disable_test_tool
