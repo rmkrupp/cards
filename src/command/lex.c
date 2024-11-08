@@ -92,6 +92,27 @@ static const char * charmsg(char c)
  *
  *    Some thoughts: it may be faster to use a lookup table and state changes
  *    versus the current "is it this?" "no? is it this?" setup.
+ *
+ * 4) TODO: UTF-8 Support
+ *
+ *    Right now, the lexer handles UTF-8 in name values, in that it correctly
+ *    finds the "" around all UTF-8 strings wthout mangling them, as long as
+ *    we do not support strings with embedded null bytes, though it does not
+ *    correctly locale-aware case folding on them, and they are not normalized
+ *    before comparison with the name_set (also, loaded bundles aren't
+ *    normalized either)
+ *
+ *    If we want to support keywords, or more kinds of tokenization, or numbers
+ *    with digits beyond ASCII 0-9, that will take a bit of work.
+ *
+ *    Also, we'd be introducing uint8_t *s into the mix and may need to update
+ *    the API for that.
+ *
+ *    At a minimum, for proper UTF-8 support, normalization and case-folding
+ *    of names being locale-aware is probably necessary. As long as keywords
+ *    aren't more complex, the lexer can basically stay as is. Note that both
+ *    normalization and case-folding involve memory allocations because they
+ *    can change the length of the string. We could use a buffer, though.
  */
 
 /* how much to grow the particle_buffer by, in number of particles,
@@ -318,6 +339,7 @@ static struct particle * consume_name(
         if (input[i] == '"') {
             struct particle * particle = particle_create(PARTICLE_NAME);
 
+            /* TODO (UTF-8 support) normalize the input before looking it up */
             particle->name =
                 name_set_lookup(name_set, &input[*n + 1], i - *n - 1);
 
@@ -325,6 +347,8 @@ static struct particle * consume_name(
                 particle->value = (char *)particle->name->name;
                 particle->length = particle->name->length;
             } else {
+                /* TODO (UTF-8 support) use a UTF-8 aware case change function
+                 */
                 particle->value = malloc(i - *n);
                 for (size_t j = 0; j < i - *n - 1; j++) {
                     particle->value[j] = input[*n + 1 + j];
@@ -356,6 +380,7 @@ static struct particle * consume_number(const char * input, size_t * n)
             *n = i - 1;
             return particle;
         }
+        /* TODO (UTF-8 support) if supporting, use uc_decimal_value */
         if (input[i] >= '0' && input[i] <= '9') {
             // okay
         } else {
@@ -381,6 +406,9 @@ static struct particle * consume_keyword(char * input, size_t * n)
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
             size_t length = i - start;
 
+            /* TODO (UTF-8 support) if we support UTF-8 keywords, normalize
+             *      before lookup
+             */
             const struct keyword_lookup_result * lookup_result =
                 keyword_lookup(&input[start], i - start);
 
@@ -392,6 +420,9 @@ static struct particle * consume_keyword(char * input, size_t * n)
                     (char *)keyword_string(lookup_result->offset);
                 particle->length = length;
             } else {
+                /* TODO (UTF-8 support) if we support UTF-8 keywords, use a
+                 *      proper case change function
+                 */
                 particle->keyword = KEYWORD_NO_MATCH;
                 particle->value = malloc(length + 1);
                 particle->length = length;
@@ -403,6 +434,10 @@ static struct particle * consume_keyword(char * input, size_t * n)
             *n = i - 1;
             return particle;
         }
+        /* TODO (UTF-8 support) if we support UTF-8 keywords, handle a wider
+         *      set of possible characters (or use a different tokenization
+         *      scheme altogether)
+         */
         if (input[i] >= 'a' && input[i] <= 'z') {
             input[i] = input[i] - 'a' + 'A';
             // okay
@@ -484,6 +519,7 @@ void lex(
                 }
                 break;
 
+            /* TODO (UTF-8 support) potentially use e.g. uc_decimal_value */
             case '0' ... '9':
                 particle = consume_number(input, &n);
                 if (!particle) {
@@ -495,7 +531,13 @@ void lex(
                 }
                 break;
 
+            /* TODO (UTF-8 support) if UTF-8 keywords, support a wider range of
+             *      leading characters
+             */
             case 'a' ... 'z':
+                /* TODO (UTF-8 support) if UTF-8 keywords, use smarter case
+                 *      change
+                 */
                 input[n] = input[n] - 'a' + 'A';
                 [[fallthrough]];
             case 'A' ... 'Z':
