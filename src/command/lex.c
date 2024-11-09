@@ -20,7 +20,7 @@
 #include "command/lex.h"
 #include "command/parse.h"
 #include "game.h"
-#include "loader.h"
+#include "name_set.h"
 
 #include <stdlib.h>
 #include <assert.h>

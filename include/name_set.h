@@ -1,4 +1,4 @@
-/* File: include/loader.h
+/* File: include/name_set.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LOADER_H
-#define LOADER_H
+#ifndef NAME_SET_H
+#define NAME_SET_H
 
 #include <stddef.h>
 #include <unitypes.h>
@@ -96,4 +96,4 @@ void name_set_apply(
         void * ptr
     ) [[gnu::nonnull(1, 2)]];
 
-#endif /* LOADER_H */
+#endif /* NAME_SET_H */

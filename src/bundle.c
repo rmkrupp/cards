@@ -21,6 +21,8 @@
 
 #include "card.h"
 #include "constants.h"
+#include "name_set.h"
+#include "util/log.h"
 
 #include <sqlite3.h>
 

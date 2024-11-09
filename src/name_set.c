@@ -1,4 +1,4 @@
-/* File: src/loader.c
+/* File: src/name_set.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "loader.h"
+#include "name_set.h"
 
 #include <stdlib.h>
 

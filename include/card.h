@@ -20,9 +20,11 @@
 #ifndef CARD_H
 #define CARD_H
 
-#include "util/log.h"
-#include "loader.h"
 #include <stddef.h>
+
+/* fordward declare */
+struct name_set;
+struct logger;
 
 /* a card */
 struct card;

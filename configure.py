@@ -384,7 +384,7 @@ w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
 w.build('$builddir/card.o', 'cc', 'src/card.c')
 w.build('$builddir/config_loader.o', 'cc', 'src/config_loader.c')
 w.build('$builddir/game.o', 'cc', 'src/game.c')
-w.build('$builddir/loader.o', 'cc', 'src/loader.c')
+w.build('$builddir/name_set.o', 'cc', 'src/name_set.c')
 w.build('$builddir/main.o', 'cc', 'src/main.c')
 w.build('$builddir/networker.o', 'cc', 'src/networker.c')
 w.build('$builddir/server.o', 'cc', 'src/server.c')
@@ -513,7 +513,7 @@ bin_target(
             '$builddir/command/lex.o',
             '$builddir/command/parse.o',
             '$builddir/config_loader.o',
-            '$builddir/loader.o',
+            '$builddir/name_set.o',
             '$builddir/main.o',
             '$builddir/networker.o',
             '$builddir/card.o',
@@ -549,7 +549,7 @@ bin_target(
             '$builddir/command/lex.o',
             '$builddir/command/keyword.o',
             '$builddir/command/parse.o',
-            '$builddir/loader.o',
+            '$builddir/name_set.o',
             '$builddir/bundle.o',
             '$builddir/game.o',
             '$builddir/card.o',

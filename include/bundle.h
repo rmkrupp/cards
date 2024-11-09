@@ -20,9 +20,11 @@
 #ifndef BUNDLE_H
 #define BUNDLE_H
 
-#include "loader.h"
-#include "util/log.h"
 #include <stddef.h>
+
+/* forward declare */
+struct name_set;
+struct logger;
 
 /* the result of loading a bundle
  *

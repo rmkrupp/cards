@@ -23,7 +23,7 @@
 
 #include "lua.h"
 
-#include "loader.h"
+#include "name_set.h"
 #include "util/log.h"
 
 #include <unistr.h>

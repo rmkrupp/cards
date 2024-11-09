@@ -19,7 +19,9 @@
  */
 #include "game.h"
 #include "bundle.h"
+#include "name_set.h"
 #include "config.h"
+#include "util/log.h"
 
 #include <stdlib.h>
 
