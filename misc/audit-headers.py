@@ -47,7 +47,7 @@ for filename in sys.argv[1:]:
                 else:
                     f.write(line)
 
-        result = subprocess.run("ninja")
+        result = subprocess.run(["ninja", "--quiet"])
         fileresults += [(auditline, result.returncode)]
 
     with open(filename, 'w') as f:
