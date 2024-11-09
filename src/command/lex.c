@@ -135,6 +135,7 @@ static const uint8_t * charmsg(const uint8_t * s)
     ucs4_t c;
 
     size_t n = u8_mbtouc(&c, s, 4);
+    (void)n;
     assert(n > 0 && n <= 4);
 
     if (c == 0xFFFD) {

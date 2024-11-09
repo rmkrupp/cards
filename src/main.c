@@ -52,11 +52,18 @@ int main(int argc, char ** argv) {
     /* read the locale from the system, first attempting to use the
      * environment variable LC_ALL, then LANG
      */
+#if defined(__linux__)
     char * lc_all = secure_getenv("LC_ALL");
     if (!lc_all) {
         lc_all = secure_getenv("LANG");
     }
     setlocale(LC_ALL, lc_all);
+#else
+    /* TODO: does this work? */
+    SetConsoleOutputCP(65001);
+    /* TODO: is this needed? */
+    printf("%s\n", setlocale(LC_ALL, ".UTF8"));
+#endif /* __linux__ */
 
     /* now we can try and read the locale from the command line */
     while (1) {

@@ -8,13 +8,15 @@ function clean() {
     rm -rf "$1.gen"
 }
 
-clean mingw-w64-pkg-config
 clean mingw-w64-configure
 clean mingw-w64-environment
 clean mingw-w64-libevent
+clean mingw-w64-libiconv
+clean mingw-w64-libunistring
 clean mingw-w64-luajit
 clean mingw-w64-openssl
 clean mingw-w64-pdcurses
+clean mingw-w64-pkg-config
 clean mingw-w64-readline
 clean mingw-w64-sqlite
 clean mingw-w64-termcap

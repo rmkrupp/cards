@@ -35,7 +35,11 @@ fetch_build mingw-w64-zlib
 # libevent depends on...
 fetch_build mingw-w64-openssl
 
+# libuninstring depends on...
+fetch_build mingw-w64-libiconv
+
 # cards depends on...
 fetch_build mingw-w64-luajit
 fetch_build mingw-w64-libevent
 fetch_build mingw-w64-sqlite
+fetch_build mingw-w64-libunistring

@@ -125,6 +125,7 @@ def enable_w64():
     w.variable(key = 'std', value = '-std=gnu2x')
     w.variable(key = 'cflags', value = '$cflags -O2 -static -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'w64netlibs', value = '-lws2_32 -liphlpapi')
+    w.variable(key = 'w64iconv', value = '-liconv')
     w.variable(key = 'w64curses', value = '-lcurses')
     w.variable(key = 'ldflags', value = '$ldflags -L/usr/x86_64-w64-mingw32/lib')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
@@ -525,7 +526,10 @@ bin_target(
             '$builddir/util/strdup.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-levent $lualib $w64netlibs -lsqlite3 -lunistring')],
+        variables = [(
+            'libs',
+            '-levent $lualib $w64netlibs -lsqlite3 -lunistring $w64iconv'
+        )],
         is_disabled = args.disable_server,
         why_disabled = 'we were generated with --disable-server',
         targets = [all_targets]
@@ -560,7 +564,7 @@ bin_target(
             '$builddir/util/log.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-lsqlite3 $lualib -lunistring')],
+        variables = [('libs', '-lsqlite3 $lualib -lunistring $w64iconv')],
         is_disabled = [
             args.lua_backend == 'none',
             'lex_test' in args.disable_test_tool
