@@ -80,7 +80,7 @@ struct name_data * name_set_remove(
 void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]];
 
 /* look up a name in this set */
-const struct name * name_set_lookup(
+struct name * name_set_lookup(
         struct name_set * name_set,
         const uint8_t * name,
         size_t length

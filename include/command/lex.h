@@ -56,7 +56,7 @@ struct particle {
     size_t length;
 
     enum keyword keyword;
-    const struct name * name;
+    struct name * name;
 };
 
 /* return a new particle of type */
