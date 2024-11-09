@@ -54,7 +54,8 @@ parser.add_argument('--lua-backend',
                     help='set the lua backend (default: luajit)')
 parser.add_argument('--disable-test-tool', action='append', default=[],
                     choices=[
-                        'gperf_test', 'lex_test', 'hash_test'
+                        'gperf_test', 'lex_test', 'hash_test',
+                        'sorted_set_test'
                     ],
                     help='don\'t build a specific test tool')
 parser.add_argument('--disable-tool', action='append', default=[],
@@ -411,6 +412,7 @@ w.newline()
 w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
 w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
 w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
+w.build('$builddir/test/sorted_set_test.o', 'cc', 'src/test/sorted_set_test.c')
 
 w.build('$builddir/tools/cards_compile/cards_compile.o', 'cc',
         'src/tools/cards_compile/cards_compile.c')
@@ -632,6 +634,21 @@ bin_target(
         ],
         is_disabled = 'hash_test' in args.disable_test_tool,
         why_disabled = 'we were generated with --disable-test-tool=hash_test',
+        targets = [all_targets, tools_targets]
+    )
+
+bin_target(
+        name = 'test/sorted_set_test',
+        inputs = [
+            '$builddir/test/sorted_set_test.o',
+            '$builddir/util/sorted_set.o'
+        ],
+        variables = [
+            ('libs', '')
+        ],
+        is_disabled = 'sorted_set_test' in args.disable_test_tool,
+        why_disabled =
+            'we were generated with --disable-test-tool=sorted_set_test',
         targets = [all_targets, tools_targets]
     )
 
