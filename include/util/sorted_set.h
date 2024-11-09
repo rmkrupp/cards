@@ -20,14 +20,6 @@
 #ifndef UTIL_SORTED_SET_H
 #define UTIL_SORTED_SET_H
 
-/* the "user story" of this sorted set library:
- *
- *  - struct sorted_set * sorted_set = sorted_set_create();
- *  - add a bunch of keys with sorted_set_add_key(),
- *    performing some error action when the keys are not unique
- *  - transform the sorted_set into a hash (see hash.h)
- */
-
 #include <stddef.h>
 
 /* a sorted set */
@@ -65,9 +57,10 @@ enum sorted_set_add_key_result {
 
 /* add this key of length to the sorted set, associating it with data
  *
- * the sorted_set takes ownership of this memory. do not free it after calling
- * this function, unless the memory is extracted via an apply_and_destroy or
- * transformation into a hash (and then from the hash.)
+ * if the key is added (i.e. if it is not a duplicate of a key currently in the
+ * set), the sorted_set takes ownership of this memory. do not free it after
+ * calling this function, unless the memory is extracted via an
+ * apply_and_destroy or transformation into a hash (and then from the hash.)
  *
  * note that this function operates on a char * because it is designed to be
  * called on the result of u8_normxfrm() being called on a uint8_t *. as far

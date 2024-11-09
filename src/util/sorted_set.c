@@ -132,9 +132,10 @@ static size_t random_level()
 
 /* add this key of length to the sorted set, associating it with data
  *
- * the sorted_set takes ownership of this memory. do not free it after calling
- * this function, unless the memory is extracted via an apply_and_destroy or
- * transformation into a hash (and then from the hash.)
+ * if the key is added (i.e. if it is not a duplicate of a key currently in the
+ * set), the sorted_set takes ownership of this memory. do not free it after
+ * calling this function, unless the memory is extracted via an
+ * apply_and_destroy or transformation into a hash (and then from the hash.)
  *
  * note that this function operates on a char * because it is designed to be
  * called on the result of u8_normxfrm() being called on a uint8_t *. as far
