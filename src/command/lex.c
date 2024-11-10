@@ -31,9 +31,7 @@
 #include <unicase.h>
 #include <unistdio.h>
 
-#include "util/strdup.h"
 #include "util/refstring.h"
-#include "util/log.h"
 
 #ifndef VERBOSE_LEXER
 #define VERBOSE_LEXER 0

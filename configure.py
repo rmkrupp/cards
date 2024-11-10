@@ -657,7 +657,8 @@ bin_target(
         name = 'test/hash_test2',
         inputs = [
             '$builddir/test/hash_test2.o',
-            '$builddir/libs/hash/hash.o'
+            '$builddir/libs/hash/hash.o',
+            '$builddir/util/strdup.o'
         ],
         variables = [
             ('libs', '')
@@ -667,6 +668,7 @@ bin_target(
             'we were generated with --disable-test-tool=hash_test2',
         targets = [all_targets, tools_targets]
     )
+
 bin_target(
         name = 'tools/cards_compile',
         inputs = [

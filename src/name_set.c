@@ -25,7 +25,6 @@
 #include "hash.h"
 #include "card.h"
 
-#include <uninorm.h>
 #include <unicase.h>
 
 /* a set for looking up name tokens */

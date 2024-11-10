@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util/strdup.h"
 
 #include "hash.h"
 
@@ -54,7 +55,7 @@ static void apply_check(const char * key, size_t length, void * data, void * ptr
 
     struct apply_check_context * context = ptr;
     context->keys = realloc(context->keys, sizeof(*context->keys) * (context->n_keys + 1));
-    context->keys[context->n_keys] = strndup(key, length);
+    context->keys[context->n_keys] = util_strndup(key, length);
     context->n_keys++;
 }
 

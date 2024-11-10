@@ -26,7 +26,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
@@ -261,8 +260,8 @@ static void networker_listener_accept_cb(
     struct evbuffer * output = bufferevent_get_output(bev);
     evbuffer_add_printf(
             output,
-            "[server] welcome, you are %" PRIu64 "\n",
-            (uint64_t)connection->id
+            "[server] welcome, you are %zu\n",
+            connection->id
         );
 }
 

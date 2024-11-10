@@ -26,11 +26,6 @@
 #include "name_set.h"
 #include "util/log.h"
 
-#include <unistr.h>
-#include <unitypes.h>
-#include <unicase.h>
-#include <uninorm.h>
-
 /* a card script */
 struct card {
     struct ability ** abilities;
