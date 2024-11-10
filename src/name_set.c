@@ -23,6 +23,7 @@
 
 #include "util/sorted_set.h"
 #include "hash.h"
+#include "card.h"
 
 #include <uninorm.h>
 #include <unicase.h>
@@ -43,12 +44,37 @@ struct name_set {
     return name_set;
 }
 
+void destroyer(const char * key, size_t length, void * data, void * ptr)
+{
+    (void)key;
+    (void)length;
+    (void)ptr;
+    struct name * name = data;
+    switch (name->type) {
+        case NAME_TYPE_CARD:
+            card_destroy(name->data);
+            break;
+        case NAME_TYPE_ABILITY:
+            ability_destroy(name->data);
+            break;
+        case NAME_TYPE_SUBTYPE:
+            subtype_destroy(name->data);
+            break;
+        case NAME_TYPE_PLAYER:
+            break;
+    }
+    free(name->display_name);
+    free(name);
+}
+
 /* destroy a name set and free the names its holding */
 void name_set_destroy(struct name_set * name_set) [[gnu::nonnull(1)]]
 {
     if (name_set->hash) {
+        hash_apply(name_set->hash, &destroyer, NULL);
         hash_destroy(name_set->hash);
     }
+    sorted_set_apply(name_set->uncompiled, &destroyer, NULL);
     sorted_set_destroy(name_set->uncompiled);
     free(name_set);
 }

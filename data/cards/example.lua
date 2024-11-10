@@ -1,6 +1,7 @@
 name = "Big Bucket"
 class = "character" -- this might end up being a constant instead?
 flavor = "The kind that makes you go “woah, that's a really big bucket.”"
+subtype = { { "Good", 1.0 } }
 aa = 3
 ad = 0
 dd = 6

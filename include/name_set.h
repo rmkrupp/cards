@@ -30,6 +30,7 @@ struct name_set;
 enum name_type {
     NAME_TYPE_CARD,
     NAME_TYPE_ABILITY,
+    NAME_TYPE_SUBTYPE,
     NAME_TYPE_PLAYER
 };
 

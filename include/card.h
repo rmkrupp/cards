@@ -32,11 +32,17 @@ struct card;
 /* a card ability */
 struct ability;
 
+/* a card subtype */
+struct subtype;
+
 /* destroy this card */
 void card_destroy(struct card * card) [[gnu::nonnull(1)]];
 
 /* destroy this ability */
 void ability_destroy(struct ability * ability) [[gnu::nonnull(1)]];
+
+/* destroy this subtype */
+void subtype_destroy(struct subtype * subtype) [[gnu::nonnull(1)]];
 
 /* create a card from this Lua data
  *

@@ -35,6 +35,9 @@
 struct card {
     struct ability ** abilities;
     size_t n_abilities;
+    struct subtype ** subtypes;
+    double * subtype_weights;
+    size_t n_subtypes;
     lua_State * L;
 };
 
@@ -49,11 +52,25 @@ struct ability_candidate {
     struct ability * ability;
 };
 
+/* a card subtype */
+struct subtype {
+    struct card ** owners;
+    size_t n_owners;
+};
+
+struct subtype_candidate {
+    char * name;
+    struct ability * ability;
+};
+
+
 /* destroy this script */
 void card_destroy(struct card * card) [[gnu::nonnull(1)]]
 {
     lua_close(card->L);
     free(card->abilities);
+    free(card->subtypes);
+    free(card->subtype_weights);
     free(card);
 }
 
@@ -62,6 +79,13 @@ void ability_destroy(struct ability * ability) [[gnu::nonnull(1)]]
 {
     free(ability->owners);
     free(ability);
+}
+
+/* destroy this subtype */
+void subtype_destroy(struct subtype * subtype) [[gnu::nonnull(1)]]
+{
+    free(subtype->owners);
+    free(subtype);
 }
 
 /* create a card from this Lua data
@@ -251,6 +275,8 @@ struct card * card_load(
         lua_pop(L, 2);
     }
     */
+
+    /* TODO: subtypes */
 
     lua_pop(L, 1);
 
