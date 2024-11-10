@@ -68,7 +68,7 @@ void in_readcb(evutil_socket_t socket, short all, void * arg)
     }
     linenoiseEditStop(ls);
     if (!line) {
-        evbuffer_add_printf(output, "exit\n");
+        evbuffer_add_printf(output, "EXIT\n");
         return;
     }
     linenoiseHistoryAdd(line);
@@ -101,7 +101,7 @@ static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
         printf("[cli] connected\r\n");
         linenoiseShow(ls);
         bufferevent_enable(bev, EV_READ);
-    } else if (events & BEV_EVENT_ERROR ) {
+    } else if (events & BEV_EVENT_ERROR) {
         linenoiseHide(ls);
         printf("[cli] error connecting\r\n");
         event_base_loopexit(bufferevent_get_base(bev), NULL);

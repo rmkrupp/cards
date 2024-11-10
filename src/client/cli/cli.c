@@ -68,7 +68,7 @@ static void net_eventcb(struct bufferevent * bev, short events, void * ctx)
         fprintf(stderr, "[cli] connected\n");
         bufferevent_enable(bev, EV_READ);
         bufferevent_enable(bev_in, EV_READ);
-    } else if (events & BEV_EVENT_ERROR ){
+    } else if (events & BEV_EVENT_ERROR) {
         fprintf(stderr, "[cli] error connecting\n");
         event_base_loopexit(bufferevent_get_base(bev), NULL);
     } else if (events & BEV_EVENT_EOF) {
@@ -212,7 +212,7 @@ int main(int argc, char ** argv)
     }
 
     if (args.send_exit) {
-        evbuffer_add_printf(bufferevent_get_output(bev_net), "exit\n");
+        evbuffer_add_printf(bufferevent_get_output(bev_net), "EXIT\n");
     }
 
     free_args(&args);
