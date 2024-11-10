@@ -441,6 +441,5 @@ int config_load(
 /* free resources used by this config */
 void config_free(struct config * config) [[gnu::nonnull(1)]]
 {
-    // do nothing
-    (void)config;
+    free(config->default_card_db);
 }

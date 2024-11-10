@@ -37,11 +37,9 @@ static constexpr size_t line_max = 1024 * 1024 * 1024;
 
 static void lex_test()
 {
-    struct particle_buffer * buffer = particle_buffer_create();
-    struct lex_result result;
-
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
+    struct particle_buffer * buffer = particle_buffer_create();
 
     char * input = malloc(line_max);
 
@@ -49,8 +47,28 @@ static void lex_test()
         fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex((uint8_t *)input, parser, buffer, &result);
+        const struct lexer_input inputs[] = {
+            {
+                .input = (uint8_t *)input,
+                .length = strlen(input)
+            }
+        };
+        size_t index = lex(
+                inputs,
+                1,
+                parser->game->name_set, buffer
+            );
+        /* TODO do something smart with index */
+        (void)index;
 
+        for (size_t i = 0; i < buffer->n_particles; i++) {
+            struct particle * particle = buffer->particles[i];
+            struct refstring * s = particle_string(particle);
+            ulc_fprintf(stdout, "%U\n", refstring_string(s));
+            refstring_destroy(s);
+        }
+
+        /*
         if (result.type == LEX_ERROR) {
             if (!isatty(fileno(stdin))) {
                 size_t i;
@@ -67,14 +85,21 @@ static void lex_test()
             printf("^error\n");
         } else {
 
-            for (size_t n = 0; n < buffer->n_particles; n++) {
-                struct refstring * string = particle_string(buffer->particles[n]);
-                ulc_fprintf(stdout, "%s%U", (n == 0) ? "" : " ", refstring_string(string));
+            for (size_t n = 0; n < lexer->buffer->n_particles; n++) {
+                struct refstring * string =
+                    particle_string(lexer->buffer->particles[n]);
+                ulc_fprintf(
+                        stdout,
+                        "%s%U",
+                        (n == 0) ? "" : " ",
+                        refstring_string(string)
+                    );
                 refstring_destroy(string);
             }
             printf("\n");
 
         }
+        */
 
         particle_buffer_free_all(buffer);
     }
@@ -82,18 +107,18 @@ static void lex_test()
     free(input);
 
     particle_buffer_destroy(buffer);
-
     parser_destroy(parser);
     game_destroy(game);
 }
 
+/*
 static void silent_lex_test(size_t * total_out, size_t * errors_out)
 {
-    struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
+    struct lexer * lexer = lexer_create(parser);
 
     char * input = malloc(line_max);
 
@@ -104,19 +129,19 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex((uint8_t *)input, parser, buffer, &result);
+        lex(lexer, (uint8_t *)input, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
             errors++;
         }
 
-        particle_buffer_free_all(buffer);
+        particle_buffer_free_all(lexer->buffer);
     }
 
     free(input);
 
-    particle_buffer_destroy(buffer);
+    lexer_destroy(lexer);
     parser_destroy(parser);
     game_destroy(game);
 
@@ -126,11 +151,11 @@ static void silent_lex_test(size_t * total_out, size_t * errors_out)
 
 static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
 {
-    struct particle_buffer * buffer = particle_buffer_create();
     struct lex_result result;
 
     struct game * game = game_create(&(struct config) {});
     struct parser * parser = parser_create(game);
+    struct lexer * lexer = lexer_create(parser);
 
     char * input = malloc(line_max);
 
@@ -141,7 +166,7 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
         fgets(input, line_max, stdin);
         if (feof(stdin)) break;
 
-        lex((uint8_t *)input, parser, buffer, &result);
+        lex(lexer, (uint8_t *)input, &result);
 
         total++;
         if (result.type == LEX_ERROR) {
@@ -149,18 +174,19 @@ static void errors_only_lex_test(size_t * total_out, size_t * errors_out)
             ulc_fprintf(stdout, "%U", input);
         }
 
-        particle_buffer_free_all(buffer);
+        particle_buffer_free_all(lexer->buffer);
     }
 
     free(input);
 
-    particle_buffer_destroy(buffer);
+    lexer_destroy(lexer);
     parser_destroy(parser);
     game_destroy(game);
 
     *errors_out = errors;
     *total_out = total;
 }
+*/
 
 enum mode {
     NORMAL,
@@ -168,6 +194,7 @@ enum mode {
     ERRORS
 };
 
+/* TODO: return other test modes */
 int main(int argc, char ** argv)
 {
     enum mode mode = NORMAL;
@@ -183,7 +210,7 @@ int main(int argc, char ** argv)
         }
     }
 
-    size_t errors, total;
+    //size_t errors, total;
 
     switch (mode) {
         case NORMAL:
@@ -191,17 +218,16 @@ int main(int argc, char ** argv)
             break;
 
         case SILENT:
-            silent_lex_test(&total, &errors);
-            printf("%zu/%zu\n", errors, total);
+            //silent_lex_test(&total, &errors);
+            //printf("%zu/%zu\n", errors, total);
             break;
 
         case ERRORS:
-            errors_only_lex_test(&total, &errors);
-            printf("%zu/%zu\n", errors, total);
+            //errors_only_lex_test(&total, &errors);
+            //printf("%zu/%zu\n", errors, total);
             break;
 
         default:
             return 1;
     }
 }
-

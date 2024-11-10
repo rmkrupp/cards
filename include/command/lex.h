@@ -27,8 +27,8 @@
 
 /* forward declare these */
 struct refstring;
-struct parser;
 struct particle_buffer;
+struct name_set;
 
 /* the different types of particles */
 enum particle_type {
@@ -46,7 +46,17 @@ enum particle_type {
                     * supplied to the lexer
                     */
     PARTICLE_BEGIN_NEST, /* the open paren */
-    PARTICLE_END_NEST /* the close paren */
+    PARTICLE_END_NEST, /* the close paren */
+
+    PARTICLE_ERROR /* the value is the lexical input from the beginning of the
+                    * error until the input recovers (i.e. there's a \n,
+                    * whitespace after a KEYWORD or NUMBER, the " to close a
+                    * NAME, or just the next character if the type couldn't be
+                    * otherwise determined)
+                    *
+                    * if VERBOSE_LEXER, .error is filled with an error message
+                    * describing the error, otherwise it is NULL
+                    */
 };
 
 /* a single particle of a type and value */
@@ -57,6 +67,9 @@ struct particle {
 
     enum keyword keyword;
     struct name * name;
+
+    uint8_t * error;
+    size_t error_length;
 };
 
 /* return a new particle of type */
@@ -82,28 +95,6 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]];
  * TODO: do we need this?
  */
 [[nodiscard]] struct refstring * particle_string(struct particle * particle);
-
-/* the type of lex results
- *
- * TODO: (potentially) expand to handle errors in a nuanced way
- *       right now, a few kinds of errors can be generated but
- *       nothing more than location leaves lex()
- *       
- *       it might be helpful to add an error code or type
- */
-enum lex_result_type {
-    LEX_OKAY,
-    LEX_ERROR
-};
-
-/* the result of a lex command */
-struct lex_result {
-    enum lex_result_type type; /* OKAY or ERROR */
-    size_t index; /* the index (in characters TODO: bytes?) consumed
-                   * if OKAY, index equals the size of the buffer
-                   * if ERROR, points to right after the last thing consumed
-                   */
-};
 
 /* a buffer for storing the results of a lex() call */
 struct particle_buffer {
@@ -146,28 +137,31 @@ void particle_buffer_add(
         struct particle * particle
     ) [[gnu::nonnull(1)]];
 
-/* turn input string into particles
+/* inputs to a lexer */
+struct lexer_input {
+    const uint8_t * input;
+    size_t length;
+};
+
+/* turn this list of inputs into particles and puts them into the particle
+ * buffer (appending them after any particles already there)
  *
- * the parser is used for its embedded name_set
+ * this does not modify the inputs or the data pointed to by the inputs, and
+ * they need not stay valid after this call except for any input that was not
+ * consumed (see return value)
  *
- * buffer must be a particle buffer
- * if it is not empty, the particles will be appended,
- * thus is must be emptied after the particles have been consumed
- * (e.g. via a call to particle_buffer_free_all())
+ * name_set is used for matching PARTICLE_NAME tokens. at some point, keywords
+ * may match against a provided set, but for now they don't
  *
- * otherwise, the caller must track its own offset into the buffer
- *
- * this modifies input. specifically, it converts all [a-z] into [A-Z]
- * when they are within a KEYWORD
- *
- * the result status is written to result_out
+ * returns the total bytes consumed across all inputs, which may be less than
+ * the size of all the inputs
  */
-void lex(
-        uint8_t * input,
-        struct parser * parser,
-        struct particle_buffer * buffer,
-        struct lex_result * result_out
-    ) [[gnu::nonnull(1, 2, 3)]];
+size_t lex(
+        const struct lexer_input * inputs,
+        size_t n_inputs,
+        struct name_set * name_set,
+        struct particle_buffer * buffer
+    ) [[gnu::nonnull(1, 3, 4)]];
 
 #endif /* COMMAND_LEX_H */
 

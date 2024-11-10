@@ -52,16 +52,7 @@ void parser_parse(
     for (size_t i = 0; i < particles->n_particles; i++) {
         struct particle * particle = particles->particles[i];
         struct refstring * s = particle_string(particle);
-        if (particle->type == PARTICLE_KEYWORD) {
-            /* TODO: fix keyword lookup */
-            if (keyword_lookup((char *)particle->value, particle->length)) {
-                fprintf(stdout, "%s: yes\n", (char*)refstring_string(s));
-            } else {
-                fprintf(stdout, "%s: no\n", (char*)refstring_string(s));
-            }
-        } else {
-            ulc_fprintf(stdout, "%s: n/a\n", (char*)refstring_string(s));
-        }
+        ulc_fprintf(stdout, "%U\n", refstring_string(s));
         refstring_destroy(s);
     }
 

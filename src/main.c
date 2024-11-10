@@ -42,7 +42,7 @@ static struct option options[] = {
 
 static void usage()
 {
-    fprintf(
+    ulc_fprintf(
             stderr,
             "Usage: cards [--help] [-l|--locale LOCALE] [CONFIG...]\n"
         );

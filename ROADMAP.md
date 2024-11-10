@@ -14,22 +14,20 @@
 
  - [ ] add another category of name: subtypes
 
- - [ ] normalize card, ability, and subtype names when loaded
+ - [x] normalize card, ability, and subtype names when loaded
 
- - [ ] reentrant lexer
+ - [x] reentrant lexer
 
- - [ ] normalize inputted names for matching against cards/abilities
-
-   - [ ] UTF-8 aware casefolding
-
- - [ ] determine if cards should have a Display Name, and if the non-display
-       name should be specified explicitly or created automatically from the
-       display, or automatic with optional override
-
- - [ ] make sure the lexer is UTF-8 transparent, at least for names and
+ - [x] make sure the lexer is UTF-8 transparent, at least for names and
        possibly for keywords
 
-   - [ ] add a compile-time optional UTF-8 normalization pass to all inputs
+ - [x] normalize inputted names for matching against cards/abilities
+
+   - [x] UTF-8 aware casefolding
+
+ - [x] determine if cards should have a Display Name, and if the non-display
+       name should be specified explicitly or created automatically from the
+       display, or automatic with optional override
 
  - [ ] set up types for commands and syntax trees (nested commands)
 

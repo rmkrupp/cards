@@ -52,10 +52,9 @@ struct connection {
     struct networker * networker;
     struct bufferevent * bev;
 
-    /* TODO */
-    /* for now, store one of these here,
-     * soon we will have a parser object
-     */
+    struct evbuffer_iovec * vecs;
+    size_t vecs_capacity;
+
     struct particle_buffer * buffer;
     struct parser * parser;
 };
@@ -106,11 +105,10 @@ static void connection_destroy(
     }
 
     bufferevent_free(connection->bev);
-
-    /* until we have a parser object */
     particle_buffer_destroy(connection->buffer);
     parser_destroy(connection->parser);
 
+    free(connection->vecs);
     free(connection);
 }
 
@@ -121,53 +119,91 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
     struct evbuffer * input = bufferevent_get_input(bev);
 
-    size_t n = 0;
+    size_t n_vecs_needed = 1;
     do {
-        char * line = evbuffer_readln(input, &n, EVBUFFER_EOL_ANY);
-        if (line) {
-
-            if (strcmp(line, "exit") == 0) {
-                connection_destroy(connection);
-                free(line);
-                return;
-            }
-
-            if (strncmp(line, "say ", 4) == 0) {
-                for (size_t i = 0; i < connection->networker->n_connections; i++) {
-                    if (connection->networker->connections[i]) {
-                        struct evbuffer * output =
-                            bufferevent_get_output(
-                                    connection->networker->connections[i]->bev);
-                        evbuffer_add_printf(output, "%s\n", &line[4]);
-                    }
-                }
-                free(line);
-                continue;
-            }
-
-            if (strcmp(line, "shutdown") == 0) {
-                event_base_loopexit(connection->networker->base, NULL);
-                free(line);
-                continue;
-            }
-
-            /* minimal lexing code for testing */
-            struct lex_result result;
-            /* TODO fix cast */
-            lex((uint8_t *)line, connection->parser, connection->buffer, &result);
-
-            if (result.type == LEX_ERROR) {
-                evbuffer_add_printf(bufferevent_get_output(connection->bev), "error\n");
-            } else {
-                struct parse_result parse_result;
-                parser_parse(connection->parser, connection->buffer, &parse_result);
-            }
-            particle_buffer_free_all(connection->buffer);
-            /* ------------------------------- */
-
-            free(line);
+        if (n_vecs_needed > connection->vecs_capacity) {
+            connection->vecs = realloc(
+                    connection->vecs,
+                    sizeof(*connection->vecs) * n_vecs_needed
+                );
+            connection->vecs_capacity = n_vecs_needed;
         }
-    } while (n > 0);
+        n_vecs_needed = evbuffer_peek(
+                input, -1, NULL, connection->vecs, connection->vecs_capacity);
+    } while (n_vecs_needed > connection->vecs_capacity);
+
+    printf("n_vecs_needed = %zu\n", n_vecs_needed);
+
+    if (n_vecs_needed == 0) {
+        return;
+    }
+
+    const struct lexer_input * lexer_inputs =
+        (const struct lexer_input *)connection->vecs;
+
+    /* TODO cleanup */
+    /*
+    if (strcmp(line, "exit") == 0) {
+        connection_destroy(connection);
+        free(line);
+        return;
+    }
+
+    if (strncmp(line, "say ", 4) == 0) {
+        size_t n_connections = connection->networker->n_connections;
+        for (size_t i = 0; i < n_connections; i++) {
+            if (connection->networker->connections[i]) {
+                struct evbuffer * output = bufferevent_get_output(
+                        connection->networker->connections[i]->bev);
+                evbuffer_add_printf(output, "%s\n", &line[4]);
+            }
+        }
+        free(line);
+        continue;
+    }
+
+    if (strcmp(line, "shutdown") == 0) {
+        event_base_loopexit(connection->networker->base, NULL);
+        free(line);
+        continue;
+    }
+    */
+
+    /* minimal lexing code for testing */
+    size_t index = lex(
+            lexer_inputs,
+            n_vecs_needed,
+            connection->parser->game->name_set,
+            connection->buffer
+        );
+
+    struct parse_result parse_result;
+    parser_parse(
+            connection->parser,
+            connection->buffer,
+            &parse_result
+        );
+
+    for (size_t i = 0; i < connection->buffer->n_particles; i++) {
+        struct particle * particle = connection->buffer->particles[i];
+        if (particle->type == PARTICLE_KEYWORD) {
+            switch (particle->keyword) {
+                default:
+                    break;
+                case KEYWORD_SHUTDOWN:
+                    event_base_loopexit(connection->networker->base, NULL);
+                    break;
+            }
+        }
+    }
+
+    particle_buffer_free_all(connection->buffer);
+    /* ------------------------------- */
+
+    printf("drain %zu bytes\n", index);
+    if (evbuffer_drain(input, index)) {
+        printf("evbuffer_drain() error\n");
+    }
 }
 
 /* dummy event callback */
