@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <event2/event.h>
 
 #include "server.h"
 #include "config.h"
@@ -30,7 +29,11 @@
 #define __USE_GNU
 #include <stdlib.h>
 #include <locale.h>
+
 #include <uniconv.h>
+#include <unistdio.h>
+
+#include <event2/event.h>
 
 #include <getopt.h>
 
