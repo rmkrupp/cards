@@ -63,7 +63,9 @@ void parser_parse(
                 zero = false;
             }
         }
-        ulc_fprintf(stdout, "\n");
+        if (!zero) {
+            ulc_fprintf(stdout, "\n");
+        }
         break;
     }
 
