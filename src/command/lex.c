@@ -70,40 +70,39 @@
  *    now or saved as part of the trigger condition and run when the conditon
  *    script is.
  *
- * 3) Performance! This has not been tested (TODO: test it.)
+ * 3) UTF-8 Support
  *
- *    Some thoughts: it may be faster to use a lookup table and state changes
- *    versus the current "is it this?" "no? is it this?" setup.
+ *    The lexer handles UTF-8 input. This is especially important in NAME
+ *    tokens because these may actually contain UTF-8 and match without error.
  *
- * 4) TODO: UTF-8 Support
+ *    NAME tokens also undergo case-folding (they become lowercase) and
+ *    normalization for collation in order to compare them to the names loaded
+ *    out of card scripts (which have also undergone these conversions.)
  *
- *    Right now, the lexer handles UTF-8 in name values, in that it correctly
- *    finds the "" around all UTF-8 strings wthout mangling them, as long as
- *    we do not support strings with embedded null bytes, though it does not
- *    correctly locale-aware case folding on them, and they are not normalized
- *    before comparison with the name_set (also, loaded bundles aren't
- *    normalized either)
+ *    NUMBER tokens must be [0-9] and KEYWORDs must be [a-zA-Z0-9!?-*+/] and
+ *    so need no conversion. The switch to matching UTF-8 keywords would be
+ *    in three steps:
  *
- *    If we want to support keywords, or more kinds of tokenization, or numbers
- *    with digits beyond ASCII 0-9, that will take a bit of work.
+ *      1. changing lex() and consume_keyword() so that they peek one ucs4_t at
+ *         a time instead of one uint8_t (there's already a peek function that
+ *         does this, we'd just have to use it)
  *
- *    Also, we'd be introducing uint8_t *s into the mix and may need to update
- *    the API for that.
+ *      2. matching against classes of characters instead of specific ranges
+ *         in lex() and consume_keyword() (libunistring has functionality for
+ *         this)
  *
- *    At a minimum, for proper UTF-8 support, normalization and case-folding
- *    of names being locale-aware is probably necessary. As long as keywords
- *    aren't more complex, the lexer can basically stay as is. Note that both
- *    normalization and case-folding involve memory allocations because they
- *    can change the length of the string. We could use a buffer, though.
+ *      3. replacing gperf as the keyword hashing backend with our internal
+ *         hashing library
  *
- * 5) TODO: re-entrant lexer
+ *    Note that this (and especially step 3) comes with a performance penalty.
  *
- *    Instead of always receiving input a complete newline-termianted string
- *    at a time, we could switch to a reentrant lexing strategy that takes
- *    in any amount of data and handles incomplete lexing. This might make
- *    sense to do as part of the Unicode handling, though I don't know how easy
- *    it is to handle "interrupted" multibyte codepoints?
- */
+ * 5) Re-entrant lexer
+ *
+ *    The lexer has been adapted to not always consume all of the input it is
+ *    given and can handle tokens split across the boundary of input received
+ *    (by not lexing tokens it is not sure are complete.)
+ *
+  */
 
 /* how much to grow the particle_buffer by, in number of particles,
  * every time its capacity is exceeded.

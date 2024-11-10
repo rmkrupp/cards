@@ -75,8 +75,18 @@ struct name_data * name_set_remove(
 
 /* compile a name set (transforming its internal sorted_set into a hash)
  *
- * TODO: how this function works when called re: the names already
- *       in the set
+ * 1. create an empty hash_inputs and make sure it has space to store the
+ *    whole sorted_set
+ *
+ * 2. move every key from the sorted_set into it, and destroy the sorted set
+ *
+ * 3. attempt to create the hash
+ *
+ * 4. (if 3 succeeds) destroy the now-empty hash_inputs and create a fresh
+ *    name_set->uncompiled sorted_set
+ *
+ * 4. (if 3 fails) using a sorted_set_maker, recreate the original sorted_set
+ *    in O(n) time and put the copy in name_set->uncompiled
  */
 void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]];
 

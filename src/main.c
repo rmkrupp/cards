@@ -62,7 +62,7 @@ int main(int argc, char ** argv) {
     }
     setlocale(LC_ALL, lc_all);
 #else
-    /* TODO: does this work? */
+    /* TODO: does this work? (it doesn't work in wine) */
     SetConsoleOutputCP(65001);
     /* TODO: is this needed? */
     printf("%s\n", setlocale(LC_ALL, ".UTF8"));

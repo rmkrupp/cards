@@ -53,6 +53,7 @@ enum particle_type {
                     * whitespace after a KEYWORD or NUMBER, the " to close a
                     * NAME, or just the next character if the type couldn't be
                     * otherwise determined)
+                    * TODO: make add the above functionality
                     *
                     * if VERBOSE_LEXER, .error is filled with an error message
                     * describing the error, otherwise it is NULL
