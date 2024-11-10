@@ -129,10 +129,13 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
             connection->vecs_capacity = n_vecs_needed;
         }
         n_vecs_needed = evbuffer_peek(
-                input, -1, NULL, connection->vecs, connection->vecs_capacity);
+                input,
+                16 * 1024,
+                NULL,
+                connection->vecs,
+                connection->vecs_capacity
+            );
     } while (n_vecs_needed > connection->vecs_capacity);
-
-    printf("n_vecs_needed = %zu\n", n_vecs_needed);
 
     if (n_vecs_needed == 0) {
         return;
@@ -143,12 +146,6 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
 
     /* TODO cleanup */
     /*
-    if (strcmp(line, "exit") == 0) {
-        connection_destroy(connection);
-        free(line);
-        return;
-    }
-
     if (strncmp(line, "say ", 4) == 0) {
         size_t n_connections = connection->networker->n_connections;
         for (size_t i = 0; i < n_connections; i++) {
@@ -158,12 +155,6 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 evbuffer_add_printf(output, "%s\n", &line[4]);
             }
         }
-        free(line);
-        continue;
-    }
-
-    if (strcmp(line, "shutdown") == 0) {
-        event_base_loopexit(connection->networker->base, NULL);
         free(line);
         continue;
     }
@@ -184,6 +175,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
             &parse_result
         );
 
+    bool exit = false;
     for (size_t i = 0; i < connection->buffer->n_particles; i++) {
         struct particle * particle = connection->buffer->particles[i];
         if (particle->type == PARTICLE_KEYWORD) {
@@ -193,16 +185,28 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
                 case KEYWORD_SHUTDOWN:
                     event_base_loopexit(connection->networker->base, NULL);
                     break;
+                case KEYWORD_EXIT:
+                    exit = true;
+                    break;
             }
+        }
+        if (exit) {
+            break;
         }
     }
 
     particle_buffer_free_all(connection->buffer);
     /* ------------------------------- */
 
-    printf("drain %zu bytes\n", index);
     if (evbuffer_drain(input, index)) {
-        printf("evbuffer_drain() error\n");
+        LOGF_ERROR(
+                connection->networker->logger,
+                "evbuffer_drain() error\n"
+            );
+    }
+
+    if (exit) {
+        connection_destroy(connection);
     }
 }
 

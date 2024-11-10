@@ -381,7 +381,8 @@ static bool lex_ptr_advance(
     return ptr->n_input == n_inputs;
 }
 
-/* return a buffer that holds all the data between start and stop, inclusive
+/* return a buffer that holds all the data between start and stop (including
+ * start, not including stop)
  *
  * if start and stop point to the same lexer_input, just return a pointer to
  * (an offset into) that. store the size into size_out and false into
@@ -411,8 +412,9 @@ static bool lex_ptr_advance(
         return (uint8_t *)&inputs[start->n_input].input[start->index];
     }
 
+    assert(start->n_input < stop->n_input);
     size_t size = inputs[start->n_input].length - start->index;
-    for (size_t n_input = start->n_input; n_input < stop->n_input; n_input++) {
+    for (size_t n_input = start->n_input + 1; n_input < stop->n_input; n_input++) {
         size += inputs[n_input].length;
     }
     size += stop->index;
@@ -423,7 +425,7 @@ static bool lex_ptr_advance(
         buffer[index] = inputs[start->n_input].input[i];
         index++;
     }
-    for (size_t n_input = start->n_input; n_input < stop->n_input; n_input++) {
+    for (size_t n_input = start->n_input + 1; n_input < stop->n_input; n_input++) {
         for (size_t i = 0; i < inputs[n_input].length; i++) {
             buffer[index] = inputs[n_input].input[i];
             index++;
@@ -431,6 +433,7 @@ static bool lex_ptr_advance(
     }
     for (size_t i = 0; i < stop->index; i++) {
         buffer[index] = inputs[stop->n_input].input[i];
+        index++;
     }
 
     *size_out = size;

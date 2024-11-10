@@ -49,11 +49,22 @@ void parser_parse(
     /* TODO */
     (void)parser;
 
-    for (size_t i = 0; i < particles->n_particles; i++) {
-        struct particle * particle = particles->particles[i];
-        struct refstring * s = particle_string(particle);
-        ulc_fprintf(stdout, "%U\n", refstring_string(s));
-        refstring_destroy(s);
+    bool zero = true;
+    for (size_t j = 0; j < particles->n_particles; j++) {
+        for (size_t i = 0; i < particles->n_particles; i++) {
+            struct particle * particle = particles->particles[i];
+            struct refstring * s = particle_string(particle);
+            ulc_fprintf(stdout, "%s%U", zero ? "" : " ", refstring_string(s));
+            refstring_destroy(s);
+            if (particle->type == PARTICLE_END) {
+                ulc_fprintf(stdout, "\n");
+                zero = true;
+            } else {
+                zero = false;
+            }
+        }
+        ulc_fprintf(stdout, "\n");
+        break;
     }
 
     result->type = PARSE_OKAY;
