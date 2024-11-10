@@ -92,7 +92,7 @@ void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]];
 
 /* look up a name in this set */
 struct name * name_set_lookup(
-        struct name_set * name_set,
+        const struct name_set * name_set,
         const uint8_t * name,
         size_t length
     ) [[gnu::nonnull(1, 2)]];

@@ -160,7 +160,7 @@ struct lexer_input {
 size_t lex(
         const struct lexer_input * inputs,
         size_t n_inputs,
-        struct name_set * name_set,
+        const struct name_set * name_set,
         struct particle_buffer * buffer
     ) [[gnu::nonnull(1, 3, 4)]];
 

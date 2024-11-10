@@ -601,7 +601,7 @@ static struct particle * consume_name(
         const struct lexer_input * inputs,
         size_t n_inputs,
         struct lex_ptr * ptr,
-        struct name_set * name_set
+        const struct name_set * name_set
     )
 {
     struct lex_ptr ptr_start = *ptr;
@@ -857,7 +857,7 @@ static struct particle * consume_keyword(
 size_t lex(
         const struct lexer_input * inputs,
         size_t n_inputs,
-        struct name_set * name_set,
+        const struct name_set * name_set,
         struct particle_buffer * buffer
     ) [[gnu::nonnull(1, 3, 4)]]
 {
