@@ -476,7 +476,7 @@ static bool lex_ptr_advance(
  * returns the number of bytes peeked, or -1 if the input is invalid, or -2 if
  * the input is incomplete
  */
-static int lex_ptr_peek_ucs4(
+[[maybe_unused]] static int lex_ptr_peek_ucs4(
         const struct lexer_input * inputs,
         size_t n_inputs,
         const struct lex_ptr * ptr,
@@ -529,7 +529,7 @@ static int lex_ptr_peek_ucs4(
  * complete input, u8_mbtoucr() returns -2, or the character in hex if
  * unicode_character_name() returned null.
  */
-static const uint8_t * charmsg(
+[[maybe_unused]] static const uint8_t * charmsg(
         const struct lexer_input * inputs,
         size_t n_inputs,
         const struct lex_ptr * ptr

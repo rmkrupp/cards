@@ -199,7 +199,7 @@ int main(int argc, char ** argv)
 
     printf("Testing keys_out length after using sorted_set_apply_and_destroy\n");
     printf("Expected: 3\n");
-    printf("Result: %lu\n", keys_out.n_keys);
+    printf("Result: %zu\n", keys_out.n_keys);
 
     if (keys_out.n_keys != 3) {
         errors++;
