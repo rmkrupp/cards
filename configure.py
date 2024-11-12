@@ -55,7 +55,7 @@ parser.add_argument('--lua-backend',
 parser.add_argument('--disable-test-tool', action='append', default=[],
                     choices=[
                         'gperf_test', 'lex_test', 'hash_test',
-                        'sorted_set_test', 'hash_test2'
+                        'sorted_set_test', 'hash_test2', 'lex_test2'
                     ],
                     help='don\'t build a specific test tool')
 parser.add_argument('--disable-tool', action='append', default=[],
@@ -414,6 +414,7 @@ w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
 w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
 w.build('$builddir/test/sorted_set_test.o', 'cc', 'src/test/sorted_set_test.c')
 w.build('$builddir/test/hash_test2.o', 'cc', 'src/test/hash_test2.c')
+w.build('$builddir/test/lex_test2.o', 'cc', 'src/test/lex_test2.c')
 
 w.build('$builddir/tools/cards_compile/cards_compile.o', 'cc',
         'src/tools/cards_compile/cards_compile.c')
@@ -652,6 +653,28 @@ bin_target(
             'we were generated with --disable-test-tool=sorted_set_test',
         targets = [all_targets, tools_targets]
     )
+
+bin_target(
+        name = 'test/lex_test2',
+        inputs = [
+            '$builddir/test/lex_test2.o',
+            '$builddir/command/lex.o',
+            '$builddir/command/keyword.o',
+            '$builddir/name_set.o',
+            '$builddir/card.o',
+            '$builddir/libs/hash/hash.o',
+            '$builddir/util/sorted_set.o',
+            '$builddir/util/refstring.o'
+        ],
+        variables = [
+            ('libs', '-lunistring $lualib')
+        ],
+        is_disabled = 'lex_test2' in args.disable_test_tool,
+        why_disabled =
+            'we were generated with --disable-test-tool=lex_test2',
+        targets = [all_targets, tools_targets]
+    )
+
 
 bin_target(
         name = 'test/hash_test2',
