@@ -65,6 +65,10 @@ static error_t parse_opt(int key, char * argv, struct argp_state * state)
             break;
 
         case ARGP_KEY_END:
+            if (!args->database_name) {
+                argp_usage(state);
+                return 1;
+            }
             break;
 
         case ARGP_KEY_ERROR:
@@ -76,11 +80,6 @@ static error_t parse_opt(int key, char * argv, struct argp_state * state)
             break;
         default:
             return ARGP_ERR_UNKNOWN;
-    }
-
-    if (!args->database_name) {
-        argp_usage(state);
-        return 1;
     }
 
     return 0;
