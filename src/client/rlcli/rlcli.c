@@ -125,7 +125,7 @@ static void free_args(struct arguments * args)
 int main(int argc, char ** argv)
 {
 
-    struct arguments args = (struct arguments) {
+    struct arguments args = {
         .portname = strdup("10101"),
         .hostname = strdup("127.0.0.1")
     };

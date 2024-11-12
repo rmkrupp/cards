@@ -33,7 +33,7 @@ static void free_args(struct arguments * args)
 
 int main(int argc, char ** argv)
 {
-    struct arguments args = (struct arguments) { };
+    struct arguments args = { };
 
     int parse_result;
     if ((parse_result = parse_args(&args, argc, argv))) {
