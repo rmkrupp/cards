@@ -26,6 +26,17 @@ from datetime import datetime
 import misc.ninja_syntax as ninja
 
 #
+# DIRECTLY INVOKED PROGRAMS
+#
+
+# used only if --defer-pkg-config=false
+pkgconfig = {
+        'release': 'pkg-config',
+        'debug': 'pkg-config',
+        'w64': 'x86_64-w64-mingw32-pkg-config'
+    }
+
+#
 # ARGUMENT PARSING
 #
 
@@ -38,6 +49,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--cflags', help='override compiler flags')
 parser.add_argument('--cc', help='override cc')
 parser.add_argument('--gperf', help='override gperf')
+parser.add_argument('--pkg-config', help='override pkg-config')
 parser.add_argument('--ldflags', help='override compiler flags when linking')
 #parser.add_argument('--prefix')
 #parser.add_argument('--destdir')
@@ -83,6 +95,9 @@ parser.add_argument('--force-version', metavar='STRING',
                     help='override the version string')
 parser.add_argument('--add-version-suffix', metavar='SUFFIX',
                     help='append the version string')
+parser.add_argument('--defer-pkg-config', type=bool, default=True,
+                    help='run pkg-config when ninja is run, not configure.py (default: true)')
+
 
 hash_opts = parser.add_argument_group('hash library options')
 hash_opts.add_argument('--enable-hash-statistics', action='store_true',
@@ -97,6 +112,87 @@ args = parser.parse_args()
 #
 # HELPER FUNCTIONS
 #
+
+def package(name,
+            alias=None,
+            pkg_config=True,
+            libs={},
+            cflags={},
+            comment=True):
+    libs = (libs.get(args.build, '') + ' ' + libs.get('all', '')).strip()
+    if len(libs) > 0:
+        libs = ' ' + libs
+
+    cflags = (cflags.get(args.build, '') + ' ' + cflags.get('all', '')).strip()
+    if len(cflags) > 0:
+        cflags = ' ' + cflags
+
+    if not alias:
+        alias = name
+
+    if comment:
+        w.comment('package ' + name) 
+    if pkg_config:
+        if args.defer_pkg_config:
+            w.variable(alias + '_cflags', '$$($pkgconfig --cflags ' + name + ')')
+            w.variable(alias + '_libs', '$$($pkgconfig --libs ' + name + ')')
+        else:
+            if args.build not in pkgconfig:
+                print('ERROR: --defer-pkg-config is false but there is no pkg-config for build type', args.build, '(have:', pkgconfig, ')', file=sys.stderr)
+                sys.exit(1)
+
+            pc = pkgconfig.get(args.build)
+            pc_cflags = subprocess.run([pc, '--cflags', name],
+                                       capture_output=True)
+            pc_libs = subprocess.run([pc, '--libs', name],
+                                     capture_output=True)
+            if pc_cflags.returncode != 0 or pc_libs.returncode != 0:
+                w.comment(
+                        'WARNING: ' + pc +
+                        ' exited non-zero for library ' + name
+                    )
+                print('WARNING:', pc, 'exited non-zero for library',
+                      name, file=sys.stderr)
+            w.variable(alias + '_cflags',
+                       pc_cflags.stdout.decode().strip() + cflags)
+            w.variable(alias + '_libs',
+                       pc_libs.stdout.decode().strip() + libs)
+    else:
+        w.variable(alias + '_cflags', cflags)
+        w.variable(alias + '_libs', libs)
+    w.newline()
+
+def transformer(source, rule):
+    if rule == 'cc':
+        if source[-2:] == '.c':
+            return source[:-2] + '.o'
+    elif rule == 'gperf':
+        if source[-6:] == '.gperf':
+            return source[:-6] + '.c'
+    return source
+
+def build(source,
+          rule='cc',
+          input_prefix='src/',
+          output_prefix='$builddir/',
+          packages=[],
+          cflags='$cflags',
+          includes='$includes'):
+
+    variables = []
+    cflags = ' '.join([cflags] + ['$' + name + '_cflags' for name in packages])
+    if cflags != '$cflags':
+        variables += [('cflags', cflags)]
+
+    if includes != '$includes':
+        variables += [('includes', includes)]
+
+    w.build(
+            output_prefix + transformer(source, rule),
+            rule,
+            input_prefix + source,
+            variables=variables
+        )
 
 def exesuffix(root, enabled):
     if enabled:
@@ -124,24 +220,10 @@ def enable_release():
 def enable_w64():
     args.disable_argp = True
     w.variable(key = 'std', value = '-std=gnu2x')
-    w.variable(key = 'cflags', value = '$cflags -O2 -static -I/usr/x86_64-w64-mingw32/include')
-    w.variable(key = 'w64netlibs', value = '-lws2_32 -liphlpapi')
-    w.variable(key = 'w64iconv', value = '-liconv')
-    w.variable(key = 'w64curses', value = '-lcurses')
-    w.variable(key = 'ldflags', value = '$ldflags -L/usr/x86_64-w64-mingw32/lib')
+    w.variable(key = 'cflags', value = '$cflags -O2 -static')
+    w.variable(key = 'includes',
+               value = '$includes -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
-
-def enable_luajit():
-    w.variable(key = 'defines', value = '$defines -DUSE_LUAJIT=1')
-    if args.build == 'w64':
-        w.variable(key = 'lualib', value = '-lluajit')
-    else:
-        w.variable(key = 'lualib', value = '-lluajit-5.1')
-
-def enable_lua51():
-    w.variable(key = 'defines', value = '$defines -DUSE_LUAJIT=0')
-    w.variable(key = 'lualib', value = '-llua5.1')
-
 def enable_verbose_lexer():
     w.variable(key = 'defines', value = '$defines -DVERBOSE_LEXER=1')
 
@@ -196,6 +278,14 @@ if args.gperf:
     w.variable(key = 'gperf', value = args.gperf)
 else:
     w.variable(key = 'gperf', value = 'gperf')
+
+if args.pkg_config:
+    w.comment('using this pkg-config because we were generated with --pkg-config=' + args.pkg_config)
+    w.variable(key = 'pkgconfig', value = args.pkg_config)
+elif args.build == 'w64':
+    w.variable(key = 'pkgconfig', value = 'x86_64-w64-mingw32-pkg-config')
+else:
+    w.variable(key = 'pkgconfig', value = 'pkg-config')
 
 #
 # CFLAGS/LDFLAGS DEFAULTS
@@ -276,15 +366,17 @@ w.newline()
 
 if args.lua_backend == 'luajit':
     w.comment('lua is luajit')
-    enable_luajit()
+    package('luajit', alias='lua',
+            cflags={'all':'-DUSE_LUAJIT=1'}, comment=False)
 elif args.lua_backend == 'lua51':
     w.comment('lua is lua51')
-    enable_lua51()
+    package('lua5.1', alias='lua',
+            cflags={'all':'-DUSE_LUAJIT=0'}, comment=False)
 else:
     w.comment('lua is disabled')
     w.comment('(this implies --disable-server and --disable-tool=cards_inspect)')
+    w.newline()
     args.disable_server = True
-w.newline()
 
 #
 # THE VERBOSE LEXER
@@ -322,6 +414,8 @@ if args.enable_hash_simulate_failure:
 # CFLAGS/LDFLAGS OVERRIDES
 #
 
+w.comment('the version define')
+
 needs_newline = False
 
 if args.cflags:
@@ -349,6 +443,19 @@ if needs_newline:
 
 w.variable(key = 'defines', value = '$defines -DVERSION="\\"$version\\""')
 w.newline()
+
+#
+# PACKAGES
+#
+
+# note: lua is handled below
+package('sqlite3')
+package('libevent', libs={"w64": "lws2_32 -liphlpapi"})
+package('unistring', pkg_config=False, libs={
+    'debug': '-lunistring',
+    'release': '-lunistring',
+    'w64': '-lunistring -liconv'
+})
 
 #
 # NINJA RULES
@@ -382,92 +489,83 @@ w.newline()
 # SOURCES
 #
 
-w.build('$builddir/bundle.o', 'cc', 'src/bundle.c')
-w.build('$builddir/card.o', 'cc', 'src/card.c')
-w.build('$builddir/config_loader.o', 'cc', 'src/config_loader.c')
-w.build('$builddir/game.o', 'cc', 'src/game.c')
-w.build('$builddir/name_set.o', 'cc', 'src/name_set.c')
-w.build('$builddir/main.o', 'cc', 'src/main.c')
-w.build('$builddir/networker.o', 'cc', 'src/networker.c')
-w.build('$builddir/server.o', 'cc', 'src/server.c')
+w.comment('source files')
+
+build('bundle.c', packages=['sqlite3'])
+build('card.c', packages=['lua'])
+build('config_loader.c', packages=['lua'])
+build('game.c')
+build('name_set.c', packages=['unistring'])
+build('main.c', packages=['unistring', 'libevent'])
+build('networker.c', packages=['unistring'])
+build('server.c')
 w.newline()
 
-w.build('$builddir/util/log.o', 'cc', 'src/util/log.c')
-w.build('$builddir/util/refstring.o', 'cc', 'src/util/refstring.c')
-w.build('$builddir/util/sorted_set.o', 'cc', 'src/util/sorted_set.c')
-w.build('$builddir/util/strdup.o', 'cc', 'src/util/strdup.c')
+build('util/log.c', packages=['unistring'])
+build('util/refstring.c', packages=['unistring'])
+build('util/sorted_set.c')
+build('util/strdup.c')
 w.newline()
 
-w.build('$builddir/command/keyword.o', 'cc', 'out/command/keyword.c',
-        variables=[
-            ('cflags',
-             '$cflags -Wno-missing-field-initializers ' +
-             '-Wno-unused-parameter')
-        ])
-
-w.build('$builddir/command/lex.o', 'cc', 'src/command/lex.c')
-w.build('$builddir/command/parse.o', 'cc', 'src/command/parse.c')
+build('command/keyword.c', input_prefix='$builddir/',
+      cflags='$cflags -Wno-missing-field-initializers -Wno-unused-parameter')
+build('command/lex.c', packages=['unistring'])
+build('command/parse.c', packages=['unistring'])
 w.newline()
 
-w.build('$builddir/test/gperf_test.o', 'cc', 'src/test/gperf_test.c')
-w.build('$builddir/test/hash_test.o', 'cc', 'src/test/hash_test.c')
-w.build('$builddir/test/lex_test.o', 'cc', 'src/test/lex_test.c')
-w.build('$builddir/test/sorted_set_test.o', 'cc', 'src/test/sorted_set_test.c')
-w.build('$builddir/test/hash_test2.o', 'cc', 'src/test/hash_test2.c')
-w.build('$builddir/test/lex_test2.o', 'cc', 'src/test/lex_test2.c')
-
-w.build('$builddir/tools/cards_compile/cards_compile.o', 'cc',
-        'src/tools/cards_compile/cards_compile.c')
-w.build('$builddir/tools/cards_compile/args_getopt.o', 'cc',
-        'src/tools/cards_compile/args_getopt.c')
-w.build('$builddir/tools/cards_compile/args_argp.o', 'cc',
-        'src/tools/cards_compile/args_argp.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
-
-w.build('$builddir/tools/cards_inspect/cards_inspect.o', 'cc',
-        'src/tools/cards_inspect/cards_inspect.c')
-w.build('$builddir/tools/cards_inspect/args_getopt.o', 'cc',
-        'src/tools/cards_inspect/args_getopt.c')
-w.build('$builddir/tools/cards_inspect/args_argp.o', 'cc',
-        'src/tools/cards_inspect/args_argp.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
-
-w.build('$builddir/tools/saves_create/saves_create.o', 'cc',
-        'src/tools/saves_create/saves_create.c')
-w.build('$builddir/tools/saves_create/args_getopt.o', 'cc',
-        'src/tools/saves_create/args_getopt.c')
-w.build('$builddir/tools/saves_create/args_argp.o', 'cc',
-        'src/tools/saves_create/args_argp.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
-
-w.build('$builddir/client/cli/cli.o', 'cc', 'src/client/cli/cli.c')
-w.build('$builddir/client/cli/args_getopt.o', 'cc',
-        'src/client/cli/args_getopt.c')
-w.build('$builddir/client/cli/args_argp.o', 'cc', 'src/client/cli/args_argp.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
+build('test/gperf_test.c')
+build('test/hash_test.c')
+build('test/lex_test.c', packages=['unistring'])
+build('test/sorted_set_test.c')
+build('test/hash_test2.c')
+build('test/lex_test2.c', packages=['unistring'])
 w.newline()
 
-w.build('$builddir/client/rlcli/rlcli.o', 'cc', 'src/client/rlcli/rlcli.c',
-        variables=[('includes', '$includes -Ilibs/linenoise')])
-w.build('$builddir/client/rlcli/args_getopt.o', 'cc',
-        'src/client/rlcli/args_getopt.c')
-w.build('$builddir/client/rlcli/args_argp.o', 'cc',
-        'src/client/rlcli/args_argp.c',
-        variables=[('cflags', '$cflags -Wno-missing-field-initializers')])
+build('tools/cards_compile/cards_compile.c', packages=['sqlite3'])
+build('tools/cards_compile/args_getopt.c')
+build('tools/cards_compile/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
-w.build('$builddir/command/keyword.c', 'gperf', 'src/command/keyword.gperf')
+build('tools/cards_inspect/cards_inspect.c', packages=['lua', 'sqlite3'])
+build('tools/cards_inspect/args_getopt.c')
+build('tools/cards_inspect/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
-w.build('$builddir/libs/hash/hash.o', 'cc', 'libs/hash/src/hash.c')
+build('tools/saves_create/saves_create.c', packages=['sqlite3'])
+build('tools/saves_create/args_getopt.c')
+build('tools/saves_create/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
-w.build('$builddir/libs/linenoise/linenoise.o', 'cc', 'libs/linenoise/linenoise.c')
+build('client/cli/cli.c', packages=['libevent'])
+build('client/cli/args_getopt.c')
+build('client/cli/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
+w.newline()
+
+build('client/rlcli/rlcli.c', packages=['libevent'],
+      includes='$includes -Ilibs/linenoise')
+build('client/rlcli/args_getopt.c')
+build('client/rlcli/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
+w.newline()
+
+build('command/keyword.gperf', rule='gperf')
+w.newline()
+
+build('hash.c', input_prefix='libs/hash/src/', output_prefix='out/libs/hash/')
+w.newline()
+
+build('libs/linenoise/linenoise.c', input_prefix='')
 w.newline()
 
 #
 # OUTPUTS
 #
+
+w.comment('output products')
 
 all_targets = []
 tools_targets = []
@@ -530,10 +628,9 @@ bin_target(
             '$builddir/util/strdup.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [(
-            'libs',
-            '-levent $lualib $w64netlibs -lsqlite3 -lunistring $w64iconv'
-        )],
+        variables = [
+            ('libs', '$libevent_libs $lua_libs $unistring_libs $sqlite3_libs')
+        ],
         is_disabled = args.disable_server,
         why_disabled = 'we were generated with --disable-server',
         targets = [all_targets]
@@ -545,7 +642,6 @@ bin_target(
             '$builddir/command/keyword.o',
             '$builddir/test/gperf_test.o'
         ],
-        variables = [('libs', '')],
         is_disabled = 'gperf_test' in args.disable_test_tool,
         why_disabled = 'we were generated with --disable-test-tool=gperf_test',
         targets = [all_targets, tools_targets]
@@ -568,7 +664,7 @@ bin_target(
             '$builddir/util/log.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [('libs', '-lsqlite3 $lualib -lunistring $w64iconv')],
+        variables = [('libs', '$sqlite3_libs $lua_libs $unistring_libs')],
         is_disabled = [
             args.lua_backend == 'none',
             'lex_test' in args.disable_test_tool
@@ -592,7 +688,7 @@ bin_target(
         getopt_inputs = [
             '$builddir/client/cli/args_getopt.o'
         ],
-        variables = [('libs', '-levent $w64netlibs')],
+        variables = [('libs', '$libevent_libs')],
         is_disabled = 'cli' in args.disable_client,
         why_disabled = 'we were generated with --disable-client=cli',
         targets = [all_targets, tools_targets]
@@ -611,9 +707,7 @@ bin_target(
         getopt_inputs = [
             '$builddir/client/rlcli/args_getopt.o'
         ],
-        variables = [
-            ('libs', '-levent')
-        ],
+        variables = [('libs', '$libevent_libs')],
         is_disabled = [
             'rlcli' in args.disable_client,
             args.build == 'w64'
@@ -631,9 +725,6 @@ bin_target(
             '$builddir/test/hash_test.o',
             '$builddir/libs/hash/hash.o'
         ],
-        variables = [
-            ('libs', '')
-        ],
         is_disabled = 'hash_test' in args.disable_test_tool,
         why_disabled = 'we were generated with --disable-test-tool=hash_test',
         targets = [all_targets, tools_targets]
@@ -644,9 +735,6 @@ bin_target(
         inputs = [
             '$builddir/test/sorted_set_test.o',
             '$builddir/util/sorted_set.o'
-        ],
-        variables = [
-            ('libs', '')
         ],
         is_disabled = 'sorted_set_test' in args.disable_test_tool,
         why_disabled =
@@ -666,9 +754,7 @@ bin_target(
             '$builddir/util/sorted_set.o',
             '$builddir/util/refstring.o'
         ],
-        variables = [
-            ('libs', '-lunistring $w64iconv $lualib')
-        ],
+        variables = [('libs', '$unistring_libs $lua_libs')],
         is_disabled = [
             'lex_test2' in args.disable_test_tool,
             args.lua_backend == 'none'
@@ -688,9 +774,6 @@ bin_target(
             '$builddir/libs/hash/hash.o',
             '$builddir/util/strdup.o'
         ],
-        variables = [
-            ('libs', '')
-        ],
         is_disabled = 'hash_test2' in args.disable_test_tool,
         why_disabled =
             'we were generated with --disable-test-tool=hash_test2',
@@ -709,9 +792,7 @@ bin_target(
         getopt_inputs = [
             '$builddir/tools/cards_compile/args_getopt.o'
         ],
-        variables = [
-            ('libs', '-lsqlite3')
-        ],
+        variables = [('libs', '$sqlite3_libs')],
         is_disabled = 'cards_compile' in args.disable_tool,
         why_disabled = 'we were generated with --disable-tool=cards_compile',
         targets = [all_targets, tools_targets]
@@ -729,9 +810,7 @@ bin_target(
         getopt_inputs = [
             '$builddir/tools/cards_inspect/args_getopt.o'
         ],
-        variables = [
-            ('libs', '-lsqlite3 $lualib')
-        ],
+        variables = [('libs', '$sqlite3_libs $lua_libs')],
         is_disabled = [
             args.lua_backend == 'none',
             'cards_inspect' in args.disable_tool
@@ -755,9 +834,7 @@ bin_target(
         getopt_inputs = [
             '$builddir/tools/saves_create/args_getopt.o'
         ],
-        variables = [
-            ('libs', '-lsqlite3')
-        ],
+        variables = [('libs', '$sqlite3_libs')],
         is_disabled = 'saves_create' in args.disable_tool,
         why_disabled = 'we were generated with --disable-tool=cards_inspect',
         targets = [all_targets, tools_targets]
@@ -766,6 +843,7 @@ bin_target(
 #
 # ALL, TOOLS, AND DEFAULT
 #
+w.comment('output groups')
 
 if len(tools_targets) > 0:
     w.build('tools', 'phony', tools_targets)
