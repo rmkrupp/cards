@@ -667,11 +667,16 @@ bin_target(
             '$builddir/util/refstring.o'
         ],
         variables = [
-            ('libs', '-lunistring $lualib')
+            ('libs', '-lunistring $w64iconv $lualib')
         ],
-        is_disabled = 'lex_test2' in args.disable_test_tool,
-        why_disabled =
+        is_disabled = [
+            'lex_test2' in args.disable_test_tool,
+            args.lua_backend == 'none'
+        ],
+        why_disabled = [
             'we were generated with --disable-test-tool=lex_test2',
+            'we were generated with --lua-backend=none'
+        ],
         targets = [all_targets, tools_targets]
     )
 
