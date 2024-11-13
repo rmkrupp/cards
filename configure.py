@@ -95,8 +95,11 @@ parser.add_argument('--force-version', metavar='STRING',
                     help='override the version string')
 parser.add_argument('--add-version-suffix', metavar='SUFFIX',
                     help='append the version string')
-parser.add_argument('--defer-pkg-config', type=bool, default=True,
-                    help='run pkg-config when ninja is run, not configure.py (default: true)')
+# TODO
+#parser.add_argument('--defer-git-describe', type=bool, default=True,
+#                    help='run git describe when ninja is run, not configure.py (default: true)')
+parser.add_argument('--defer-pkg-config', action=argparse.BooleanOptionalAction, default=True,
+                    help='run pkg-config when ninja is run, not configure.py (default: yes)')
 
 
 hash_opts = parser.add_argument_group('hash library options')
@@ -120,11 +123,11 @@ def package(name,
             cflags={},
             comment=True):
     libs = (libs.get(args.build, '') + ' ' + libs.get('all', '')).strip()
-    if len(libs) > 0:
+    if pkg_config and len(libs) > 0:
         libs = ' ' + libs
 
     cflags = (cflags.get(args.build, '') + ' ' + cflags.get('all', '')).strip()
-    if len(cflags) > 0:
+    if pkg_config and len(cflags) > 0:
         cflags = ' ' + cflags
 
     if not alias:
@@ -134,8 +137,8 @@ def package(name,
         w.comment('package ' + name) 
     if pkg_config:
         if args.defer_pkg_config:
-            w.variable(alias + '_cflags', '$$($pkgconfig --cflags ' + name + ')')
-            w.variable(alias + '_libs', '$$($pkgconfig --libs ' + name + ')')
+            w.variable(alias + '_cflags', '$$($pkgconfig --cflags ' + name + ')' + cflags)
+            w.variable(alias + '_libs', '$$($pkgconfig --libs ' + name + ')' + libs)
         else:
             if args.build not in pkgconfig:
                 print('ERROR: --defer-pkg-config is false but there is no pkg-config for build type', args.build, '(have:', pkgconfig, ')', file=sys.stderr)
@@ -224,8 +227,6 @@ def enable_w64():
     w.variable(key = 'includes',
                value = '$includes -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
-def enable_verbose_lexer():
-    w.variable(key = 'defines', value = '$defines -DVERBOSE_LEXER=1')
 
 #
 # THE WRITER
@@ -361,24 +362,6 @@ else:
 w.newline()
 
 #
-# LUA MODE
-#
-
-if args.lua_backend == 'luajit':
-    w.comment('lua is luajit')
-    package('luajit', alias='lua',
-            cflags={'all':'-DUSE_LUAJIT=1'}, comment=False)
-elif args.lua_backend == 'lua51':
-    w.comment('lua is lua51')
-    package('lua5.1', alias='lua',
-            cflags={'all':'-DUSE_LUAJIT=0'}, comment=False)
-else:
-    w.comment('lua is disabled')
-    w.comment('(this implies --disable-server and --disable-tool=cards_inspect)')
-    w.newline()
-    args.disable_server = True
-
-#
 # THE VERBOSE LEXER
 #
 
@@ -386,7 +369,7 @@ if args.disable_verbose_lexer:
     w.comment('the verbose lexer is not enabled because we were generated with --disable-verbose-lexer')
 else:
     w.comment('the verbose lexer is enabled')
-    enable_verbose_lexer()
+    w.variable(key = 'defines', value = '$defines -DVERBOSE_LEXER=1')
 w.newline()
 
 #
@@ -414,8 +397,6 @@ if args.enable_hash_simulate_failure:
 # CFLAGS/LDFLAGS OVERRIDES
 #
 
-w.comment('the version define')
-
 needs_newline = False
 
 if args.cflags:
@@ -429,6 +410,8 @@ if args.ldflags:
 #
 # OPTIONAL VERSION SUFFIX
 #
+
+w.comment('the version define')
 
 if args.add_version_suffix:
     w.variable(key = 'version', value = '"$version"-' + args.add_version_suffix)
@@ -448,14 +431,31 @@ w.newline()
 # PACKAGES
 #
 
-# note: lua is handled below
 package('sqlite3')
-package('libevent', libs={"w64": "lws2_32 -liphlpapi"})
+package('libevent', libs={"w64": "-lws2_32 -liphlpapi"})
 package('unistring', pkg_config=False, libs={
     'debug': '-lunistring',
     'release': '-lunistring',
     'w64': '-lunistring -liconv'
 })
+
+#
+# LUA BACKEND
+#
+
+if args.lua_backend == 'luajit':
+    w.comment('lua is luajit')
+    package('luajit', alias='lua',
+            cflags={'all':'-DUSE_LUAJIT=1'}, comment=False)
+elif args.lua_backend == 'lua51':
+    w.comment('lua is lua51')
+    package('lua5.1', alias='lua',
+            cflags={'all':'-DUSE_LUAJIT=0'}, comment=False)
+else:
+    w.comment('lua is disabled')
+    w.comment('(this implies --disable-server and --disable-tool=cards_inspect)')
+    w.newline()
+    args.disable_server = True
 
 #
 # NINJA RULES
@@ -555,7 +555,8 @@ w.newline()
 build('command/keyword.gperf', rule='gperf')
 w.newline()
 
-build('hash.c', input_prefix='libs/hash/src/', output_prefix='out/libs/hash/')
+build('hash.c',
+      input_prefix='libs/hash/src/', output_prefix='$builddir/libs/hash/')
 w.newline()
 
 build('libs/linenoise/linenoise.c', input_prefix='')
@@ -843,7 +844,6 @@ bin_target(
 #
 # ALL, TOOLS, AND DEFAULT
 #
-w.comment('output groups')
 
 if len(tools_targets) > 0:
     w.build('tools', 'phony', tools_targets)
