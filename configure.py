@@ -774,7 +774,8 @@ bin_target(
             '$builddir/card.o',
             '$builddir/libs/hash/hash.o',
             '$builddir/util/sorted_set.o',
-            '$builddir/util/refstring.o'
+            '$builddir/util/refstring.o',
+            '$builddir/util/log.o'
         ],
         variables = [('libs', '$unistring_libs $lua_libs')],
         is_disabled = [
