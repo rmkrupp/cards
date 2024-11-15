@@ -137,6 +137,10 @@ struct card * card_load(
 
     lua_pop(L, 1);
 
+    /* TODO: move this to end so that we check every lua thing for abilities
+     *       and subtypes before we do this add so we don't have to remove
+     *       it for every error (?)
+     */
     if (!name_set_add(name_set, name, name_length, card, NAME_TYPE_CARD)) {
         LOGF_ERROR(logger, "duplicate card name '%.*U'\n", name_length, name);
         lua_close(L);

@@ -214,6 +214,7 @@ int main(int argc, char ** argv)
     evutil_freeaddrinfo(answer);
 
     char * line = NULL;
+    /* TODO */
     size_t line_max = 1024 * 1024 * 1024;
 
     if (args.n_load_files > 0) {

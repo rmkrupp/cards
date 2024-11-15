@@ -203,6 +203,7 @@ int main(int argc, char ** argv)
             fprintf(stderr, "[cli] error: %s\n", strerror(errno));
             continue;
         }
+        /* TODO */
         char * line = malloc(1024 * 1024 * 1024);
         while (fgets(line, 1024 * 1024 * 1024, f)) {
             evbuffer_add_printf(bufferevent_get_output(bev_net), "%s", line);
