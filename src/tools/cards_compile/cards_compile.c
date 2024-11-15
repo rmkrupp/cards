@@ -135,7 +135,6 @@ int main(int argc, char ** argv)
         }
 
         long tell_size = ftell(f);
-        printf("tell_size = %ld\n", tell_size);
 
         if (tell_size < 0) {
             fprintf(
