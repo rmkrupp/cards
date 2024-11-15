@@ -46,11 +46,11 @@ parser = argparse.ArgumentParser(
         epilog = 'This program is part of cards <github.com/rmkrupp/cards>'
     )
 
-parser.add_argument('--cflags', help='override compiler flags')
-parser.add_argument('--cc', help='override cc')
-parser.add_argument('--gperf', help='override gperf')
-parser.add_argument('--pkg-config', help='override pkg-config')
-parser.add_argument('--ldflags', help='override compiler flags when linking')
+parser.add_argument('--cflags', help='override compiler flags (and CFLAGS)')
+parser.add_argument('--cc', help='override cc (and CC)')
+parser.add_argument('--gperf', help='override gperf (and GPERF)')
+parser.add_argument('--pkg-config', help='override pkg-config (and PKG_CONFIG)')
+parser.add_argument('--ldflags', help='override compiler flags when linking (and LDFLAGS)')
 #parser.add_argument('--prefix')
 #parser.add_argument('--destdir')
 parser.add_argument('--build',
@@ -260,14 +260,25 @@ w.variable(key = 'builddir', value = 'out')
 # TOOLS TO INVOKE
 #
 
-if 'CC' in os.environ:
-    print('WARNING: CC environment variable is set but will be ignored (did you mean --cc=?)',
-          file=sys.stderr)
+def warn_environment(key, argsval, flagname):
+    if key in os.environ and argsval:
+        print('WARNING:', key, 'environment variable is set but will be ignored because', flagname, 'was passed', file=sys.stderr)
+        w.comment('WARNING: ' + key + ' environment variable is set but will be ignored because ' + flagname + ' was passed')
+
+warn_environment('CC', args.cc, '--cc=')
+warn_environment('GPERF', args.cc, '--gperf=')
+# TODO: is there a normal environment variable for pkg-config?
+#warn_environment('PKG_CONFIG', args.cc, '--pkg-config=')
+warn_environment('CFLAGS', args.cc, '--cflags=')
+warn_environment('LDFLAGS', args.cc, '--ldflags=')
 
 if args.cc:
     if (args.build == 'w64' and args.cc != 'x86_64-w64-mingw32-gcc') or (args.build != 'w64' and args.cc != 'gcc'):
         w.comment('using this cc because we were generated with --cc=' + args.cc)
     w.variable(key = 'cc', value = args.cc)
+elif 'CC' in os.environ:
+    w.comment('using this cc because CC was set')
+    w.variable(key = 'cc', value = os.environ['cc'])
 elif args.build == 'w64':
     w.variable(key = 'cc', value = 'x86_64-w64-mingw32-gcc')
 else:
@@ -277,6 +288,8 @@ if args.gperf:
     if args.gperf != 'gperf':
         w.comment('using this gperf because we were generated with --gperf=' + args.gperf)
     w.variable(key = 'gperf', value = args.gperf)
+elif 'GPERF' in os.environ:
+    w.comment('using this gperf because GPERF was set')
 else:
     w.variable(key = 'gperf', value = 'gperf')
 
@@ -294,10 +307,16 @@ else:
 
 if args.cflags:
     w.comment('these are overriden below because we were generated with --cflags=' + args.cflags)
+elif 'CFLAGS' in os.environ:
+    w.comment('these are overriden below because CFLAGS was set')
+
 w.variable(key = 'cflags', value = '-Wall -Wextra -Werror -fdiagnostics-color -flto')
 
 if args.ldflags:
     w.comment('these are overriden below because we were generated with --ldflags=' + args.ldflags)
+elif 'LDFLAGS' in os.environ:
+    w.comment('these are overriden below because LDFLAGS was set')
+
 w.variable(key = 'ldflags', value = '')
 
 #
@@ -402,16 +421,18 @@ needs_newline = False
 if args.cflags:
     w.variable(key = 'cflags', value = args.cflags)
     needs_newline = True
+elif 'CFLAGS' in os.environ:
+    w.variable(key = 'cflags', value = os.environ['CFLAGS'])
 
 if args.ldflags:
     w.variable(key = 'ldflags', value = args.ldflags)
     needs_newline = True
+elif 'LDFLAGS' in os.environ:
+    w.variable(key = 'ldflags', value = os.environ['LDFLAGS'])
 
 #
 # OPTIONAL VERSION SUFFIX
 #
-
-w.comment('the version define')
 
 if args.add_version_suffix:
     w.variable(key = 'version', value = '"$version"-' + args.add_version_suffix)
