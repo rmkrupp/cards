@@ -260,8 +260,8 @@ static void networker_listener_accept_cb(
     struct evbuffer * output = bufferevent_get_output(bev);
     evbuffer_add_printf(
             output,
-            "[server] welcome, you are %zu\n",
-            connection->id
+            "[server] welcome, you are %lu\n",
+            (unsigned long)connection->id
         );
 }
 
