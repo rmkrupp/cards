@@ -20,7 +20,6 @@ Build with `./configure.py --build=release && ninja`
  - libevent
  - either Lua 5.1 or luajit
  - sqlite3
- - readline (unless `--disable-readline`, which stops `rlcli` from building)
  - argp (unless `--disable-argp`, which falls back to `getopt` for `rlcli` and
    `cli`.
 

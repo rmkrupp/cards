@@ -48,6 +48,8 @@
 
  - [ ] maintain a log of every command sent to the parser
 
+   - [ ] transform particles back into commands?
+
    - [ ] prepare for this to be filtered and simplified to keep only those
          commands which result in a game state change
 
