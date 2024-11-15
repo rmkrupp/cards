@@ -1,4 +1,4 @@
-/* File: include/tools/saves_create/args.h
+/* File: include/tools/save_create/args.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TOOLS_SAVES_CREATE_ARGS
-#define TOOLS_SAVES_CREATE_ARGS
+#ifndef TOOLS_SAVE_CREATE_ARGS
+#define TOOLS_SAVE_CREATE_ARGS
 
 /* the result of parse_args */
 struct arguments
@@ -29,12 +29,12 @@ struct arguments
 /* parse this argv and argc, storing the result in args
  *
  * whether this invokes argp or getopt code depends on whether we are
- * compiled using src/tools/saves_create/args_argp.c or
- * src/tools/saves_create/args_getopt.c, which is controlled by the
+ * compiled using src/tools/save_create/args_argp.c or
+ * src/tools/save_create/args_getopt.c, which is controlled by the
  * configure.py --use-argp flag, and the --build option (argp is off
  * automatically for w64 builds.)
  */
 int parse_args(
         struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]];
 
-#endif /* TOOLS_SAVES_CREATE_ARGS */
+#endif /* TOOLS_SAVE_CREATE_ARGS */

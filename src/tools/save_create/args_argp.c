@@ -1,4 +1,4 @@
-/* File: src/tools/saves_create/args_argp.c
+/* File: src/tools/save_create/args_argp.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "tools/saves_create/args.h"
+#include "tools/save_create/args.h"
 
 #include "util/strdup.h"
 
@@ -25,7 +25,7 @@
 #include <argp.h>
 
 const char * argp_program_version =
-    "saves_create " VERSION;
+    "save_create " VERSION;
 
 const char * argp_program_bug_address =
     "<beka.krupp@gmail.com>";

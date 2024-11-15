@@ -1,4 +1,4 @@
-/* File: src/tools/saves_create/saves_create.c
+/* File: src/tools/save_create/save_create.c
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -23,7 +23,7 @@
 
 #include <sqlite3.h>
 
-#include "tools/saves_create/args.h"
+#include "tools/save_create/args.h"
 
 /* returns 0 on success, 1 on failure. if it failed, the db is closed */
 static int add_metadata(sqlite3 * db, const char * key, const char * value)

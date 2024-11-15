@@ -73,7 +73,7 @@ parser.add_argument('--disable-test-tool', action='append', default=[],
 parser.add_argument('--disable-tool', action='append', default=[],
                     choices=[
                         'cards_compile', 'cards_inspect',
-                        'saves_create'
+                        'save_create'
                     ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-client', action='append', default=[],
@@ -533,9 +533,9 @@ build('tools/cards_inspect/args_argp.c',
       cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('tools/saves_create/saves_create.c', packages=['sqlite3'])
-build('tools/saves_create/args_getopt.c')
-build('tools/saves_create/args_argp.c',
+build('tools/save_create/save_create.c', packages=['sqlite3'])
+build('tools/save_create/args_getopt.c')
+build('tools/save_create/args_argp.c',
       cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
@@ -824,20 +824,20 @@ bin_target(
     )
 
 bin_target(
-        name = 'tools/saves_create',
+        name = 'tools/save_create',
         inputs = [
-            '$builddir/tools/saves_create/saves_create.o',
+            '$builddir/tools/save_create/save_create.o',
             '$builddir/util/strdup.o'
         ],
         argp_inputs = [
-            '$builddir/tools/saves_create/args_argp.o'
+            '$builddir/tools/save_create/args_argp.o'
         ],
         getopt_inputs = [
-            '$builddir/tools/saves_create/args_getopt.o'
+            '$builddir/tools/save_create/args_getopt.o'
         ],
         variables = [('libs', '$sqlite3_libs')],
-        is_disabled = 'saves_create' in args.disable_tool,
-        why_disabled = 'we were generated with --disable-tool=cards_inspect',
+        is_disabled = 'save_create' in args.disable_tool,
+        why_disabled = 'we were generated with --disable-tool=save_create',
         targets = [all_targets, tools_targets]
     )
 
