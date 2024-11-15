@@ -7,6 +7,8 @@ build.ninja
 /out/
 __pycache__
 *.db
+*.bundle
+*.save
 *.ignore
 *.ignore.*
 *.gen
