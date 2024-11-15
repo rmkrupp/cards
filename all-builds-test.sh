@@ -37,6 +37,8 @@ build --disable-argp
 build --disable-verbose-lexer
 build --enable-hash-statistics
 build --disable-hash-warnings
+build --no-defer-pkg-config
+build --ldflags="-Wl,--as-needed"
 
 build --build=release
 build --lua-backend=lua51 --build=release
@@ -47,6 +49,8 @@ build --disable-argp --build=release
 build --disable-verbose-lexer --build=release
 build --enable-hash-statistics --build=release
 build --disable-hash-warnings --build=release
+build --no-defer-pkg-config --build=release
+build --ldflags="-Wl,--as-needed" --build=release
 
 build --build=w64
 #build --lua-backend=lua51 --build=w64
@@ -57,7 +61,8 @@ build --disable-server --build=w64
 build --disable-verbose-lexer --build=w64
 build --enable-hash-statistics --build=w64
 build --disable-hash-warnings --build=w64
-
+build --no-defer-pkg-config --build=w64
+build --ldflags="-Wl,--as-needed" --build=w64
 
 # Clean up a bit
 ./configure.py && ninja -tclean
