@@ -21,6 +21,7 @@
 #define TOOLS_CARDS_INSPECT_ARGS
 
 #include <stddef.h>
+#include <stdbool.h>
 
 /* the result of parse_args */
 struct arguments
