@@ -23,7 +23,7 @@
 
 #include <unistdio.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
 
 [[nodiscard]] struct parser * parser_create(struct game * game)
 {

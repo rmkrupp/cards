@@ -20,6 +20,7 @@
 #ifndef NAME_SET_H
 #define NAME_SET_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <unitypes.h>
 
