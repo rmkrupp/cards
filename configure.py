@@ -32,6 +32,7 @@ import misc.ninja_syntax as ninja
 # used only if --defer-pkg-config=false
 pkgconfig = {
         'release': 'pkg-config',
+        'release-compat': 'pkg-config',
         'debug': 'pkg-config',
         'w64': 'x86_64-w64-mingw32-pkg-config'
     }
@@ -54,7 +55,8 @@ parser.add_argument('--ldflags', help='override compiler flags when linking (and
 #parser.add_argument('--prefix')
 #parser.add_argument('--destdir')
 parser.add_argument('--build',
-                    choices=['release', 'debug', 'w64'], default='debug',
+                    choices=['release', 'release-compat', 'debug', 'w64'],
+                    default='debug',
                     help='set the build type (default: debug)')
 parser.add_argument('--build-native',
                     choices=['none', 'mtune', 'march', 'both'], default='none',
@@ -220,6 +222,19 @@ def enable_release():
         w.variable(key = 'cflags', value = '$cflags -O2')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
 
+def enable_release_compat():
+    w.variable(
+            key = 'std',
+            value = '-std=gnu2x -Dconstexpr=const ' +
+            '\"-Dstatic_assert(x)=\" -DENABLE_COMPAT'
+        )
+    if (args.O3):
+        w.comment('setting -O3 because we were generated with --O3')
+        w.variable(key = 'cflags', value = '$cflags -O3')
+    else:
+        w.variable(key = 'cflags', value = '$cflags -O2')
+    w.variable(key = 'defines', value = '$defines -DNDEBUG')
+
 def enable_w64():
     args.disable_argp = True
     w.variable(key = 'std', value = '-std=gnu2x')
@@ -371,6 +386,9 @@ if args.build == 'debug':
 elif args.build == 'release':
     w.comment('build mode: release')
     enable_release()
+elif args.build == 'release-compat':
+    w.comment('build mode: release-compat')
+    enable_release_compat()
 elif args.build == 'w64':
     w.comment('build mode: w64')
     w.comment('(this implies --disable-argp)')
@@ -457,6 +475,7 @@ package('libevent', libs={"w64": "-lws2_32 -liphlpapi"})
 package('unistring', pkg_config=False, libs={
     'debug': '-lunistring',
     'release': '-lunistring',
+    'release-compat': '-lunistring',
     'w64': '-lunistring -liconv'
 })
 

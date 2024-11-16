@@ -242,7 +242,11 @@ struct name * name_set_lookup(
     ) [[gnu::nonnull(1, 2)]]
 {
     /* first, transform */
+#if ENABLE_COMPAT
+#define size_buffer 1024
+#else
     constexpr size_t size_buffer = 1024;
+#endif /* ENABLE_COMPAT */
     size_t size_out_transform = size_buffer;
     static uint8_t transform_buffer[size_buffer];
     uint8_t * buffer_out_transform;
@@ -296,6 +300,10 @@ struct name * name_set_lookup(
     }
 
     return NULL;
+
+#if ENABLE_COMPAT
+#undef size_buffer
+#endif /* ENABLE_COMPAT */
 }
 
 /* used internally by name_set_apply */
