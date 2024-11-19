@@ -545,6 +545,7 @@ build('util/log.c', packages=['unistring'])
 build('util/refstring.c', packages=['unistring'])
 build('util/sorted_set.c')
 build('util/strdup.c')
+build('util/checksum.c')
 w.newline()
 
 build('command/keyword.c', input_prefix='$builddir/',
@@ -868,7 +869,8 @@ bin_target(
         name = 'tools/save_create',
         inputs = [
             '$builddir/tools/save_create/save_create.o',
-            '$builddir/util/strdup.o'
+            '$builddir/util/strdup.o',
+            '$builddir/util/checksum.o'
         ],
         argp_inputs = [
             '$builddir/tools/save_create/args_argp.o'

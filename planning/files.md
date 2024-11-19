@@ -35,14 +35,20 @@ metadata. (See below.)
 
  - `CREATE TABLE cards (filename, script);`
 
-A bundle holding every card in use by the save.
+A bundle holding every card in use by the save. `filename` is a text field and
+`script` is a blob field.
 
  - `CREATE TABLE players (id, name);`
 
-A list of every player and that player's numeric id.
+A list of every player by `name` (text) and that player's numeric `id`.
 
  - `CREATE TABLE log (player_id, command);`
 
 A list of every command run that modified the game state (i.e. the commands
-that need to be run to recreate the game) and what player ran them.
+that need to be run to recreate the game) and what player ran them. `command`
+is a text field, `player_id` is numeric and matches the id in players.
 
+ - `CREATE TABLE rules (key, value);`
+
+A list of every rule needed to recreate the game state with the command log.
+`key` and `value` are both textual.
