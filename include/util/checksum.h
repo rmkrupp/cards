@@ -24,13 +24,29 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* calculate a checksum (a 32-character null terminated hex string) and return
+ * it in freshly allocated memory
+ *
+ * this uses the MD5 algorithm
+ */
 [[nodiscard]] char * checksum_calculate(
-        uint8_t * data, size_t length) [[gnu::nonnull(1)]];
+        const uint8_t * data, size_t length) [[gnu::nonnull(1)]];
 
+/* calculate a checksum and match it to the given one
+ *
+ * returns true if they match, false otherwise
+ */
 bool checksum_match(
         const char * checksum,
         uint8_t * data,
         size_t length
     ) [[gnu::nonnull(1, 2)]];
+
+/* test if this string is a valid checksum (exactly 32 characters long plus
+ * null terminator, each character in [0-9a-f])
+ *
+ * returns true if it's valid, false otherwise
+ */
+bool checksum_valid(const char * checksum) [[gnu::nonnull(1)]];
 
 #endif /* UTIL_CHECKSUM_H */
