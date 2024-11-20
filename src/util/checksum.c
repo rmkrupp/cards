@@ -119,39 +119,42 @@ static inline uint32_t rotate_left (uint32_t n, unsigned int c)
     }
 
     /* remaining data */
-    uint64_t padding[16];
-    uint8_t * padding_u8 = (uint8_t *)padding;
+    union {
+        uint64_t u64[16];
+        uint32_t u32[32];
+        uint8_t u8[128];
+    } padding;
     size_t k = 0;
 
     if (i < length) {
         /* partial chunk */
         for (; i < length; i++, k++) {
-            padding_u8[k] = data[i];
+            padding.u8[k] = data[i];
         }
     }
 
     /* append a 1 bit */
-    padding_u8[k] |= 0x80;
+    padding.u8[k] = 0x80;
     k++;
 
     /* pad out to a multiple of 64 bytes */
     if (k < 56) {
         for (; k < 56; k++) {
-            padding_u8[k] = 0;
+            padding.u8[k] = 0;
         }
     } else if (k > 56) {
         for (; k < 120; k++) {
-            padding_u8[k] = 0;
+            padding.u8[k] = 0;
         }
     }
 
     /* append length in bits */
-    padding[k / 8] = length * 8;
+    padding.u64[k / 8] = length * 8;
     k += 8;
 
     /* one or two last loop iteration(s) */
     for (size_t i = 0; i < k; i += 64) {
-        uint32_t * m = (uint32_t *)&padding[i];
+        uint32_t * m = &padding.u32[i / 4];
         uint32_t a = a0,
                  b = b0,
                  c = c0,
