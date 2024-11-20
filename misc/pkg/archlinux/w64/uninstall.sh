@@ -4,6 +4,7 @@
 # uninstall the AUR packages installed by install.sh
 #
 
+sudo pacman --noconfirm -R mingw-w64-jansson
 sudo pacman --noconfirm -R mingw-w64-libevent
 sudo pacman --noconfirm -R mingw-w64-luajit
 sudo pacman --noconfirm -R mingw-w64-sqlite

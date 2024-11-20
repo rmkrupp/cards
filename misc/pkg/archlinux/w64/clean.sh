@@ -10,6 +10,7 @@ function clean() {
 
 clean mingw-w64-configure
 clean mingw-w64-environment
+clean mingw-w64-jansson
 clean mingw-w64-libevent
 clean mingw-w64-libiconv
 clean mingw-w64-libunistring

@@ -75,7 +75,7 @@ parser.add_argument('--disable-test-tool', action='append', default=[],
 parser.add_argument('--disable-tool', action='append', default=[],
                     choices=[
                         'cards_compile', 'cards_inspect',
-                        'save_create'
+                        'save_create', 'save_inspect'
                     ],
                     help='don\'t build a specific tool')
 parser.add_argument('--disable-client', action='append', default=[],
@@ -472,6 +472,7 @@ w.newline()
 
 package('sqlite3')
 package('libevent', libs={"w64": "-lws2_32 -liphlpapi"})
+package('jansson')
 package('unistring', pkg_config=False, libs={
     'debug': '-lunistring',
     'release': '-lunistring',
@@ -574,9 +575,15 @@ build('tools/cards_inspect/args_argp.c',
       cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('tools/save_create/save_create.c', packages=['sqlite3'])
+build('tools/save_create/save_create.c', packages=['sqlite3', 'jansson'])
 build('tools/save_create/args_getopt.c')
 build('tools/save_create/args_argp.c',
+      cflags='$cflags -Wno-missing-field-initializers')
+w.newline()
+
+build('tools/save_inspect/save_inspect.c', packages=['sqlite3', 'jansson'])
+build('tools/save_inspect/args_getopt.c')
+build('tools/save_inspect/args_argp.c',
       cflags='$cflags -Wno-missing-field-initializers')
 w.newline()
 
@@ -870,7 +877,8 @@ bin_target(
         inputs = [
             '$builddir/tools/save_create/save_create.o',
             '$builddir/util/strdup.o',
-            '$builddir/util/checksum.o'
+            '$builddir/util/checksum.o',
+            '$builddir/util/sorted_set.o'
         ],
         argp_inputs = [
             '$builddir/tools/save_create/args_argp.o'
@@ -878,12 +886,30 @@ bin_target(
         getopt_inputs = [
             '$builddir/tools/save_create/args_getopt.o'
         ],
-        variables = [('libs', '$sqlite3_libs')],
+        variables = [('libs', '$sqlite3_libs $jansson_libs')],
         is_disabled = 'save_create' in args.disable_tool,
         why_disabled = 'we were generated with --disable-tool=save_create',
         targets = [all_targets, tools_targets]
     )
 
+bin_target(
+        name = 'tools/save_inspect',
+        inputs = [
+            '$builddir/tools/save_inspect/save_inspect.o',
+            '$builddir/util/strdup.o',
+            '$builddir/util/checksum.o'
+        ],
+        argp_inputs = [
+            '$builddir/tools/save_inspect/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/tools/save_inspect/args_getopt.o'
+        ],
+        variables = [('libs', '$sqlite3_libs $jansson_libs')],
+        is_disabled = 'save_inspect' in args.disable_tool,
+        why_disabled = 'we were generated with --disable-tool=save_inspect',
+        targets = [all_targets, tools_targets]
+    )
 #
 # ALL, TOOLS, AND DEFAULT
 #

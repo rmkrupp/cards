@@ -20,10 +20,15 @@
 #ifndef TOOLS_SAVE_CREATE_ARGS
 #define TOOLS_SAVE_CREATE_ARGS
 
+#include <stddef.h>
+
 /* the result of parse_args */
 struct arguments
 {
     char * database_name;
+    char * json_name;
+    char ** filenames;
+    size_t n_filenames;
 };
 
 /* parse this argv and argc, storing the result in args

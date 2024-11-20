@@ -1,0 +1,67 @@
+{
+    "rules":
+    [
+        {
+            "key" : "key1",
+            "value" : "val1"
+        },
+        {
+            "key" : "key2",
+            "value" : "val2"
+
+        }
+
+    ],
+    "players":
+    [
+        {
+            "id" : 0,
+            "name" : "bob"
+        },
+        {
+            "id" : 1,
+            "name" : "jim"
+        },
+        {
+            "id" : 2,
+            "name" : "geeg"
+        }
+    ],
+    "metadata" :
+    [
+        {
+            "key" : "mk1",
+            "value" : "mv1"
+        },
+        {
+            "key" : "mk2",
+            "value" : "mv2"
+        }
+    ],
+    "log" :
+    [
+        {
+            "player_id" : 0,
+            "command" : "attack"
+        },
+        {
+            "player_id" : 2,
+            "command" : "defend"
+        },
+        {
+            "player_id" : 1,
+            "command" : "battle"
+        }
+    ],
+    "cards" :
+    [
+        {
+            "filename" : "data/cards/example.lua",
+            "checksum" : "ece696bd73582c6ed215ecf0faf73fe9"
+        },
+        {
+            "filename" : "data/cards/example2.lua",
+            "checksum" : "0f3e1c4bcf28a35ff1d18c5a3414f83c"
+        }
+    ]
+}

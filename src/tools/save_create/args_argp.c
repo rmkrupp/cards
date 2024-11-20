@@ -34,42 +34,50 @@ static char doc[] =
     "saves_create -- bundle card scripts";
 
 static char args_doc[] =
-    "DATABASE";
+    "DATABASE JSON_FILE [BUNDLES...]";
 
+/*
 static struct argp_option options[] = {
-    { "super", 's', NULL, 0, "turn on super mode" },
     { }
 };
+*/
 
 static error_t parse_opt(int key, char * argv, struct argp_state * state)
 {
     struct arguments * args = state->input;
 
     switch (key) {
-        case 's':
-            printf("nuy.\n");
-            break;
         case ARGP_KEY_ARG:
-            if (args->database_name) {
-                return ARGP_ERR_UNKNOWN;
+            if (args->json_name) {
+                args->filenames = realloc(
+                        args->filenames,
+                        sizeof(*args->filenames) * (args->n_filenames + 1)
+                    );
+                args->filenames[args->n_filenames] = util_strdup(argv);
+                args->n_filenames++;
+            } else if (args->database_name) {
+                args->json_name = util_strdup(argv);
             } else {
                 args->database_name = util_strdup(argv);
             }
             break;
 
         case ARGP_KEY_END:
+            if (!args->database_name || !args->json_name) {
+                free(args->database_name);
+                free(args->json_name);
+                argp_usage(state);
+                return 1;
+            }
             break;
 
         case ARGP_KEY_ERROR:
             free(args->database_name);
+            free(args->json_name);
             break;
+
         default:
             return ARGP_ERR_UNKNOWN;
-    }
-
-    if (!args->database_name) {
-        argp_usage(state);
-        return 1;
     }
 
     return 0;
@@ -79,7 +87,7 @@ int parse_args(
         struct arguments * args, int argc, char ** argv) [[gnu::nonnull(1)]]
 {
     struct argp argp = (struct argp) {
-        .options = options,
+        .options = NULL,
         .parser = parse_opt,
         .doc = doc,
         .args_doc = args_doc

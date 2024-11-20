@@ -27,7 +27,7 @@
 
 static void usage()
 {
-    fprintf(stderr, "Usage: save_create [--help] DATABASE\n");
+    fprintf(stderr, "Usage: save_create [--help] DATABASE JSON_FILE [BUNDLES...]\n");
 }
 
 static struct option options[] = {
@@ -57,13 +57,20 @@ int parse_args(
         }
     }
 
-    if (optind < argc) {
+    if (optind + 2 > argc) {
         usage();
         return 1;
     }
 
-    args->database_name = util_strdup(argv[optind]);
-    optind++;
+    args->database_name = util_strdup(argv[optind++]);
+    args->json_name = util_strdup(argv[optind++]);
+    if (optind < argc) {
+        args->filenames = malloc(sizeof(*args->filenames) * (argc - optind));
+        args->n_filenames = argc - optind;
+        for (size_t i = 0; i < args->n_filenames; i++) {
+            args->filenames[i] = util_strdup(argv[optind++]);
+        }
+    }
 
     return 0;
 }

@@ -20,6 +20,7 @@ Build with `./configure.py --build=release && ninja`
  - libevent
  - either Lua 5.1 or luajit
  - sqlite3
+ - jansson
  - argp (unless `--disable-argp`, which falls back to `getopt` for `rlcli` and
    `cli`.
 
@@ -53,6 +54,7 @@ AUR packages needed:
  - `mingw-w64-libevent`
  - `mingw-w64-luajit`
  - `mingw-w64-sqlite`
+ - `mingw-w64-jansson`
 
 To build without readline, pass `--disable-readline` to `configure.py`. Note
 that even with readline, the `rlcli` tool does not work well with cmd.exe or

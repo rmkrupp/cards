@@ -43,3 +43,4 @@ fetch_build mingw-w64-luajit
 fetch_build mingw-w64-libevent
 fetch_build mingw-w64-sqlite
 fetch_build mingw-w64-libunistring
+fetch_build mingw-w64-jansson

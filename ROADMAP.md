@@ -62,7 +62,7 @@
 
  - [ ] save game file inspector tool (extract metadata, player lists, and log)
 
- - [ ] save game creator tool (given a text log etc. create a save game)
+ - [x] save game creator tool (given a text log etc. create a save game)
 
 ## Version 0.2
 
