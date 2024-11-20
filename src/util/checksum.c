@@ -205,10 +205,15 @@ static inline uint32_t rotate_left (uint32_t n, unsigned int c)
 
     /* extract the checksum */
     char * buffer = malloc(33);
-    uint32_t result[] = { a0, b0, c0, d0 };
-    uint8_t * bytes = (uint8_t *)result;
+
+    /* access the { a0, b0, c0, d0 } checksum as bytes */
+    union {
+        uint32_t u32[4];
+        uint8_t u8[16];
+    } result = { .u32 = { a0, b0, c0, d0 } };
+
     for (size_t k = 0; k < 16; k++) {
-        snprintf(&buffer[2 * k], 3, "%02x", bytes[k]);
+        snprintf(&buffer[2 * k], 3, "%02x", result.u8[k]);
     }
     buffer[32] = '\0';
 
