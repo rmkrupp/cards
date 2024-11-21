@@ -1053,8 +1053,7 @@ int main(int argc, char ** argv)
 
     if (sqlite3_exec(
                 db,
-                "CREATE TABLE IF NOT EXISTS cards "
-                "(filename, checksum, script)",
+                "CREATE TABLE IF NOT EXISTS cards (filename, script)",
                 NULL,
                 NULL,
                 &errmsg
