@@ -48,24 +48,28 @@ parser = argparse.ArgumentParser(
     )
 
 parser.add_argument('--cflags', help='override compiler flags (and CFLAGS)')
+parser.add_argument('--ldflags',
+                    help='override compiler flags when linking (and LDFLAGS)')
+
 parser.add_argument('--cc', help='override cc (and CC)')
 parser.add_argument('--gperf', help='override gperf (and GPERF)')
-parser.add_argument('--pkg-config', help='override pkg-config (and PKG_CONFIG)')
-parser.add_argument('--ldflags', help='override compiler flags when linking (and LDFLAGS)')
-#parser.add_argument('--prefix')
-#parser.add_argument('--destdir')
+parser.add_argument('--pkg-config',
+                    help='override pkg-config (and PKG_CONFIG)')
+
 parser.add_argument('--build',
-                    choices=['release', 'release-compat', 'debug', 'w64'],
+                    choices=['release', 'standalone', 'debug', 'w64'],
                     default='debug',
                     help='set the build type (default: debug)')
+parser.add_argument('--enable-compatible', action='store_true',
+                    help='enable compatibility mode for older compilers')
+parser.add_argument('--disable-sanitize', action='store_true',
+                    help='don\'t enable the sanitizer in debug mode')
 parser.add_argument('--build-native',
                     choices=['none', 'mtune', 'march', 'both'], default='none',
                     help='build with mtune=native or march=native')
 parser.add_argument('--O3', '--o3', action='store_true',
                     help='build releases with -O3')
-parser.add_argument('--lua-backend',
-                    choices=['lua51', 'luajit', 'none'], default='luajit',
-                    help='set the lua backend (default: luajit)')
+
 parser.add_argument('--disable-test-tool', action='append', default=[],
                     choices=[
                         'gperf_test', 'lex_test', 'hash_test',
@@ -85,32 +89,38 @@ parser.add_argument('--disable-client', action='append', default=[],
                     help='don\'t build a specific client')
 parser.add_argument('--disable-server', action='store_true',
                     help='don\'t build the server')
-parser.add_argument('--disable-readline', action='store_true',
-                    help='don\'t build anything dependent on readline')
+
+parser.add_argument('--lua-backend',
+                    choices=['lua51', 'luajit', 'none'], default='luajit',
+                    help='set the lua backend (default: luajit)')
 parser.add_argument('--disable-argp', action='store_true',
                     help='fall back to getopt for argument parsing')
-parser.add_argument('--disable-sanitize', action='store_true',
-                    help='don\'t enable the sanitizer in debug mode')
+
 parser.add_argument('--disable-verbose-lexer', action='store_true',
                     help='don\'t enable the verbose lexer')
+
 parser.add_argument('--force-version', metavar='STRING',
                     help='override the version string')
 parser.add_argument('--add-version-suffix', metavar='SUFFIX',
                     help='append the version string')
-# TODO
-#parser.add_argument('--defer-git-describe', type=bool, default=True,
-#                    help='run git describe when ninja is run, not configure.py (default: true)')
-parser.add_argument('--defer-pkg-config', action=argparse.BooleanOptionalAction, default=True,
-                    help='run pkg-config when ninja is run, not configure.py (default: yes)')
 
+# n.b. we aren't using BooleanOptionalAction for Debian reasons
+parser.add_argument('--defer-git-describe', action='store_true', default=True,
+                    help='run git describe when ninja is run, not configure.py (default)')
+parser.add_argument('--no-defer-git-describe', action='store_false', dest='defer_git_describe',
+                    help='run git describe when configure.py is run, not ninja')
+parser.add_argument('--defer-pkg-config', action='store_true', default=True,
+                    help='run pkg-config when ninja is run, not configure.py (default)')
+parser.add_argument('--no-defer-pkg-config', action='store_false', dest='defer_pkg_config',
+                    help='run pkg-config when configure.py is run, not ninja')
 
 hash_opts = parser.add_argument_group('hash library options')
-hash_opts.add_argument('--enable-hash-statistics', action='store_true',
-                    help='compile with -DHASH_STATISTICS')
-hash_opts.add_argument('--disable-hash-warnings', action='store_true',
-                    help='compile with -DHASH_NO_WARNINGS')
-hash_opts.add_argument('--enable-hash-simulate-failure', action='store_true',
-                    help='compile with -DHASH_SIMULATE_FAILURE')
+hash_opts.add_argument('--enable-hash-statistics', action = 'store_true',
+                    help = 'compile with -DHASH_STATISTICS')
+hash_opts.add_argument('--disable-hash-warnings', action = 'store_true',
+                    help = 'compile with -DHASH_NO_WARNINGS')
+hash_opts.add_argument('--enable-hash-simulate-failure', action = 'store_true',
+                    help = 'compile with -DHASH_SIMULATE_FAILURE')
 
 args = parser.parse_args()
 
@@ -119,11 +129,11 @@ args = parser.parse_args()
 #
 
 def package(name,
-            alias=None,
-            pkg_config=True,
-            libs={},
-            cflags={},
-            comment=True):
+            alias = None,
+            pkg_config = True,
+            libs = {},
+            cflags = {},
+            comment = True):
     libs = (libs.get(args.build, '') + ' ' + libs.get('all', '')).strip()
     if pkg_config and len(libs) > 0:
         libs = ' ' + libs
@@ -148,16 +158,16 @@ def package(name,
 
             pc = pkgconfig.get(args.build)
             pc_cflags = subprocess.run([pc, '--cflags', name],
-                                       capture_output=True)
+                                       capture_output = True)
             pc_libs = subprocess.run([pc, '--libs', name],
-                                     capture_output=True)
+                                     capture_output = True)
             if pc_cflags.returncode != 0 or pc_libs.returncode != 0:
                 w.comment(
                         'WARNING: ' + pc +
                         ' exited non-zero for library ' + name
                     )
                 print('WARNING:', pc, 'exited non-zero for library',
-                      name, file=sys.stderr)
+                      name, file = sys.stderr)
             w.variable(alias + '_cflags',
                        pc_cflags.stdout.decode().strip() + cflags)
             w.variable(alias + '_libs',
@@ -177,12 +187,12 @@ def transformer(source, rule):
     return source
 
 def build(source,
-          rule='cc',
-          input_prefix='src/',
-          output_prefix='$builddir/',
-          packages=[],
-          cflags='$cflags',
-          includes='$includes'):
+          rule = 'cc',
+          input_prefix = 'src/',
+          output_prefix = '$builddir/',
+          packages = [],
+          cflags = '$cflags',
+          includes = '$includes'):
 
     variables = []
     cflags = ' '.join([cflags] + ['$' + name + '_cflags' for name in packages])
@@ -196,7 +206,7 @@ def build(source,
             output_prefix + transformer(source, rule),
             rule,
             input_prefix + source,
-            variables=variables
+            variables = variables
         )
 
 def exesuffix(root, enabled):
@@ -206,39 +216,61 @@ def exesuffix(root, enabled):
         return root
 
 def enable_debug():
-    w.variable(key = 'std', value = '-std=gnu23')
-    w.variable(key = 'cflags', value = '$cflags $sanflags -g -Og')
+    if args.O3:
+        print('WARNING: --O3 ignored when --build=debug, try --build=release')
+        w.comment('WARNING: setting -Og even though we were generated with --O3')
+
+    if args.enable_compatible:
+        w.variable(key = 'std', value = '-std=gnu2x')
+        w.variable(key = 'cflags', value = '$cflags $sanflags -g -Og')
+        w.comment('adding compatibility defines because we were generated with --enable-compatible')
+        w.variable(key = 'defines',
+                   value = '$defines '+
+                   '-Dconstexpr=const ' +
+                   '"-Dstatic_assert(x)=" ' +
+                   '-DENABLE_COMPAT')
+    else:
+        w.variable(key = 'std', value = '-std=gnu23')
+        w.variable(key = 'cflags', value = '$cflags $sanflags -g -Og')
+
     if not args.force_version:
         w.variable(key = 'version', value = '"$version"-debug')
     else:
         w.comment('not appending -debug because we were generated with --force-version=')
 
 def enable_release():
-    w.variable(key = 'std', value = '-std=gnu23')
-    if (args.O3):
+    if args.O3:
         w.comment('setting -O3 because we were generated with --O3')
-        w.variable(key = 'cflags', value = '$cflags -O3')
+        o = '-O3'
     else:
-        w.variable(key = 'cflags', value = '$cflags -O2')
-    w.variable(key = 'defines', value = '$defines -DNDEBUG')
+        o = '-O2'
 
-def enable_release_compat():
-    w.variable(
-            key = 'std',
-            value = '-std=gnu2x -Dconstexpr=const ' +
-            '\"-Dstatic_assert(x)=\" -DENABLE_COMPAT'
-        )
-    if (args.O3):
-        w.comment('setting -O3 because we were generated with --O3')
-        w.variable(key = 'cflags', value = '$cflags -O3')
+    if args.enable_compatible:
+        w.variable(key = 'std', value = '-std=gnu2x')
+        w.variable(key = '$cflags ' + o)
+        w.comment('adding compatibility defines because we were generated with --enable-compatible')
+        w.variable(key = 'defines',
+                   value = '$defines '+
+                   '-Dconstexpr=const ' +
+                   '"-Dstatic_assert(x)=" ' +
+                   '-DENABLE_COMPAT')
     else:
-        w.variable(key = 'cflags', value = '$cflags -O2')
+        w.variable(key = 'std', value = '-std=gnu23')
+        w.variable(key = 'cflags', value = '$cflags ' + o)
+
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
 
 def enable_w64():
     args.disable_argp = True
     w.variable(key = 'std', value = '-std=gnu2x')
     w.variable(key = 'cflags', value = '$cflags -O2 -static')
+    if args.enable_compatible:
+        w.comment('adding compatibility defines because we were generated with --enable-compatible')
+        w.variable(key = 'defines',
+                   value = '$defines '+
+                   '-Dconstexpr=const ' +
+                   '"-Dstatic_assert(x)=" ' +
+                   '-DENABLE_COMPAT')
     w.variable(key = 'includes',
                value = '$includes -I/usr/x86_64-w64-mingw32/include')
     w.variable(key = 'defines', value = '$defines -DNDEBUG')
@@ -253,7 +285,8 @@ w = ninja.Writer(open('build.ninja', 'w'))
 # PREAMBLE
 #
 
-w.comment('we were generated by configure.py on ' + datetime.now().strftime('%d-%m-%y %H:%M:%S'))
+w.comment('we were generated by configure.py on ' +
+          datetime.now().strftime('%d-%m-%y at %H:%M:%S'))
 w.comment('arguments: ' + str(sys.argv[1:]))
 w.newline()
 
@@ -264,10 +297,24 @@ w.newline()
 if args.force_version:
     # this option also disables the -debug suffix in enable_debug()
     # but it does not disable --add_version_suffix
-    w.comment('the following version was set at generation by --force-version=' + args.force_version)
+    w.comment('the following version was set at generation by --force-version='
+              + args.force_version)
     w.variable(key = 'version', value = args.force_version)
 else:
-    w.variable(key = 'version', value = '$$(git describe --always --dirty)')
+    if args.defer_git_describe:
+        w.variable(key = 'version',
+                   value = '$$(git describe --always --dirty)')
+    else:
+        git_describe = subprocess.run(
+                ['git', 'describe', '--always', '--dirty'],
+                capture_output = True
+            )
+        if git_describe.returncode != 0:
+            w.comment('WARNING: git describe exited non-zero')
+            print('WARNING: git describe exited non-zero', file = sys.stderr)
+            w.variable(key = 'version', value = 'unknown')
+        else:
+            w.variable(key = 'version', value = git_describe.stdout.decode())
 
 w.variable(key = 'builddir', value = 'out')
 
@@ -277,8 +324,12 @@ w.variable(key = 'builddir', value = 'out')
 
 def warn_environment(key, argsval, flagname):
     if key in os.environ and argsval:
-        print('WARNING:', key, 'environment variable is set but will be ignored because', flagname, 'was passed', file=sys.stderr)
-        w.comment('WARNING: ' + key + ' environment variable is set but will be ignored because ' + flagname + ' was passed')
+        print('WARNING:', key,
+              'environment variable is set but will be ignored because',
+              flagname, 'was passed', file = sys.stderr)
+        w.comment('WARNING: ' + key +
+                  ' environment variable is set but will be ignored because ' +
+                  flagname + ' was passed')
 
 warn_environment('CC', args.cc, '--cc=')
 warn_environment('GPERF', args.cc, '--gperf=')
@@ -288,8 +339,10 @@ warn_environment('CFLAGS', args.cc, '--cflags=')
 warn_environment('LDFLAGS', args.cc, '--ldflags=')
 
 if args.cc:
-    if (args.build == 'w64' and args.cc != 'x86_64-w64-mingw32-gcc') or (args.build != 'w64' and args.cc != 'gcc'):
-        w.comment('using this cc because we were generated with --cc=' + args.cc)
+    if (args.build == 'w64' and args.cc != 'x86_64-w64-mingw32-gcc') \
+            or (args.build != 'w64' and args.cc != 'gcc'):
+        w.comment('using this cc because we were generated with --cc=' +
+                  args.cc)
     w.variable(key = 'cc', value = args.cc)
 elif 'CC' in os.environ:
     w.comment('using this cc because CC was set')
@@ -301,7 +354,8 @@ else:
 
 if args.gperf:
     if args.gperf != 'gperf':
-        w.comment('using this gperf because we were generated with --gperf=' + args.gperf)
+        w.comment('using this gperf because we were generated with --gperf=' +
+                  args.gperf)
     w.variable(key = 'gperf', value = args.gperf)
 elif 'GPERF' in os.environ:
     w.comment('using this gperf because GPERF was set')
@@ -309,7 +363,8 @@ else:
     w.variable(key = 'gperf', value = 'gperf')
 
 if args.pkg_config:
-    w.comment('using this pkg-config because we were generated with --pkg-config=' + args.pkg_config)
+    w.comment('using this pkg-config because we were generated with --pkg-config=' +
+              args.pkg_config)
     w.variable(key = 'pkgconfig', value = args.pkg_config)
 elif args.build == 'w64':
     w.variable(key = 'pkgconfig', value = 'x86_64-w64-mingw32-pkg-config')
@@ -321,14 +376,17 @@ else:
 #
 
 if args.cflags:
-    w.comment('these are overriden below because we were generated with --cflags=' + args.cflags)
+    w.comment('these are overriden below because we were generated with --cflags=' +
+              args.cflags)
 elif 'CFLAGS' in os.environ:
     w.comment('these are overriden below because CFLAGS was set')
 
-w.variable(key = 'cflags', value = '-Wall -Wextra -Werror -fdiagnostics-color -flto')
+w.variable(key = 'cflags',
+           value = '-Wall -Wextra -Werror -fdiagnostics-color -flto')
 
 if args.ldflags:
-    w.comment('these are overriden below because we were generated with --ldflags=' + args.ldflags)
+    w.comment('these are overriden below because we were generated with --ldflags=' +
+              args.ldflags)
 elif 'LDFLAGS' in os.environ:
     w.comment('these are overriden below because LDFLAGS was set')
 
@@ -350,8 +408,10 @@ elif args.build_native == 'both':
     w.comment('# adding cflags for --build-native=both')
     w.variable(key = 'cflags', value = '$cflags -march=native -mtune=native')
 else:
-    print('WARNING: unhandled build-native mode "' + args.build_native + '"', file=sys.stderr)
-    w.comment('WARNING: unhandled build-native mode "' + args.build_native +'"')
+    print('WARNING: unhandled build-native mode "' + args.build_native + '"',
+          file = sys.stderr)
+    w.comment('WARNING: unhandled build-native mode "' +
+              args.build_native + '"')
 
 #
 # SANITIZER
@@ -379,7 +439,8 @@ w.newline()
 
 if args.build == 'debug':
     if args.O3:
-        print('WARNING: ignoring option --O3 for debug build', file=sys.stderr)
+        print('WARNING: ignoring option --O3 for debug build',
+              file = sys.stderr)
         w.comment('WARNING: ignoring option --O3 for debug build')
     w.comment('build mode: debug')
     enable_debug()
@@ -394,7 +455,8 @@ elif args.build == 'w64':
     w.comment('(this implies --disable-argp)')
     enable_w64()
 else:
-    print('WARNING: unhandled build mode "' + args.build + '"', file=sys.stderr)
+    print('WARNING: unhandled build mode "' + args.build + '"',
+          file = sys.stderr)
     w.comment('WARNING: unhandled build mode "' + args.build +'"')
 w.newline()
 
@@ -453,7 +515,8 @@ elif 'LDFLAGS' in os.environ:
 #
 
 if args.add_version_suffix:
-    w.variable(key = 'version', value = '"$version"-' + args.add_version_suffix)
+    w.variable(key = 'version',
+               value = '"$version"-' + args.add_version_suffix)
     needs_newline = True
 
 if needs_newline:
@@ -471,9 +534,9 @@ w.newline()
 #
 
 package('sqlite3')
-package('libevent', libs={"w64": "-lws2_32 -liphlpapi"})
+package('libevent', libs = {"w64": "-lws2_32 -liphlpapi"})
 package('jansson')
-package('unistring', pkg_config=False, libs={
+package('unistring', pkg_config = False, libs = {
     'debug': '-lunistring',
     'release': '-lunistring',
     'release-compat': '-lunistring',
@@ -486,17 +549,15 @@ package('unistring', pkg_config=False, libs={
 
 if args.lua_backend == 'luajit':
     w.comment('lua is luajit')
-    package('luajit', alias='lua',
-            cflags={'all':'-DUSE_LUAJIT=1'}, comment=False)
+    package('luajit', alias = 'lua',
+            cflags = {'all': '-DUSE_LUAJIT=1'}, comment = False)
 elif args.lua_backend == 'lua51':
     w.comment('lua is lua51')
-    package('lua5.1', alias='lua',
-            cflags={'all':'-DUSE_LUAJIT=0'}, comment=False)
+    package('lua5.1', alias = 'lua',
+            cflags = {'all': '-DUSE_LUAJIT=0'}, comment = False)
 else:
     w.comment('lua is disabled')
-    w.comment('(this implies --disable-server and --disable-tool=cards_inspect)')
     w.newline()
-    args.disable_server = True
 
 #
 # NINJA RULES
@@ -532,82 +593,82 @@ w.newline()
 
 w.comment('source files')
 
-build('bundle.c', packages=['sqlite3'])
-build('card.c', packages=['lua'])
-build('config_loader.c', packages=['lua'])
+build('bundle.c', packages = ['sqlite3'])
+build('card.c', packages = ['lua'])
+build('config_loader.c', packages = ['lua'])
 build('game.c')
-build('name_set.c', packages=['unistring'])
-build('main.c', packages=['unistring', 'libevent'])
-build('networker.c', packages=['unistring'])
+build('name_set.c', packages = ['unistring'])
+build('main.c', packages = ['unistring', 'libevent'])
+build('networker.c', packages = ['unistring'])
 build('server.c')
 w.newline()
 
-build('util/log.c', packages=['unistring'])
-build('util/refstring.c', packages=['unistring'])
+build('util/log.c', packages = ['unistring'])
+build('util/refstring.c', packages = ['unistring'])
 build('util/sorted_set.c')
 build('util/strdup.c')
 build('util/checksum.c')
 w.newline()
 
-build('command/keyword.c', input_prefix='$builddir/',
-      cflags='$cflags -Wno-missing-field-initializers -Wno-unused-parameter')
-build('command/lex.c', packages=['unistring'])
-build('command/parse.c', packages=['unistring'])
+build('command/keyword.c', input_prefix = '$builddir/',
+      cflags = '$cflags -Wno-missing-field-initializers -Wno-unused-parameter')
+build('command/lex.c', packages = ['unistring'])
+build('command/parse.c', packages = ['unistring'])
 w.newline()
 
 build('test/gperf_test.c')
 build('test/hash_test.c')
-build('test/lex_test.c', packages=['unistring'])
+build('test/lex_test.c', packages = ['unistring'])
 build('test/sorted_set_test.c')
 build('test/hash_test2.c')
-build('test/lex_test2.c', packages=['unistring'])
+build('test/lex_test2.c', packages = ['unistring'])
 w.newline()
 
-build('tools/cards_compile/cards_compile.c', packages=['sqlite3'])
+build('tools/cards_compile/cards_compile.c', packages = ['sqlite3'])
 build('tools/cards_compile/args_getopt.c')
 build('tools/cards_compile/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
+      cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('tools/cards_inspect/cards_inspect.c', packages=['lua', 'sqlite3'])
+build('tools/cards_inspect/cards_inspect.c', packages = ['lua', 'sqlite3'])
 build('tools/cards_inspect/args_getopt.c')
 build('tools/cards_inspect/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
+      cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('tools/save_create/save_create.c', packages=['sqlite3', 'jansson'])
+build('tools/save_create/save_create.c', packages = ['sqlite3', 'jansson'])
 build('tools/save_create/args_getopt.c')
 build('tools/save_create/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
+      cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('tools/save_inspect/save_inspect.c', packages=['sqlite3', 'jansson'])
-build('tools/save_inspect/args_getopt.c')
-build('tools/save_inspect/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
-w.newline()
+#build('tools/save_inspect/save_inspect.c', packages = ['sqlite3', 'jansson'])
+#build('tools/save_inspect/args_getopt.c')
+#build('tools/save_inspect/args_argp.c',
+#      cflags = '$cflags -Wno-missing-field-initializers')
+#w.newline()
 
-build('client/cli/cli.c', packages=['libevent'])
+build('client/cli/cli.c', packages = ['libevent'])
 build('client/cli/args_getopt.c')
 build('client/cli/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
+      cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('client/rlcli/rlcli.c', packages=['libevent'],
-      includes='$includes -Ilibs/linenoise')
+build('client/rlcli/rlcli.c', packages = ['libevent'],
+      includes = '$includes -Ilibs/linenoise')
 build('client/rlcli/args_getopt.c')
 build('client/rlcli/args_argp.c',
-      cflags='$cflags -Wno-missing-field-initializers')
+      cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-build('command/keyword.gperf', rule='gperf')
+build('command/keyword.gperf', rule = 'gperf')
 w.newline()
 
 build('hash.c',
-      input_prefix='libs/hash/src/', output_prefix='$builddir/libs/hash/')
+      input_prefix = 'libs/hash/src/', output_prefix = '$builddir/libs/hash/')
 w.newline()
 
-build('libs/linenoise/linenoise.c', input_prefix='')
+build('libs/linenoise/linenoise.c', input_prefix = '')
 w.newline()
 
 #
@@ -621,12 +682,12 @@ tools_targets = []
 
 def bin_target(name,
                inputs,
-               argp_inputs=[],
-               getopt_inputs=[],
-               targets=[],
-               variables=[],
-               is_disabled=False,
-               why_disabled=''):
+               argp_inputs = [],
+               getopt_inputs = [],
+               targets = [],
+               variables = [],
+               is_disabled = False,
+               why_disabled = ''):
     fullname = exesuffix(name, args.build == 'w64')
 
     if type(is_disabled) == bool:
@@ -636,7 +697,8 @@ def bin_target(name,
     assert(len(is_disabled) == len(why_disabled))
 
     if True not in is_disabled:
-        if args.disable_argp and (len(argp_inputs) > 0 or len(getopt_inputs) > 0):
+        if args.disable_argp and (len(argp_inputs) > 0 \
+                or len(getopt_inputs) > 0):
             w.comment('# building ' + name + ' with getopt because we were generated with --disable-argp')
             inputs += getopt_inputs
         else:
@@ -644,7 +706,7 @@ def bin_target(name,
 
         for group in targets:
             group += [fullname]
-        w.build(fullname, 'bin', inputs, variables=variables)
+        w.build(fullname, 'bin', inputs, variables = variables)
     else:
         if sum([1 for disabled in is_disabled if disabled]) > 1:
             w.comment(fullname + ' is disabled because:')
@@ -680,8 +742,14 @@ bin_target(
         variables = [
             ('libs', '$libevent_libs $lua_libs $unistring_libs $sqlite3_libs')
         ],
-        is_disabled = args.disable_server,
-        why_disabled = 'we were generated with --disable-server',
+        is_disabled = [
+            args.disable_server,
+            args.lua_backend == 'none'
+        ],
+        why_disabled = [
+            'we were generated with --disable-server',
+            'we were generated with --lua-backend=none'
+        ],
         targets = [all_targets]
     )
 
@@ -892,24 +960,24 @@ bin_target(
         targets = [all_targets, tools_targets]
     )
 
-bin_target(
-        name = 'tools/save_inspect',
-        inputs = [
-            '$builddir/tools/save_inspect/save_inspect.o',
-            '$builddir/util/strdup.o',
-            '$builddir/util/checksum.o'
-        ],
-        argp_inputs = [
-            '$builddir/tools/save_inspect/args_argp.o'
-        ],
-        getopt_inputs = [
-            '$builddir/tools/save_inspect/args_getopt.o'
-        ],
-        variables = [('libs', '$sqlite3_libs $jansson_libs')],
-        is_disabled = 'save_inspect' in args.disable_tool,
-        why_disabled = 'we were generated with --disable-tool=save_inspect',
-        targets = [all_targets, tools_targets]
-    )
+#bin_target(
+#        name = 'tools/save_inspect',
+#        inputs = [
+#            '$builddir/tools/save_inspect/save_inspect.o',
+#            '$builddir/util/strdup.o',
+#            '$builddir/util/checksum.o'
+#        ],
+#        argp_inputs = [
+#            '$builddir/tools/save_inspect/args_argp.o'
+#        ],
+#        getopt_inputs = [
+#            '$builddir/tools/save_inspect/args_getopt.o'
+#        ],
+#        variables = [('libs', '$sqlite3_libs $jansson_libs')],
+#        is_disabled = 'save_inspect' in args.disable_tool,
+#        why_disabled = 'we were generated with --disable-tool=save_inspect',
+#        targets = [all_targets, tools_targets]
+#    )
 #
 # ALL, TOOLS, AND DEFAULT
 #
