@@ -247,7 +247,7 @@ def enable_release():
 
     if args.enable_compatible:
         w.variable(key = 'std', value = '-std=gnu2x')
-        w.variable(key = '$cflags ' + o)
+        w.variable(key = 'cflags', value = '$cflags ' + o)
         w.comment('adding compatibility defines because we were generated with --enable-compatible')
         w.variable(key = 'defines',
                    value = '$defines '+
