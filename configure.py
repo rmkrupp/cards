@@ -960,24 +960,25 @@ bin_target(
         targets = [all_targets, tools_targets]
     )
 
-#bin_target(
-#        name = 'tools/save_inspect',
-#        inputs = [
-#            '$builddir/tools/save_inspect/save_inspect.o',
-#            '$builddir/util/strdup.o',
-#            '$builddir/util/checksum.o'
-#        ],
-#        argp_inputs = [
-#            '$builddir/tools/save_inspect/args_argp.o'
-#        ],
-#        getopt_inputs = [
-#            '$builddir/tools/save_inspect/args_getopt.o'
-#        ],
-#        variables = [('libs', '$sqlite3_libs $jansson_libs')],
-#        is_disabled = 'save_inspect' in args.disable_tool,
-#        why_disabled = 'we were generated with --disable-tool=save_inspect',
-#        targets = [all_targets, tools_targets]
-#    )
+bin_target(
+        name = 'tools/save_inspect',
+        inputs = [
+            '$builddir/tools/save_inspect/save_inspect.o',
+            '$builddir/util/strdup.o',
+            '$builddir/util/checksum.o',
+            '$builddir/util/sorted_set.o'
+        ],
+        argp_inputs = [
+            '$builddir/tools/save_inspect/args_argp.o'
+        ],
+        getopt_inputs = [
+            '$builddir/tools/save_inspect/args_getopt.o'
+        ],
+        variables = [('libs', '$sqlite3_libs $jansson_libs')],
+        is_disabled = 'save_inspect' in args.disable_tool,
+        why_disabled = 'we were generated with --disable-tool=save_inspect',
+        targets = [all_targets, tools_targets]
+    )
 #
 # ALL, TOOLS, AND DEFAULT
 #
