@@ -216,10 +216,6 @@ def exesuffix(root, enabled):
         return root
 
 def enable_debug():
-    if args.O3:
-        print('WARNING: --O3 ignored when --build=debug, try --build=release')
-        w.comment('WARNING: setting -Og even though we were generated with --O3')
-
     if args.enable_compatible:
         w.variable(key = 'std', value = '-std=gnu2x')
         w.variable(key = 'cflags', value = '$cflags $sanflags -g -Og')
@@ -447,9 +443,6 @@ if args.build == 'debug':
 elif args.build == 'release':
     w.comment('build mode: release')
     enable_release()
-elif args.build == 'release-compat':
-    w.comment('build mode: release-compat')
-    enable_release_compat()
 elif args.build == 'w64':
     w.comment('build mode: w64')
     w.comment('(this implies --disable-argp)')
