@@ -635,11 +635,11 @@ build('tools/save_create/args_argp.c',
       cflags = '$cflags -Wno-missing-field-initializers')
 w.newline()
 
-#build('tools/save_inspect/save_inspect.c', packages = ['sqlite3', 'jansson'])
-#build('tools/save_inspect/args_getopt.c')
-#build('tools/save_inspect/args_argp.c',
-#      cflags = '$cflags -Wno-missing-field-initializers')
-#w.newline()
+build('tools/save_inspect/save_inspect.c', packages = ['sqlite3', 'jansson'])
+build('tools/save_inspect/args_getopt.c')
+build('tools/save_inspect/args_argp.c',
+      cflags = '$cflags -Wno-missing-field-initializers')
+w.newline()
 
 build('client/cli/cli.c', packages = ['libevent'])
 build('client/cli/args_getopt.c')
