@@ -1,0 +1,14 @@
+Currently the following fixes are needed:
+
+ - mingw-w64-luajit installs an incorrect .pc file. Edit it such that
+   pkg-config runs -lluajit not -lluajit-5.1
+
+ - mingw-w64-libevent's PKGBUILD needs to be modified (because of the upgrade
+   to GCC 14 for MinGW) in the following ways:
+
+    - inside build(), cd to `libevent-$pkgver-stable`
+
+    - add `--disable-samples --disable-libevent-regress` to configure
+
+    - in package(), pushd instead of cd, and add `-stable` suffix too, and add
+      a popd at just before the end of the for loop
