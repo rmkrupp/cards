@@ -40,7 +40,7 @@
 #endif /* CONFIG_PORT_DEFAULT */
 
 #ifndef CONFIG_DEFAULT_CARD_DB_DEFAULT
-#define CONFIG_DEFAULT_CARD_DB_DEFAULT "data/cards.db"
+#define CONFIG_DEFAULT_CARD_DB_DEFAULT "data/cards.bundle"
 #endif /* CONFIG_DEFAULT_CARD_DB_DEFAULT */
 
 /* the type of config option */
