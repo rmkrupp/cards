@@ -57,7 +57,7 @@ parser.add_argument('--pkg-config',
                     help='override pkg-config (and PKG_CONFIG)')
 
 parser.add_argument('--build',
-                    choices=['release', 'standalone', 'debug', 'w64'],
+                    choices=['release', 'debug', 'w64'],
                     default='debug',
                     help='set the build type (default: debug)')
 parser.add_argument('--enable-compatible', action='store_true',
