@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 /* TODO: remove this unless we start checking isatty again */
-#include <unistd.h>
+//#include <unistd.h>
 
 /* TODO: fix casts */
 
@@ -44,8 +44,8 @@ static void lex_test()
     char * input = malloc(line_max);
 
     while (!feof(stdin)) {
-        fgets(input, line_max, stdin);
-        if (feof(stdin)) break;
+        char * s = fgets(input, line_max, stdin);
+        if (!s || feof(stdin)) break;
 
         const struct lexer_input inputs[] = {
             {
