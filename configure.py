@@ -64,6 +64,10 @@ parser.add_argument('--enable-compatible', action='store_true',
                     help='enable compatibility mode for older compilers')
 parser.add_argument('--disable-sanitize', action='store_true',
                     help='don\'t enable the sanitizer in debug mode')
+
+parser.add_argument('--fanalyzer', action='store_true',
+                    help='include -fanalyzer in c flags')
+
 parser.add_argument('--build-native',
                     choices=['none', 'mtune', 'march', 'both'], default='none',
                     help='build with mtune=native or march=native')
@@ -388,6 +392,11 @@ elif 'CFLAGS' in os.environ:
 
 w.variable(key = 'cflags',
            value = '-Wall -Wextra -Werror -fdiagnostics-color -flto -D_FORTIFY_SOURCE=2')
+
+if args.fanalyzer:
+    w.comment('enabling -fanalyzer because were were generated with --fanalayzer')
+    w.variable(keys = 'cflags',
+               value = '$cflags -fanalyzer')
 
 if args.ldflags:
     w.comment('these are overriden below because we were generated with --ldflags=' +
