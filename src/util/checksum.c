@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* S and K are constants needed by the MD5 algorithm */
 static constexpr unsigned int S[64] = {
     7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
     5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
@@ -49,12 +50,18 @@ static constexpr uint32_t K[64] = {
     0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
 };
 
+/* bitwise left rotate n by c bits*/
 static inline uint32_t rotate_left (uint32_t n, unsigned int c)
 {
     c &= 31;
     return (n << c) | (n >> ((-c) & 31));
 }
 
+/* calculate a checksum (a 32-character null terminated hex string) and return
+ * it in freshly allocated memory
+ *
+ * this uses the MD5 algorithm
+ */
 [[nodiscard]] char * checksum_calculate(
         const uint8_t * data, uint64_t length) [[gnu::nonnull(1)]]
 {
@@ -223,6 +230,10 @@ static inline uint32_t rotate_left (uint32_t n, unsigned int c)
     return buffer;
 }
 
+/* calculate a checksum and match it to the given one
+ *
+ * returns true if they match, false otherwise
+ */
 bool checksum_match(
         const char * checksum,
         uint8_t * data,
@@ -235,6 +246,11 @@ bool checksum_match(
     return result == 0;
 }
 
+/* test if this string is a valid checksum (exactly 32 characters long plus
+ * null terminator, each character in [0-9a-f])
+ *
+ * returns true if it's valid, false otherwise
+ */
 bool checksum_valid(const char * checksum) [[gnu::nonnull(1)]]
 {
     size_t i;
