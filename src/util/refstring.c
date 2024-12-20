@@ -41,14 +41,32 @@ struct refstring {
     long references;
 };
 
+struct refstring null_refstring = {
+    .string = u8"<null refstring>",
+    .references = 0
+};
+
 /* create a refstring from a copy of this null-terminated string */
 [[nodiscard]] struct refstring * refstring_create(const uint8_t * string)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
+
+    if (!refstring) {
+        null_refstring.references++;
+        return &null_refstring;
+    }
+
     *refstring = (struct refstring) {
         .string = u8_strdup(string),
         .references = 1
     };
+
+    if (!refstring->string) {
+        free(refstring);
+        null_refstring.references++;
+        return &null_refstring;
+    }
+
     return refstring;
 }
 
@@ -63,9 +81,21 @@ struct refstring {
 
     int n = u8_vsnprintf(NULL, 0, format, args1) + 1;
     uint8_t * s = malloc(sizeof(*s) * n);
+
+    if (!s) {
+        return &null_refstring;
+    }
+
     u8_vsnprintf(s, n, format, args2);
 
     struct refstring * refstring = malloc(sizeof(*refstring));
+
+    if (!refstring) {
+        free(s);
+        null_refstring.references++;
+        return &null_refstring;
+    }
+
     *refstring = (struct refstring) {
         .string = s,
         .references = 1
@@ -84,10 +114,19 @@ struct refstring {
         const uint8_t * string, size_t n)
 {
     struct refstring * refstring = malloc(sizeof(*refstring));
+
+    if (!refstring) return &null_refstring;
+
     *refstring = (struct refstring) {
         .string = malloc(n + 1),
         .references = 1
     };
+
+    if (!refstring->string) {
+        free(refstring);
+        return &null_refstring;
+    }
+
     for (size_t i = 0; i < n; i++) {
         refstring->string[i] = string[i];
     }
@@ -100,7 +139,7 @@ void refstring_destroy(struct refstring * refstring) [[gnu::nonnull(1)]]
 {
     assert(refstring->references > 0);
     refstring->references--;
-    if (refstring->references == 0) {
+    if (refstring->references == 0 && refstring != &null_refstring) {
         free(refstring->string);
         free(refstring);
     }
@@ -122,3 +161,12 @@ const uint8_t * refstring_string(
     refstring->references++;
     return refstring;
 }
+
+/* returns true if refstring is the global "null refstring" returned when a
+ * refstring function cannot allocate memory
+ */
+bool refstring_is_null_refstring(struct refstring * refstring)
+{
+    return refstring == &null_refstring;
+}
+

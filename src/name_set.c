@@ -22,8 +22,10 @@
 #include <stdlib.h>
 
 #include "util/sorted_set.h"
+#include "util/log.h"
 #include "hash.h"
 #include "card.h"
+
 
 #include <unicase.h>
 
@@ -37,6 +39,9 @@ struct name_set {
 [[nodiscard]] struct name_set * name_set_create()
 {
     struct name_set * name_set = malloc(sizeof(*name_set));
+    if (!name_set) {
+        return NULL;
+    }
     *name_set = (struct name_set) {
         .uncompiled = sorted_set_create()
     };
@@ -80,15 +85,17 @@ void name_set_destroy(struct name_set * name_set) [[gnu::nonnull(1)]]
 
 /* add this name to this name set
  *
- * returns true if the key is added, false otherwise (because it was a
- * duplicate)
+ * returns true if the key is added, false otherwise
+ *
+ * if a memory allocation error occurred, sets oom to true (and returns false)
  */
 bool name_set_add(
         struct name_set * name_set,
         const uint8_t * key,
         size_t length,
         void * data,
-        enum name_type type
+        enum name_type type,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]]
 {
     /* first, transform */
@@ -102,6 +109,11 @@ bool name_set_add(
             &size_out_transform
         );
 
+    if (!buffer_out_transform) {
+        *oom = true;
+        return false;
+    }
+
     /* then, normalize/prepare for collation */
     size_t size_out = 0;
 
@@ -113,7 +125,19 @@ bool name_set_add(
             &size_out
         );
 
+    if (!buffer_out) {
+        free(buffer_out_transform);
+        *oom = true;
+        return false;
+    }
+
     struct name * name = malloc(sizeof(*name));
+    if (!name) {
+        free(buffer_out);
+        free(buffer_out_transform);
+        *oom = true;
+        return false;
+    }
     *name = (struct name) {
         .display_name = buffer_out_transform,
         .display_name_length = size_out_transform,
@@ -127,6 +151,14 @@ bool name_set_add(
             size_out,
             name
         );
+
+    if (result == SORTED_SET_ADD_KEY_ERROR) {
+        *oom = true;
+        free(buffer_out);
+        free(name->display_name);
+        free(name);
+        return false;
+    }
 
     if (result != SORTED_SET_ADD_KEY_UNIQUE) {
         free(buffer_out);
@@ -234,19 +266,31 @@ void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]]
     }
 }
 
-/* look up a name in this set */
+/* look up a name in this set
+ *
+ * returns the name if present, NULL otherwise
+ *
+ * sets oom to true and returns NULL on memory error (which can occur in the
+ * rare case that the name needs more than the default buffer space for unicode
+ * tolower and normxfrm)
+ */
 struct name * name_set_lookup(
         const struct name_set * name_set,
-        const uint8_t * key, 
-        size_t length
+        const uint8_t * key,
+        size_t length,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]]
 {
-    /* first, transform */
 #if ENABLE_COMPAT
+#ifdef size_buffer
+#warn ENABLE_COMPAT causing a pre-existing size_buffer #define to be clobbered
+#endif /* size_buffer */
 #define size_buffer 1024
 #else
     constexpr size_t size_buffer = 1024;
 #endif /* ENABLE_COMPAT */
+
+    /* first, transform */
     size_t size_out_transform = size_buffer;
     static uint8_t transform_buffer[size_buffer];
     uint8_t * buffer_out_transform;
@@ -259,6 +303,11 @@ struct name * name_set_lookup(
             transform_buffer,
             &size_out_transform
         );
+
+    if (!buffer_out_transform) {
+        *oom = true;
+        return NULL;
+    }
 
     /* then, normalize/prepare for collation */
     size_t size_out = size_buffer;
@@ -276,7 +325,13 @@ struct name * name_set_lookup(
         free(buffer_out_transform);
     }
 
+    if (!buffer_out) {
+        *oom = true;
+        return NULL;
+    }
+
     if (name_set->hash) {
+        /* n.b. this cannot fail due to malloc-y reasons */
         const struct hash_lookup_result * hash_result =
             hash_lookup(name_set->hash, buffer_out, size_out);
 
@@ -288,6 +343,7 @@ struct name * name_set_lookup(
         }
     }
 
+    /* n.b. neither can this */
     const struct sorted_set_lookup_result * sorted_set_result =
         sorted_set_lookup(name_set->uncompiled, buffer_out, size_out);
 

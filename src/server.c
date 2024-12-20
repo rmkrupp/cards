@@ -32,6 +32,10 @@
 {
     struct server * server = malloc(sizeof(*server));
 
+    if (!server) {
+        return NULL;
+    }
+
     *server = (struct server) {
         .config = config,
         .networker = networker_create(config)

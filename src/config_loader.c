@@ -21,6 +21,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "util/safe_realloc.h"
+
 #include "lua.h"
 #include "config.h"
 
@@ -103,6 +105,7 @@ static int default_config_callback(struct config_option * option)
 [[nodiscard]] static struct config_loader * config_loader_create()
 {
     struct config_loader * loader = malloc(sizeof(*loader));
+    if (!loader) return NULL;
     *loader = (struct config_loader) { };
     return loader;
 }
@@ -125,21 +128,28 @@ static void config_loader_destroy(
  * if callback is null use default_config_callback which treats
  * context as a pointer to something the size of the value, and
  * stores that value into the pointer when loading is done
+ *
+ * in the event of a memory allocation error, this sets oom to true
  */
 static void config_loader_add_option_boolean(
         struct config_loader * loader,
         const char * name, 
         bool default_value,
         int (*callback)(struct config_option *),
-        void * context
+        void * context,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
     }
 
-    loader->options = realloc(loader->options,
+    loader->options = safe_realloc(loader->options,
             sizeof(*loader->options) * (loader->n_options + 1));
+    if (!loader->options) {
+        *oom = true;
+        return;
+    }
 
     loader->options[loader->n_options] = (struct config_option) {
         .type = CONFIG_BOOLEAN,
@@ -157,21 +167,28 @@ static void config_loader_add_option_boolean(
  * if callback is null use default_config_callback which treats
  * context as a pointer to something the size of the value, and
  * stores that value into the pointer when loading is done
+ *
+ * in the event of a memory allocation error, this sets oom to true
  */
 static void config_loader_add_option_integer(
         struct config_loader * loader,
         const char * name, 
         long default_value,
         int (*callback)(struct config_option *),
-        void * context
+        void * context,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
     }
 
-    loader->options = realloc(loader->options,
+    loader->options = safe_realloc(loader->options,
             sizeof(*loader->options) * (loader->n_options + 1));
+    if (!loader->options) {
+        *oom = true;
+        return;
+    }
 
     loader->options[loader->n_options] = (struct config_option) {
         .type = CONFIG_INTEGER,
@@ -189,21 +206,28 @@ static void config_loader_add_option_integer(
  * if callback is null use default_config_callback which treats
  * context as a pointer to something the size of the value, and
  * stores that value into the pointer when loading is done
+ *
+ * in the event of a memory allocation error, this sets oom to true
  */
 static void config_loader_add_option_string(
         struct config_loader * loader,
         const char * name, 
         const char * default_value,
         int (*callback)(struct config_option *),
-        void * context
+        void * context,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]]
 {
     if (!callback && context) {
         callback = &default_config_callback;
     }
 
-    loader->options = realloc(loader->options,
+    loader->options = safe_realloc(loader->options,
             sizeof(*loader->options) * (loader->n_options + 1));
+    if (!loader->options) {
+        *oom = true;
+        return;
+    }
 
     loader->options[loader->n_options] = (struct config_option) {
         .type = CONFIG_STRING,
@@ -326,30 +350,46 @@ static int config_loader_update(
     return error;
 }
 
-/* populate a config from a list of Lua scripts */
+/* populate a config from a list of Lua scripts
+ *
+ * returns 0 on success, 1 on error, or 2 on memory allocation failure
+ */
 int config_load(
         struct config * config, int nfiles, char ** files) [[gnu::nonnull(1)]]
 {
     int err;
 
     struct config_loader * loader = config_loader_create();
+    if (!loader) {
+        return 2;
+    }
+
+    bool oom;
 
     config_loader_add_option_string(
-            loader, "version", VERSION, NULL, NULL);
+            loader, "version", VERSION, NULL, NULL, &oom);
     config_loader_add_option_integer(
-            loader, "port", CONFIG_PORT_DEFAULT, NULL, &config->port);
+            loader, "port", CONFIG_PORT_DEFAULT, NULL, &config->port, &oom);
     config_loader_add_option_string(
             loader,
             "default_card_db",
             CONFIG_DEFAULT_CARD_DB_DEFAULT,
             NULL,
-            &config->default_card_db
+            &config->default_card_db,
+            &oom
         );
     config_loader_add_option_boolean(
-            loader, "dummy", CONFIG_DUMMY_DEFAULT, NULL, &config->dummy);
+            loader, "dummy", CONFIG_DUMMY_DEFAULT, NULL, &config->dummy, &oom);
+
+    if (oom) {
+        fprintf(stderr, "[config] error initializing loader\n");
+        config_loader_destroy(loader);
+        return 2;
+    }
 
     lua_State * L = luaL_newstate();
     if (!L) {
+        fprintf(stderr, "[config] error creating Lua state\n");
         config_loader_destroy(loader);
         return 1;
     }
@@ -397,7 +437,11 @@ int config_load(
         if (err) {
             lua_close(L);
             config_loader_destroy(loader);
-            return 1;
+            if (err == LUA_ERRMEM) {
+                return 2;
+            } else {
+                return 1;
+            }
         }
 
         if (lua_pcall(L, 0, 0, 0)) {

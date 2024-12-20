@@ -58,4 +58,9 @@ const uint8_t * refstring_string(
 [[nodiscard]] struct refstring * refstring_dup(
         struct refstring * refstring) [[gnu::nonnull(1)]];
 
+/* returns true if the refstring is the "null refstring" returned when
+ * refrstring functions cannot allocate memory for a new refstring
+ */
+bool refstring_is_null_refstring(struct refstring * refstring);
+
 #endif /* REFSTRING_H */

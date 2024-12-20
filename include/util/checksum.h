@@ -27,6 +27,8 @@
 /* calculate a checksum (a 32-character null terminated hex string) and return
  * it in freshly allocated memory
  *
+ * returns the buffer, or NULL if malloc failed
+ *
  * this uses the MD5 algorithm
  */
 [[nodiscard]] char * checksum_calculate(

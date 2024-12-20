@@ -51,9 +51,10 @@ enum sorted_set_add_key_result {
     SORTED_SET_ADD_KEY_UNIQUE, /* the key was added because it was not already
                                 * present
                                 */
-    SORTED_SET_ADD_KEY_DUPLICATE /* the key was not added because it was
-                                  * already present
-                                  */
+    SORTED_SET_ADD_KEY_DUPLICATE, /* the key was not added because it was
+                                   * already present
+                                   */
+    SORTED_SET_ADD_KEY_ERROR /* an error occured (malloc returned NULL) */
 };
 
 /* add this key of length to the sorted set, associating it with data

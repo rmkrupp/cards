@@ -142,6 +142,10 @@ int main(int argc, char ** argv)
 
     size_t ls_buffer_size = 16 * 1024;
     char * ls_buffer = malloc(ls_buffer_size);
+    if (!ls_buffer) {
+        free_args(&args);
+        return 1;
+    }
     struct linenoiseState ls;
     linenoiseEditStart(&ls, -1, -1, ls_buffer, ls_buffer_size, "# ");
     linenoiseHide(&ls);
@@ -180,6 +184,8 @@ int main(int argc, char ** argv)
         free_args(&args);
         event_base_free(base);
         libevent_global_shutdown();
+        linenoiseEditStop(&ls);
+        free(ls_buffer);
 
 #if defined(__MINGW32__)
         WSACleanup();
@@ -203,6 +209,8 @@ int main(int argc, char ** argv)
         bufferevent_free(bev_net);
         event_base_free(base);
         libevent_global_shutdown();
+        linenoiseEditStop(&ls);
+        free(ls_buffer);
 
 #if defined(__MINGW32__)
         WSACleanup();
@@ -219,6 +227,16 @@ int main(int argc, char ** argv)
 
     if (args.n_load_files > 0) {
         line = malloc(line_max);
+        if (!line) {
+            fprintf(stderr, "OOM (malloc returned NULL)\n");
+            free_args(&args);
+            evutil_freeaddrinfo(answer);
+            bufferevent_free(bev_net);
+            event_base_free(base);
+            libevent_global_shutdown();
+            linenoiseEditStop(&ls);
+            free(ls_buffer);
+        }
     }
 
     for (size_t i = 0; i < args.n_load_files; i++) {

@@ -129,14 +129,14 @@ void particle_buffer_at_least(
 
 /* add this particle to this buffer, growing the buffer if necessary
  *
- * NOTE: again, allow a null particle here
- * TODO: should we? (unlike particle_string() there's no code change between
- *       allowing and not allowing for this function)
+ * if a memory failure occurred (when attempting to grow the buffer), oom
+ * will be set to true and the particle will not be added
  */
 void particle_buffer_add(
         struct particle_buffer * buffer,
-        struct particle * particle
-    ) [[gnu::nonnull(1)]];
+        struct particle * particle,
+        bool * oom
+    ) [[gnu::nonnull(1, 2, 3)]];
 
 /* inputs to a lexer */
 struct lexer_input {
@@ -156,13 +156,24 @@ struct lexer_input {
  *
  * returns the total bytes consumed across all inputs, which may be less than
  * the size of all the inputs
+ *
+ * out of memory handling: if memory allocation fails (malloc or realloc
+ * return NULL) during lexing, the out_of_memory field of the particle buffer
+ * is set to true. In this case, if future calls to lex() succeed, there is
+ * no loss of data (i.e. the internal pointer does not advance over a particle
+ * that could not be lexed due to lack of memory.)
+ *
+ * the oom argument will be cleared to false by a succesful call to
+ * lex if it was previously true. it is not used as an input and thus may
+ * also be safely cleared by the caller, if desired.
  */
 size_t lex(
         const struct lexer_input * inputs,
         size_t n_inputs,
         const struct name_set * name_set,
-        struct particle_buffer * buffer
-    ) [[gnu::nonnull(1, 3, 4)]];
+        struct particle_buffer * buffer,
+        bool * oom
+    ) [[gnu::nonnull(1, 3, 4, 5)]];
 
 #endif /* COMMAND_LEX_H */
 

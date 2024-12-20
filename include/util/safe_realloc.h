@@ -1,4 +1,4 @@
-/* File: src/util/strdup.c
+/* File: src/util/safe_realloc.h
  * Part of cards <github.com/rmkrupp/cards>
  *
  * Copyright (C) 2024 Noah Santer <n.ed.santer@gmail.com>
@@ -17,40 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "util/strdup.h"
+#ifndef UTIL_SAFE_REALLOC_H
+#define UTIL_SAFE_REALLOC_H
 
-#if !defined(__linux__)
 #include <stdlib.h>
-#endif
 
-#include <string.h>
-
-[[nodiscard]] char * util_strdup(const char * s)
+/* like realloc but free's the original ptr if the call to realloc returns NULL
+ */
+static inline void * safe_realloc(void * ptr, size_t size)
 {
-#if defined(__linux__)
-    return strdup(s);
-#elif defined(__MINGW32__)
-    return _strdup(s);
-#else
-#error unsupported platform (no util_strdup)
-#endif
-}
-
-[[nodiscard]] char * util_strndup(const char * s, size_t n)
-{
-#if defined(__linux__)
-    return strndup(s, n);
-#else
-    char * out = malloc(n + 1);
-    if (!out) return NULL;
-    for (size_t i = 0; i < n; i++) {
-        out[i] = s[i];
-        if (!s[i]) {
-            return out;
-        }
+    void * new_ptr = realloc(ptr, size);
+    if (!new_ptr) {
+        free(ptr);
     }
-    out[n] = '\0';
-    return out;
-#endif
+    return new_ptr;
 }
 
+#endif /* UTIL_SAFE_REALLOC_H */

@@ -28,6 +28,7 @@
 [[nodiscard]] struct parser * parser_create(struct game * game)
 {
     struct parser * parser = malloc(sizeof(*parser));
+    if (!parser) return NULL;
     *parser = (struct parser) {
         .game = game
     };

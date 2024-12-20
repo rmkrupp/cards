@@ -19,6 +19,7 @@
  */
 #include "networker.h"
 #include "util/log.h"
+#include "util/safe_realloc.h"
 
 #include "command/lex.h"
 #include "command/parse.h"
@@ -71,6 +72,10 @@ struct networker_connection_iter {
     ) [[gnu::nonnull(1, 2)]]
 {
     struct connection * connection = malloc(sizeof(*connection));
+    if (!connection) {
+        return NULL;
+    }
+
     *connection = (struct connection) {
         .id = networker->n_connections,
         .networker = networker,
@@ -79,10 +84,24 @@ struct networker_connection_iter {
         .parser = parser_create(networker->game)
     };
 
-    networker->connections = realloc(
+    if (!connection->buffer || !connection->parser) {
+        particle_buffer_destroy(connection->buffer);
+        parser_destroy(connection->parser);
+        free(connection);
+        return NULL;
+    }
+
+    networker->connections = safe_realloc(
             networker->connections,
             sizeof(*networker->connections) * (networker->n_connections + 1)
         );
+
+    if (!networker->connections) {
+        particle_buffer_destroy(connection->buffer);
+        parser_destroy(connection->parser);
+        free(connection);
+        return NULL;
+    }
 
     networker->connections[networker->n_connections] = connection;
     networker->n_connections++;
@@ -121,6 +140,7 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
     size_t n_vecs_needed = 1;
     do {
         if (n_vecs_needed > connection->vecs_capacity) {
+            // TODO malloc
             connection->vecs = realloc(
                     connection->vecs,
                     sizeof(*connection->vecs) * n_vecs_needed
@@ -160,12 +180,18 @@ static void example_read_cb(struct bufferevent * bev, void * ptr)
     */
 
     /* minimal lexing code for testing */
+    bool oom;
     size_t index = lex(
             lexer_inputs,
             n_vecs_needed,
             connection->parser->game->name_set,
-            connection->buffer
+            connection->buffer,
+            &oom
         );
+
+    if (oom) {
+        LOGF_ERROR(NULL, "lex() signaled a memory failure\n");
+    }
 
     struct parse_result parse_result;
     parser_parse(
@@ -306,6 +332,9 @@ static void networker_listener_error_cb(
     };
 
     struct networker * networker = malloc(sizeof(*networker));
+    if (!networker) {
+        return NULL;
+    }
 
     *networker = (struct networker) {
         .logger = config->logger,
@@ -376,6 +405,9 @@ int networker_run(struct networker * networker) [[gnu::nonnull(1)]]
         struct networker * networker) [[gnu::nonnull(1)]]
 {
     struct networker_connection_iter * iter = malloc(sizeof(*iter));
+    if (!iter) {
+        return NULL;
+    }
     *iter = (struct networker_connection_iter) {
         .networker = networker,
         .index = 0

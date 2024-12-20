@@ -59,7 +59,8 @@ bool name_set_add(
         const uint8_t * name,
         size_t length,
         void * data,
-        enum name_type type
+        enum name_type type,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]];
 
 /* remove this name from this set
@@ -91,11 +92,19 @@ struct name_data * name_set_remove(
  */
 void name_set_compile(struct name_set * name_set) [[gnu::nonnull(1)]];
 
-/* look up a name in this set */
+/* look up a name in this set
+ *
+ * returns the name if present, NULL otherwise
+ *
+ * sets oom to true and returns NULL on memory error (which can occur in the
+ * rare case that the name needs more than the default buffer space for unicode
+ * tolower and normxfrm)
+ */
 struct name * name_set_lookup(
         const struct name_set * name_set,
         const uint8_t * name,
-        size_t length
+        size_t length,
+        bool * oom
     ) [[gnu::nonnull(1, 2)]];
 
 /* call this function on every name in this set, passing it ptr */

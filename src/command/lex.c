@@ -116,6 +116,7 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
 [[nodiscard]] struct particle * particle_create(enum particle_type type)
 {
     struct particle * particle = malloc(sizeof(*particle));
+    if (!particle) return NULL;
     *particle = (struct particle) {
         .type = type
     };
@@ -132,12 +133,18 @@ static_assert(PARTICLE_BUFFER_GROW_INCREMENT > 0);
         enum particle_type type, const uint8_t * value, size_t n)
 {
     struct particle * particle = malloc(sizeof(*particle));
+    if (!particle) return NULL;
 
     *particle = (struct particle) {
         .type = type,
         .value = malloc(n + 1),
         .length = n
     };
+
+    if (!particle->value) {
+        free(particle);
+        return NULL;
+    }
 
     for (size_t i = 0; i < n; i++) {
         particle->value[i] = value[i];
@@ -243,6 +250,7 @@ void particle_destroy(struct particle * particle) [[gnu::nonnull(1)]]
 [[nodiscard]] struct particle_buffer * particle_buffer_create()
 {
     struct particle_buffer * buffer = malloc(sizeof(*buffer));
+    if (!buffer) return NULL;
     *buffer = (struct particle_buffer) { };
     return buffer;
 }
@@ -270,21 +278,33 @@ void particle_buffer_free_all(
  *
  * NOTE: the current implementation grows to exactly minimum, no matter
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
+ *
+ * memory allocation note: if realloc returns NULL during this operation, the
+ * old buffer is not overwritten and the capacity is not increased
  */
 void particle_buffer_grow(
         struct particle_buffer * buffer, size_t amount) [[gnu::nonnull(1)]]
 {
-    buffer->particles = realloc(
+    void * new_ptr = realloc(
             buffer->particles,
             sizeof(*buffer->particles) * (buffer->capacity + amount)
         );
-    buffer->capacity += amount;
+
+    if (new_ptr) {
+        free(buffer->particles);
+        buffer->particles = new_ptr;
+        buffer->capacity += amount;
+    }
 }
 
 /* if buffer->capacity < minimum, grow to (at least) minimum
  *
  * NOTE: the current implementation grows to exactly minimum, no matter
  *       what PARTICLE_BUFFER_GROW_INCREMENT is
+ *
+ * memory allocation note: if the underlying particle_buffer_grow call cannot
+ * grow the buffer because realloc returns NULL, the capacity is not changed
+ * and the old buffer is not modified (or free'd, etc.)
  */
 void particle_buffer_at_least(
         struct particle_buffer * buffer, size_t minimum) [[gnu::nonnull(1)]]
@@ -294,14 +314,23 @@ void particle_buffer_at_least(
     }
 }
 
-/* add this particle to this buffer */
+/* add this particle to this buffer
+ *
+ * if a memory failure occurred (when attempting to grow the buffer), oom
+ * will be set to true and the particle will not be added
+ */
 void particle_buffer_add(
         struct particle_buffer * buffer,
-        struct particle * particle
-    ) [[gnu::nonnull(1)]]
+        struct particle * particle,
+        bool * oom
+    ) [[gnu::nonnull(1, 2, 3)]]
 {
     if (buffer->n_particles == buffer->capacity) {
         particle_buffer_grow(buffer, PARTICLE_BUFFER_GROW_INCREMENT);
+    }
+    if (buffer->n_particles == buffer->capacity) {
+        *oom = true;
+        return;
     }
     buffer->particles[buffer->n_particles] = particle;
     buffer->n_particles++;
@@ -388,7 +417,7 @@ static bool lex_ptr_advance(
  * otherwise, allocate a buffer and copy the data over into it. store the size
  * and true into need_free_out
  *
- * returns either one of those
+ * returns either one of those, or NULL if malloc does
  *
  * this casts away the const of the lexer_input if it returns a buffer from
  * that, you just have to triple promise to follow needs_free_out and to in
@@ -417,6 +446,7 @@ static bool lex_ptr_advance(
     size += stop->index;
 
     uint8_t * buffer = malloc(size);
+    if (!buffer) return NULL;
     size_t index = 0;
     for (size_t i = start->index; i < inputs[start->n_input].length; i++) {
         buffer[index] = inputs[start->n_input].input[i];
@@ -457,8 +487,11 @@ static bool lex_ptr_advance(
     uint8_t * buffer = lex_ptr_buffer(
             inputs, start, stop, &size, &needs_free_out);
 
+    if (!buffer) return NULL;
+
     if (!needs_free_out) {
         uint8_t * new_buffer = malloc(size);
+        if (!buffer) return NULL;
         for (size_t i = 0; i < size; i++) {
             new_buffer[i] = buffer[i];
         }
@@ -565,19 +598,33 @@ static bool lex_ptr_advance(
 /* subfunction of lex() */
 /* TODO: align the stop conditions between these consume functions, e.g. for
  *       \r
+ *
+ * will return NULL and set oom to true on memory allocation failure,
+ * except for allocations for the error message. if those fail, the resulting
+ * particle will have an error_length of -1
  */
 static struct particle * consume_end_nest(
         const struct lexer_input * inputs,
         size_t n_inputs,
-        struct lex_ptr * ptr
+        struct lex_ptr * ptr,
+        bool * oom
     )
 {
     uint8_t c = lex_ptr_peek(inputs, ptr);
     if (c == '\0' || c == ' ' || c == '\n' || c == ')') {
         lex_ptr_advance(inputs, n_inputs, ptr);
-        return particle_create(PARTICLE_END_NEST);
+        struct particle * particle = particle_create(PARTICLE_END_NEST);
+        if (!particle) {
+            *oom = true;
+            return NULL;
+        }
+        return particle;
     } else {
         struct particle * particle = particle_create(PARTICLE_ERROR);
+        if (!particle) {
+            *oom = true;
+            return NULL;
+        }
         /* TODO: error value / position */
 #if VERBOSE_LEXER
         particle->error_length = u8_asprintf(
@@ -594,12 +641,17 @@ static struct particle * consume_end_nest(
 /* subfunction of lex() */
 /* TODO: align the stop conditions between these consume functions, e.g. for
  *       \r
+ *
+ * will return NULL and set oom to true on memory allocation failure,
+ * except for allocations for the error message. if those fail, the resulting
+ * particle will have an error_length of -1
  */
 static struct particle * consume_name(
         const struct lexer_input * inputs,
         size_t n_inputs,
         struct lex_ptr * ptr,
-        const struct name_set * name_set
+        const struct name_set * name_set,
+        bool * oom
     )
 {
     struct lex_ptr ptr_start = *ptr;
@@ -621,6 +673,10 @@ static struct particle * consume_name(
                 return NULL;
             }
             struct particle * particle = particle_create(PARTICLE_ERROR);
+            if (!particle) {
+                *oom = true;
+                return NULL;
+            }
 #if VERBOSE_LEXER
             /* TODO: error value / position */
             particle->error_length = u8_asprintf(
@@ -644,18 +700,35 @@ static struct particle * consume_name(
         return NULL;
     }
 
+    /* TODO figure out ptr advancing and this stuff? */
     struct particle * particle = particle_create(PARTICLE_NAME);
+    if (!particle) {
+        *oom = true;
+        return NULL;
+    }
 
     size_t size;
     bool needs_free;
     uint8_t * buffer = lex_ptr_buffer(
             inputs, &ptr_start, &ptr_copy, &size, &needs_free);
 
+    if (!buffer) {
+        free(particle);
+        *oom = true;
+        return NULL;
+    }
+
     particle->name = name_set_lookup(
             name_set,
             buffer,
-            size
+            size,
+            oom
         );
+
+    if (*oom) {
+        free(particle);
+        return NULL;
+    }
 
     if (particle->name) {
         particle->value = particle->name->display_name;
@@ -670,6 +743,11 @@ static struct particle * consume_name(
             particle->length = size;
         } else {
             particle->value = malloc(size);
+            if (!particle->value) {
+                free(particle);
+                *oom = true;
+                return NULL;
+            }
             for (size_t i = 0; i < size; i++) {
                 particle->value[i] = buffer[i];
             }
@@ -686,11 +764,16 @@ static struct particle * consume_name(
 /* subfunction of lex() */
 /* TODO: align the stop conditions between these consume functions, e.g. for
  *       \r
+ *
+ * will return null and set oom to true on memory allocation failure,
+ * except for allocations for the error message. if those fail, the resulting
+ * particle will have an error_length of -1
  */
 static struct particle * consume_number(
         const struct lexer_input * inputs,
         size_t n_inputs,
-        struct lex_ptr * ptr
+        struct lex_ptr * ptr,
+        bool * oom
     )
 {
     struct lex_ptr ptr_copy = *ptr;
@@ -701,9 +784,18 @@ static struct particle * consume_number(
         /* we found the end, return a particle */
         if (c == '\0' || c == ' ' || c == '\n' || c == ')') {
             struct particle * particle = particle_create(PARTICLE_NUMBER);
+            if (!particle) {
+                *oom = true;
+                return NULL;
+            }
             size_t size;
             uint8_t * buffer = lex_ptr_buffer_always_copy(
                     inputs, ptr, &ptr_copy, &size);
+            if (!buffer) {
+                *oom = true;
+                free(particle);
+                return NULL;
+            }
             particle->value = buffer;
             particle->length = size;
             *ptr = ptr_copy;
@@ -714,6 +806,10 @@ static struct particle * consume_number(
             // okay
         } else {
             struct particle * particle = particle_create(PARTICLE_ERROR);
+            if (!particle) {
+                *oom = true;
+                return NULL;
+            }
             /* TODO: there are actually a few things we could do in this case
              *       to try and "recover"
              *
@@ -755,11 +851,16 @@ static struct particle * consume_number(
 /* subfunction of lex() */
 /* TODO: align the stop conditions between these consume functions, e.g. for
  *       \r
+ *
+ * will return null and set oom to true on memory allocation failure,
+ * except for allocations for the error message. if those fail, the resulting
+ * particle will have an error_length of -1
  */
 static struct particle * consume_keyword(
         const struct lexer_input * inputs,
         size_t n_inputs,
-        struct lex_ptr * ptr
+        struct lex_ptr * ptr,
+        bool * oom
     )
 {
     struct lex_ptr ptr_copy = *ptr;
@@ -768,11 +869,20 @@ static struct particle * consume_keyword(
 
         if (c == '\0' || c == ' ' || c == '\n' || c == ')') {
             struct particle * particle = particle_create(PARTICLE_KEYWORD);
+            if (!particle) {
+                *oom = true;
+                return NULL;
+            }
 
             size_t size;
             bool needs_free;
             uint8_t * buffer = lex_ptr_buffer(
                     inputs, ptr, &ptr_copy, &size, &needs_free);
+            if (!buffer) {
+                *oom = true;
+                free(particle);
+                return NULL;
+            }
 
             /* these two casts will go away if we switch to internal hash
              * library for keywords
@@ -821,6 +931,10 @@ static struct particle * consume_keyword(
             // okay
         } else {
             struct particle * particle = particle_create(PARTICLE_ERROR);
+            if (!particle) {
+                *oom = true;
+                return NULL;
+            }
 #if VERBOSE_LEXER
             particle->error_length = u8_asprintf(
                     &particle->error,
@@ -848,18 +962,29 @@ static struct particle * consume_keyword(
  *
  * otherwise, the caller must track its own offset into the buffer
  *
- * the result status is written to result_out
- *
  * returns the number of bytes consumed from the inputs
+ *
+ * out of memory handling: if memory allocation fails (malloc or realloc
+ * return NULL) during lexing, the oom argument is set to true. In this case,
+ * if future calls to lex() succeed, there is no loss of data (i.e. the
+ * internal pointer does not advance over a particle that could not be lexed
+ * due to lack of memory.)
+ *
+ * the oom argument will be cleared to false by a succesful call to
+ * lex if it was previously true. it is not used as an input and thus may
+ * also be safely cleared by the caller, if desired.
  */
 size_t lex(
         const struct lexer_input * inputs,
         size_t n_inputs,
         const struct name_set * name_set,
-        struct particle_buffer * buffer
-    ) [[gnu::nonnull(1, 3, 4)]]
+        struct particle_buffer * buffer,
+        bool * oom
+    ) [[gnu::nonnull(1, 3, 4, 5)]]
 {
     struct lex_ptr ptr = { };
+
+    *oom = false;
 
     while (!lex_ptr_at_end(n_inputs, &ptr)) {
         struct particle * particle = NULL;
@@ -888,16 +1013,24 @@ size_t lex(
 
             case '\n':
                 particle = particle_create(PARTICLE_END);
+                if (!particle) {
+                    *oom = true;
+                    return lex_ptr_sum(inputs, &ptr);
+                }
                 lex_ptr_advance(inputs, n_inputs, &ptr);
                 break;
 
             case '(':
                 particle = particle_create(PARTICLE_BEGIN_NEST);
+                if (!particle) {
+                    *oom = true;
+                    return lex_ptr_sum(inputs, &ptr);
+                }
                 lex_ptr_advance(inputs, n_inputs, &ptr);
                 break;
 
             case ')':
-                particle = consume_end_nest(inputs, n_inputs, &ptr);
+                particle = consume_end_nest(inputs, n_inputs, &ptr, oom);
                 if (!particle) {
                     return lex_ptr_sum(inputs, &ptr);
                 }
@@ -905,14 +1038,14 @@ size_t lex(
 
             case '"':
                 particle = consume_name(
-                        inputs, n_inputs, &ptr, name_set);
+                        inputs, n_inputs, &ptr, name_set, oom);
                 if (!particle) {
                     return lex_ptr_sum(inputs, &ptr);
                 }
                 break;
 
             case '0' ... '9':
-                particle = consume_number(inputs, n_inputs, &ptr);
+                particle = consume_number(inputs, n_inputs, &ptr, oom);
                 if (!particle) {
                     return lex_ptr_sum(inputs, &ptr);
                 }
@@ -926,7 +1059,7 @@ size_t lex(
             case '/':
             case '?':
             case '!':
-                particle = consume_keyword(inputs, n_inputs, &ptr);
+                particle = consume_keyword(inputs, n_inputs, &ptr, oom);
                 if (!particle) {
                     return lex_ptr_sum(inputs, &ptr);
                 }
@@ -947,7 +1080,10 @@ size_t lex(
         }
 
         if (particle) {
-            particle_buffer_add(buffer, particle);
+            particle_buffer_add(buffer, particle, oom);
+            if (*oom) {
+                return lex_ptr_sum(inputs, &ptr);
+            }
         }
     }
 

@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "util/sorted_set.h"
+#include "util/safe_realloc.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -28,6 +29,7 @@ struct sorted_set {
     struct node ** next;
     size_t layers;
     size_t size;
+    size_t padding;
 };
 
 /* a node in the skip list */
@@ -46,14 +48,26 @@ struct node {
     void * data;
 };
 
+/* waste sizeof(size_t) bytes to make -fanalyzer happy */
+/* TODO: is there a better way? */
+static_assert(sizeof(struct sorted_set) == sizeof(struct node));
+
 /* create an empty sorted set */
 [[nodiscard]] struct sorted_set * sorted_set_create()
 {
     struct sorted_set * sorted_set = malloc(sizeof(*sorted_set));
+    if (!sorted_set) return NULL;
+
     *sorted_set = (struct sorted_set) {
         .next = malloc(sizeof(*sorted_set->next)),
         .layers = 1
     };
+
+    if (!sorted_set->next) {
+        free(sorted_set);
+        return NULL;
+    }
+
     sorted_set->next[0] = NULL;
     return sorted_set;
 }
@@ -158,6 +172,10 @@ enum sorted_set_add_key_result sorted_set_add_key(
 
     /* trailing nodes */
     struct node ** update = malloc(sizeof(*update) * sorted_set->layers);
+    if (!update) {
+        return SORTED_SET_ADD_KEY_ERROR;
+    }
+
     for (size_t i = new_level; i < sorted_set->layers; i++) {
         update[i] = NULL;
     }
@@ -199,12 +217,23 @@ enum sorted_set_add_key_result sorted_set_add_key(
     sorted_set->size++;
 
     struct node * new_node = malloc(sizeof(*new_node));
+    if (!new_node) {
+        free(update);
+        return SORTED_SET_ADD_KEY_ERROR;
+    }
+
     *new_node = (struct node) {
         .key = key,
         .length = length,
         .data = data,
         .next = malloc(sizeof(*new_node->next) * new_level)
     };
+
+    if (!new_node->next) {
+        free(update);
+        free(new_node);
+        return SORTED_SET_ADD_KEY_ERROR;
+    }
 
     /* update the nexts of update[] and set new_node's nexts */
     if (new_level <= sorted_set->layers) {
@@ -218,10 +247,15 @@ enum sorted_set_add_key_result sorted_set_add_key(
             update[i]->next[i] = new_node;
         }
 
-        sorted_set->next = realloc(
+        sorted_set->next = safe_realloc(
                 sorted_set->next,
                 sizeof(*sorted_set->next) * new_level
             );
+        if (!sorted_set->next) {
+            free(update);
+            free(new_node);
+            return SORTED_SET_ADD_KEY_ERROR;
+        }
 
         for (size_t i = sorted_set->layers; i < new_level; i++) {
             sorted_set->next[i] = new_node;
@@ -434,9 +468,17 @@ struct sorted_set_maker {
     struct sorted_set_maker * sorted_set_maker =
         malloc(sizeof(*sorted_set_maker));
 
+    if (!sorted_set_maker) {
+        return NULL;
+    }
+
     *sorted_set_maker = (struct sorted_set_maker) {
         .sorted_set = malloc(sizeof(*sorted_set_maker->sorted_set))
     };
+    if (!sorted_set_maker->sorted_set) {
+        free(sorted_set_maker);
+        return NULL;
+    }
 
     struct sorted_set * sorted_set = sorted_set_maker->sorted_set;
 
@@ -446,6 +488,12 @@ struct sorted_set_maker {
     }
 
     size_t * landmarks = malloc(sizeof(*landmarks) * layers);
+    if (!landmarks) {
+        free(sorted_set_maker->sorted_set);
+        free(sorted_set_maker);
+        return NULL;
+    }
+
     size_t i = layers - 1;
     for (size_t n = n_keys / 2; n > 1; n /= 2) {
         landmarks[i] = n;
@@ -453,10 +501,24 @@ struct sorted_set_maker {
     }
 
     sorted_set->layers = layers;
-    sorted_set->next = malloc(sizeof(*sorted_set->next) * layers);
+    sorted_set->next = calloc(layers, sizeof(*sorted_set->next));
     sorted_set->size = 0;
 
+    if (!sorted_set->next) {
+        free(landmarks);
+        free(sorted_set_maker->sorted_set);
+        free(sorted_set_maker);
+        return NULL;
+    }
+
     struct node ** update = malloc(sizeof(*update) * layers);
+    if (!update) {
+        free(landmarks);
+        free(sorted_set->next);
+        free(sorted_set_maker->sorted_set);
+        free(sorted_set_maker);
+        return NULL;
+    }
     for (size_t i = 0; i < layers; i++) {
         update[i] = (struct node *)sorted_set;
     }
@@ -472,9 +534,41 @@ struct sorted_set_maker {
         layer++;
 
         struct node * node = malloc(sizeof(*node));
+        if (!node) {
+            struct node * node = sorted_set->next[layers - 1];
+            while (node) {
+                struct node * next = node->next[layers - 1];
+                free(node->next);
+                free(node);
+                node = next;
+            }
+            free(update);
+            free(landmarks);
+            free(sorted_set->next);
+            free(sorted_set_maker->sorted_set);
+            free(sorted_set_maker);
+            return NULL;
+        }
+
         *node = (struct node) {
             .next = malloc(sizeof(*node->next) * (layer))
         };
+
+        if (!node->next) {
+            struct node * node = sorted_set->next[layers - 1];
+            while (node) {
+                struct node * next = node->next[layers - 1];
+                free(node->next);
+                free(node);
+                node = next;
+            }
+            free(update);
+            free(landmarks);
+            free(sorted_set->next);
+            free(sorted_set_maker->sorted_set);
+            free(sorted_set_maker);
+            return NULL;
+        }
 
         for (size_t j = 0; j < layer; j++) {
             update[j]->next[j] = node;

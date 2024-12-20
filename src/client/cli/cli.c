@@ -205,6 +205,11 @@ int main(int argc, char ** argv)
         }
         /* TODO */
         char * line = malloc(1024 * 1024 * 1024);
+        if (!line) {
+            fprintf(stderr, "OOM (malloc returned NULL)\n");
+            fclose(f);
+            return 1;
+        }
         while (fgets(line, 1024 * 1024 * 1024, f)) {
             evbuffer_add_printf(bufferevent_get_output(bev_net), "%s", line);
         }

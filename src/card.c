@@ -126,10 +126,18 @@ struct card * card_load(
     }
 
     size_t name_length;
-    /* TODO: triple check this cast is fine */
+    /* this cast is fine, Lua strings can even contain embedded zeros and thus
+     * aren't really c strings anyway
+     */
     const uint8_t * name = (const uint8_t *)lua_tolstring(L, -1, &name_length);
 
     struct card * card = malloc(sizeof(*card));
+
+    if (!card) {
+        LOGF_ERROR(logger, "card_load() failed to allocate memory\n");
+        lua_close(L);
+        return NULL;
+    }
 
     *card = (struct card) {
         .L = L
@@ -141,8 +149,13 @@ struct card * card_load(
      *       and subtypes before we do this add so we don't have to remove
      *       it for every error (?)
      */
-    if (!name_set_add(name_set, name, name_length, card, NAME_TYPE_CARD)) {
-        LOGF_ERROR(logger, "duplicate card name '%.*U'\n", name_length, name);
+    bool oom = false;
+    if (!name_set_add(name_set, name, name_length, card, NAME_TYPE_CARD, &oom)) {
+        if (oom) {
+            LOGF_ERROR(logger, "card_load() failed to allocate memory\n");
+        } else {
+            LOGF_ERROR(logger, "duplicate card name '%.*U'\n", name_length, name);
+        }
         lua_close(L);
         free(card);
         return NULL;
@@ -207,7 +220,15 @@ struct card * card_load(
         size_t length;
         const char * key = lua_tolstring(L, -1, &length);
         const struct name * ability_name =
-            name_set_lookup(name_set, (const uint8_t *)key, length);
+            name_set_lookup(name_set, (const uint8_t *)key, length, &oom);
+
+        if (oom) {
+            LOGF_ERROR(logger, "card_load() failed to allocate memory\n");
+            /* TODO should we return instead? */
+            lua_pop(L, 2);
+            continue;
+        }
+
         if (ability_name && ability_name->type == NAME_TYPE_CARD) {
             LOGF_ERROR(
                     logger,
@@ -222,6 +243,7 @@ struct card * card_load(
         }
         
         abilities = realloc(abilities, sizeof(*abilities) * (n_abilities + 1));
+        /* TODO: check */
         struct ability * ability;
 
         if (ability_name) {
@@ -236,6 +258,9 @@ struct card * card_load(
             ability = (struct ability *)ability_name->data;
         } else {
             ability = malloc(sizeof(*abilities[n_abilities]));
+
+            // TODO check malloc
+
             *ability = (struct ability) { };
         }
 
@@ -248,6 +273,7 @@ struct card * card_load(
                 ability->owners,
                 sizeof(*ability->owners) * (ability->n_owners + 1)
             );
+        /* TODO: check */
         ability->owners[ability->n_owners] = card;
 
         if (!ability_name) {

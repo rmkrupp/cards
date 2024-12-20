@@ -57,6 +57,28 @@ static const char * type_to_string(enum particle_type type)
     return null_string;
 }
 
+static void ensure_not_oom(bool oom, size_t * n_errors)
+{
+    if (oom) {
+        fprintf(
+                stderr,
+                "warning: test signaled OOM\n"
+            );
+        *n_errors += 1;
+    }
+}
+
+static void ensure_not_null(void * thing, size_t * n_errors)
+{
+    if (!thing) {
+        fprintf(
+                stderr,
+                "pointer is null when not-null was expected\n"
+            );
+        *n_errors += 1;
+    }
+}
+
 static void ensure_particle_type(
         struct particle * particle, enum particle_type type, size_t * n_errors)
 {
@@ -168,6 +190,8 @@ int main(int argc, char ** argv)
     (void)argc;
     (void)argv;
 
+    bool oom;
+
     size_t errors = 0;
 
     printf("Begin sanity check...\n");
@@ -183,9 +207,16 @@ int main(int argc, char ** argv)
     struct particle_buffer * buffer = particle_buffer_create();
     struct name_set * name_set = name_set_create();
 
-    name_set_add(name_set, u8"scone", 5, NULL, NAME_TYPE_PLAYER);
+    ensure_not_null(name_set, &errors);
+    ensure_not_null(buffer, &errors);
+    if (!name_set || !buffer) return -1;
 
-    size_t result = lex(word, sizeof(word) / sizeof(*word), name_set, buffer);
+    name_set_add(name_set, u8"scone", 5, NULL, NAME_TYPE_PLAYER, &oom);
+    ensure_not_oom(oom, &errors);
+
+    size_t result =
+        lex(word, sizeof(word) / sizeof(*word), name_set, buffer, &oom);
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 5, &errors);
 
@@ -209,7 +240,14 @@ int main(int argc, char ** argv)
         }
     };
 
-    result = lex(two_words, sizeof(two_words) / sizeof(*two_words), name_set, buffer);
+    result = lex(
+            two_words,
+            sizeof(two_words) / sizeof(*two_words),
+            name_set,
+            buffer,
+            &oom
+        );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 12, &errors);
 
@@ -237,7 +275,14 @@ int main(int argc, char ** argv)
         }
     };
 
-    result = lex(carryover, sizeof(carryover) / sizeof(*carryover), name_set, buffer);
+    result = lex(
+            carryover,
+            sizeof(carryover) / sizeof(*carryover),
+            name_set,
+            buffer,
+            &oom
+        );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 18, &errors);
 
@@ -274,8 +319,10 @@ int main(int argc, char ** argv)
             carryover_three,
             sizeof(carryover_three) / sizeof(*carryover_three),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 12, &errors);
 
@@ -306,8 +353,10 @@ int main(int argc, char ** argv)
             carryover_number,
             sizeof(carryover_number) / sizeof(*carryover_number),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 7, &errors);
 
@@ -338,8 +387,10 @@ int main(int argc, char ** argv)
             carryover_names,
             sizeof(carryover_names) / sizeof(*carryover_names),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 23, &errors);
 
@@ -362,8 +413,10 @@ int main(int argc, char ** argv)
             no_space_paren,
             sizeof(no_space_paren) / sizeof(*no_space_paren),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 16, &errors);
 
@@ -400,8 +453,10 @@ int main(int argc, char ** argv)
             num_and_string,
             sizeof(num_and_string) / sizeof(*num_and_string),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 26, &errors);
 
@@ -433,8 +488,10 @@ int main(int argc, char ** argv)
             unicode,
             sizeof(unicode) / sizeof(*unicode),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 7, &errors);
 
@@ -444,7 +501,6 @@ int main(int argc, char ** argv)
     ensure_particle_value(buffer->particles[0], u8"\xf0\x9f\x98\x80", &errors);
 
     particle_buffer_free_all(buffer);
-
 
     /* test for null bytes in names */
     struct lexer_input null_bytes_names[] = {
@@ -458,8 +514,10 @@ int main(int argc, char ** argv)
             null_bytes_names,
             sizeof(null_bytes_names) / sizeof(*null_bytes_names),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 8, &errors);
 
@@ -484,8 +542,10 @@ int main(int argc, char ** argv)
             unicode_over_inputs,
             sizeof(unicode_over_inputs) / sizeof(*unicode_over_inputs),
             name_set,
-            buffer
+            buffer,
+            &oom
         );
+    ensure_not_oom(oom, &errors);
 
     ensure_result_value(result, 7, &errors);
 
@@ -504,5 +564,4 @@ int main(int argc, char ** argv)
     }
     particle_buffer_destroy(buffer);
     name_set_destroy(name_set);
-
 }

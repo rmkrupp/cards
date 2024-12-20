@@ -51,6 +51,7 @@ struct logger {
     (void)config;
 
     struct logger * logger = malloc(sizeof(*logger));
+    if (!logger) return NULL;
     *logger = (struct logger) { };
     return logger;
 }

@@ -56,7 +56,9 @@ static void lex_test()
         size_t index = lex(
                 inputs,
                 1,
-                parser->game->name_set, buffer
+                parser->game->name_set,
+                buffer,
+                &(bool){ false }
             );
         /* TODO do something smart with index */
         (void)index;

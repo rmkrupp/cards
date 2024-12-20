@@ -215,6 +215,7 @@ static inline uint32_t rotate_left (uint32_t n, unsigned int c)
 
     /* extract the checksum */
     char * buffer = malloc(33);
+    if (!buffer) return NULL;
 
     /* access the { a0, b0, c0, d0 } checksum as bytes */
     union {

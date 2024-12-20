@@ -30,10 +30,18 @@
         struct config * config) [[gnu::nonnull(1)]]
 {
     struct game * game = malloc(sizeof(*game));
+    if (!game) {
+        return NULL;
+    }
     *game = (struct game) {
         .name_set = name_set_create(),
         .logger = config->logger
     };
+
+    if (!game->name_set) {
+        free(game);
+        return NULL;
+    }
 
     if (config->default_card_db) {
         LOGF_INFO(
