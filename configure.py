@@ -395,7 +395,7 @@ w.variable(key = 'cflags',
 
 if args.fanalyzer:
     w.comment('enabling -fanalyzer because were were generated with --fanalayzer')
-    w.variable(keys = 'cflags',
+    w.variable(key = 'cflags',
                value = '$cflags -fanalyzer')
 
 if args.ldflags:
