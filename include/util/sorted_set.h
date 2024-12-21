@@ -138,6 +138,17 @@ struct sorted_set_maker;
 
 /* create a sorted_set_maker that will make a sorted sorted with this number
  * of keys
+ *
+ * the expected usage is to then call sorted_set_maker_add_key n_keys times
+ * and then finally sorted_set_maker_finalize() to transform the maker into
+ * a sorted_set
+ *
+ * sets created using this method will have uniformally distributed skip
+ * points, unlike the propabilistic distribution of creating a set and then
+ * adding them one by one without using a maker
+ *
+ * if n_keys == 0, there's no clear reason to call this function, but it
+ * handles this case just fine anyways.
  */
 [[nodiscard]] struct sorted_set_maker * sorted_set_maker_create(
         size_t n_keys);
@@ -175,7 +186,8 @@ void sorted_set_maker_destroy_except_keys(
  *
  * returns true if the sorted_set_maker is now complete
  *
- * it is an error to call this on a complete sorted_set_maker
+ * it is an error to call this on a complete sorted_set_maker (this includes
+ * a sorted_set_maker created with n_keys == 0)
  */
 bool sorted_set_maker_add_key(
         struct sorted_set_maker * sorted_set_maker,

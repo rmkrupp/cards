@@ -458,13 +458,20 @@ struct sorted_set_maker {
 /* create a sorted_set_maker that will make a sorted sorted with this number
  * of keys
  *
- * it is an error to call this with n_keys == 0
+ * the expected usage is to then call sorted_set_maker_add_key n_keys times
+ * and then finally sorted_set_maker_finalize() to transform the maker into
+ * a sorted_set
+ *
+ * sets created using this method will have uniformally distributed skip
+ * points, unlike the propabilistic distribution of creating a set and then
+ * adding them one by one without using a maker
+ *
+ * if n_keys == 0, there's no clear reason to call this function, but it
+ * handles this case just fine anyways.
  */
 [[nodiscard]] struct sorted_set_maker * sorted_set_maker_create(
         size_t n_keys)
 {
-    assert(n_keys > 0);
-
     struct sorted_set_maker * sorted_set_maker =
         malloc(sizeof(*sorted_set_maker));
 
@@ -478,6 +485,19 @@ struct sorted_set_maker {
     if (!sorted_set_maker->sorted_set) {
         free(sorted_set_maker);
         return NULL;
+    }
+
+    if (n_keys == 0) {
+        /* early exit if this is called with n_keys == 0, in which case there's
+         * no need to set up the optimal layout
+         *
+         * (all that needs to be done is for sorted_set_maker->next to be NULL
+         * so that sorted_set_maker_complete() returns true)
+         *
+         * it's an error to call sorted_set_maker_add_key in that case though,
+         * just like any other time where it's called more than n_keys times
+         */
+        return sorted_set_maker;
     }
 
     struct sorted_set * sorted_set = sorted_set_maker->sorted_set;
@@ -661,7 +681,8 @@ void sorted_set_maker_destroy_except_keys(
  *
  * returns true if the sorted_set_maker is now complete
  *
- * it is an error to call this on a complete sorted_set_maker
+ * it is an error to call this on a complete sorted_set_maker (this includes
+ * a sorted_set_maker created with n_keys == 0)
  */
 bool sorted_set_maker_add_key(
         struct sorted_set_maker * sorted_set_maker,
@@ -670,6 +691,7 @@ bool sorted_set_maker_add_key(
         void * data
     ) [[gnu::nonnull(1, 2)]]
 {
+    assert(sorted_set_maker->next);
     sorted_set_maker->next->key = key;
     sorted_set_maker->next->length = length;
     sorted_set_maker->next->data = data;
